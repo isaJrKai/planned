@@ -1,0 +1,506 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ===========================================================================
+   EDITORIAL JAPANDI-LUXE THEME — Planned Kids Savings
+   ===========================================================================
+   Canvas: deep green-black #090C0A (aged mahogany at dusk)
+   Gold foil: #C9A84C -> #E8D5A0 -> #D4AF37 (animated shimmer)
+   Green-wood tones: #1A332A, #2A4A3A (depth, never rough)
+   Typography: Playfair Display (serif headings/amounts) + Inter (sans body)
+   Tenebrism: cards emerge from near-black with ethereal glow
+   =========================================================================== */
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-inter);
+  --font-editorial: var(--font-playfair);
+  --font-mono: var(--font-mono-stack);
+
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  --radius: 0.5rem;
+
+  /* Editorial luxe palette — applied as the default (no toggle) */
+  --background: #090C0A;           /* deep green-black canvas */
+  --foreground: #E8E4D8;           /* warm parchment text */
+
+  --card: #0E1310;                 /* slightly lighter than bg, for cards */
+  --card-foreground: #E8E4D8;
+  --popover: #0E1310;
+  --popover-foreground: #E8E4D8;
+
+  --primary: #C9A84C;              /* gold */
+  --primary-foreground: #090C0A;
+
+  --secondary: #1A332A;            /* green-wood */
+  --secondary-foreground: #E8E4D8;
+
+  --muted: #141A16;
+  --muted-foreground: #8A8676;
+
+  --accent: #2A4A3A;
+  --accent-foreground: #E8E4D8;
+
+  --destructive: #C45A4A;
+
+  --border: rgba(201, 168, 76, 0.14);    /* hairline gold */
+  --input: rgba(201, 168, 76, 0.18);
+  --ring: #C9A84C;
+
+  --chart-1: #C9A84C;  /* gold */
+  --chart-2: #6BBF8A;  /* sage */
+  --chart-3: #D4943A;  /* amber */
+  --chart-4: #8A9B82;  /* moss */
+  --chart-5: #E8D5A0;  /* light gold */
+
+  --sidebar: #0B0F0D;
+  --sidebar-foreground: #E8E4D8;
+  --sidebar-primary: #C9A84C;
+  --sidebar-primary-foreground: #090C0A;
+  --sidebar-accent: #141A16;
+  --sidebar-accent-foreground: #E8E4D8;
+  --sidebar-border: rgba(201, 168, 76, 0.10);
+  --sidebar-ring: #C9A84C;
+
+  --font-mono-stack: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.dark {
+  /* Mirror — the design IS dark by default. Kept for shadcn compatibility. */
+  --background: #090C0A;
+  --foreground: #E8E4D8;
+  --card: #0E1310;
+  --card-foreground: #E8E4D8;
+  --popover: #0E1310;
+  --popover-foreground: #E8E4D8;
+  --primary: #C9A84C;
+  --primary-foreground: #090C0A;
+  --secondary: #1A332A;
+  --secondary-foreground: #E8E4D8;
+  --muted: #141A16;
+  --muted-foreground: #8A8676;
+  --accent: #2A4A3A;
+  --accent-foreground: #E8E4D8;
+  --destructive: #C45A4A;
+  --border: rgba(201, 168, 76, 0.14);
+  --input: rgba(201, 168, 76, 0.18);
+  --ring: #C9A84C;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html, body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Tabular nums everywhere numbers appear so columns align like a ledger */
+  .tabular-nums,
+  table,
+  input[type="number"] {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+
+  /* Custom scrollbar — slim, gold-tinted */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(201, 168, 76, 0.18);
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(201, 168, 76, 0.35);
+  }
+}
+
+/* ===========================================================================
+   EDITORIAL TYPOGRAPHY — Playfair Display serif for headings + amounts
+   =========================================================================== */
+
+.font-editorial {
+  font-family: var(--font-playfair), "Playfair Display", Georgia, "Times New Roman", serif;
+  font-feature-settings: "liga" 1, "dlig" 1, "kern" 1;
+}
+
+.tracking-editorial {
+  letter-spacing: 0.12em;
+}
+.tracking-wider-editorial {
+  letter-spacing: 0.20em;
+}
+.tracking-widest-editorial {
+  letter-spacing: 0.28em;
+}
+
+/* Micro-labels — uppercase, tiny, high tracking. Editorial section headers. */
+.micro-label {
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(232, 228, 216, 0.55);
+  font-weight: 500;
+}
+
+.micro-label-gold {
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #C9A84C;
+  font-weight: 500;
+}
+
+/* ===========================================================================
+   GOLD FOIL — animated shimmer text for key financial figures
+   =========================================================================== */
+
+.text-gold-foil {
+  background: linear-gradient(
+    100deg,
+    #C9A84C 0%,
+    #E8D5A0 25%,
+    #D4AF37 50%,
+    #E8D5A0 75%,
+    #C9A84C 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: gold-shimmer 6s linear infinite;
+}
+
+.text-gold-foil-static {
+  background: linear-gradient(180deg, #E8D5A0 0%, #C9A84C 50%, #D4AF37 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+@keyframes gold-shimmer {
+  0%   { background-position: 0% center; }
+  100% { background-position: 200% center; }
+}
+
+/* ===========================================================================
+   TENEBRIST SURFACES — cards emerge from darkness with subtle green-wood glow
+   =========================================================================== */
+
+.surface-wood {
+  background:
+    radial-gradient(120% 100% at 0% 0%, rgba(201, 168, 76, 0.04) 0%, transparent 50%),
+    linear-gradient(160deg, rgba(26, 51, 42, 0.42) 0%, rgba(14, 19, 16, 0.85) 100%);
+  border: 1px solid rgba(201, 168, 76, 0.12);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.surface-wood-strong {
+  background:
+    radial-gradient(140% 120% at 50% 0%, rgba(201, 168, 76, 0.07) 0%, transparent 55%),
+    linear-gradient(180deg, rgba(26, 51, 42, 0.55) 0%, rgba(11, 15, 13, 0.95) 100%);
+  border: 1px solid rgba(201, 168, 76, 0.18);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.surface-flat {
+  background: rgba(14, 19, 16, 0.6);
+  border: 1px solid rgba(201, 168, 76, 0.08);
+}
+
+/* Ethereal halo glow behind child avatars */
+.halo-glow {
+  position: relative;
+}
+.halo-glow::before {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  background: var(--halo-color, #C9A84C);
+  opacity: 0.18;
+  filter: blur(12px);
+  z-index: 0;
+}
+
+/* Hairline gold gradient dividers */
+.divider-gold {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(201, 168, 76, 0.20) 15%,
+    rgba(201, 168, 76, 0.08) 85%,
+    transparent 100%
+  );
+}
+
+.divider-gold-vertical {
+  width: 1px;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(201, 168, 76, 0.20) 15%,
+    rgba(201, 168, 76, 0.08) 85%,
+    transparent 100%
+  );
+}
+
+/* Ultra-fine noise grain for organic warmth */
+.grain-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.015;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+
+/* Progress bars — thin, editorial */
+.progress-thin {
+  height: 3px;
+  background: rgba(201, 168, 76, 0.10);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.progress-thin > div {
+  height: 100%;
+  background: linear-gradient(90deg, #C9A84C 0%, #E8D5A0 100%);
+  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Status pills — muted, never loud */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  font-weight: 500;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+.pill-gold {
+  background: rgba(201, 168, 76, 0.10);
+  color: #E8D5A0;
+  border: 1px solid rgba(201, 168, 76, 0.30);
+}
+.pill-green {
+  background: rgba(107, 191, 138, 0.10);
+  color: #6BBF8A;
+  border: 1px solid rgba(107, 191, 138, 0.30);
+}
+.pill-amber {
+  background: rgba(212, 148, 58, 0.10);
+  color: #D4943A;
+  border: 1px solid rgba(212, 148, 58, 0.30);
+}
+.pill-muted {
+  background: rgba(232, 228, 216, 0.06);
+  color: rgba(232, 228, 216, 0.55);
+  border: 1px solid rgba(232, 228, 216, 0.10);
+}
+
+/* Gold primary button */
+.btn-gold {
+  background: linear-gradient(180deg, #E8D5A0 0%, #C9A84C 100%);
+  color: #090C0A;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  border: 1px solid #C9A84C;
+  transition: all 0.2s ease;
+}
+.btn-gold:hover:not(:disabled) {
+  background: linear-gradient(180deg, #E8D5A0 0%, #D4AF37 100%);
+  box-shadow: 0 0 24px rgba(201, 168, 76, 0.35);
+}
+.btn-gold:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-outline {
+  background: transparent;
+  color: #C9A84C;
+  border: 1px solid rgba(201, 168, 76, 0.35);
+  transition: all 0.2s ease;
+}
+.btn-outline:hover:not(:disabled) {
+  background: rgba(201, 168, 76, 0.08);
+  border-color: rgba(201, 168, 76, 0.55);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: rgba(232, 228, 216, 0.7);
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+.btn-ghost:hover {
+  color: #E8D5A0;
+  background: rgba(201, 168, 76, 0.06);
+}
+
+/* Input fields — dark with gold focus ring */
+.input-editorial {
+  background: rgba(14, 19, 16, 0.7);
+  border: 1px solid rgba(201, 168, 76, 0.18);
+  color: #E8E4D8;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+.input-editorial:focus {
+  outline: none;
+  border-color: rgba(201, 168, 76, 0.55);
+  box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.10);
+}
+.input-editorial::placeholder {
+  color: rgba(232, 228, 216, 0.35);
+}
+
+/* Sidebar nav item */
+.nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  color: rgba(232, 228, 216, 0.55);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.nav-item:hover {
+  color: #E8E4D8;
+  background: rgba(201, 168, 76, 0.04);
+}
+.nav-item.active {
+  color: #E8D5A0;
+  background: rgba(201, 168, 76, 0.08);
+}
+.nav-item.active::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  background: linear-gradient(180deg, #C9A84C 0%, #E8D5A0 100%);
+  border-radius: 1px;
+}
+
+/* Table styling — editorial ledger look */
+.ledger-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  font-size: 13px;
+}
+.ledger-table th {
+  text-align: left;
+  padding: 12px 16px;
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: rgba(232, 228, 216, 0.45);
+  border-bottom: 1px solid rgba(201, 168, 76, 0.18);
+  background: transparent;
+}
+.ledger-table td {
+  padding: 14px 16px;
+  color: rgba(232, 228, 216, 0.85);
+  border-bottom: 1px solid rgba(201, 168, 76, 0.06);
+  vertical-align: middle;
+}
+.ledger-table tbody tr:hover td {
+  background: rgba(201, 168, 76, 0.03);
+}
+.ledger-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Animations */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up {
+  animation: fade-up 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes breathe {
+  0%, 100% { opacity: 0.5; }
+  50%      { opacity: 0.9; }
+}
+.animate-breathe {
+  animation: breathe 4s ease-in-out infinite;
+}
+
+/* Responsive utilities */
+@media (max-width: 768px) {
+  .hide-mobile { display: none !important; }
+}
+@media (min-width: 769px) {
+  .hide-desktop { display: none !important; }
+}
