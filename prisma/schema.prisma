@@ -1,8 +1,10 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// ============================================================================
+// PRISMA SCHEMA — Planned Family Savings & Allowance App
+// ============================================================================
+// Mirrors the Zustand store types in src/lib/types.ts so the hydration layer
+// is a clean 1:1 mapping. All money in UGX (integer). All timestamps in
+// milliseconds since epoch (stored as BigInt to be safe across SQLite).
+// ============================================================================
 
 generator client {
   provider = "prisma-client-js"
@@ -13,20 +15,156 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// ---- Family members --------------------------------------------------------
+
+model Child {
+  id            String   @id
+  name          String
+  age           Int
+  avatarColor   String
+  avatarPhoto   String?  // base64 data URL or external URL
+  currentAmount Int      @default(0)  // UGX live savings balance
+  goalAmount    Int      @default(0)
+  goalName      String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  accounts     Account[]
+  transactions Transaction[]
+  spending     SpendingEntry[]
+  investments  Investment[]
+  tokenLedger  TokenLedgerEntry[]
+  goals        Goal[]                  @relation("ChildGoals")
 }
 
-model Post {
+model ParentProfile {
+  id           String   @id
+  name         String
+  role         String   // "Mother" | "Father" | "Guardian"
+  avatarColor  String
+  avatarPhoto  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  spending     SpendingEntry[]
+  goals        Goal[]                  @relation("ParentGoals")
+}
+
+// ---- Financial entities ---------------------------------------------------
+
+model Account {
   id        String   @id @default(cuid())
-  title     String
-  content   String?
-  published Boolean  @default(false)
-  authorId  String
+  childId   String
+  name      String
+  balance   Int      @default(0)  // UGX external balance
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  child     Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+}
+
+model Transaction {
+  id           String   @id @default(cuid())
+  childId      String
+  type         String   // save | withdraw | invest | redeem | parent_give
+  amount       Int      @default(0)  // UGX, always positive
+  tokenDelta   Int      @default(0)
+  accountId    String?
+  investmentId String?
+  note         String
+  timestamp    BigInt                          @default(0)
+  createdAt    DateTime @default(now())
+
+  child        Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  @@index([childId])
+  @@index([timestamp])
+}
+
+model SpendingCategory {
+  id      String @id
+  name    String
+  budget  Int    @default(0)  // UGX monthly budget
+}
+
+model SpendingEntry {
+  id         String   @id @default(cuid())
+  ownerId    String   // child id OR parent id
+  ownerKind  String   // "parent" | "child"
+  ownerName  String   // denormalized for convenience
+  category   String
+  amount     Int      @default(0)
+  note       String
+  timestamp  BigInt                         @default(0)
+  createdAt  DateTime @default(now())
+
+  child      Child?   @relation(fields: [childId], references: [id], onDelete: Cascade)
+  parent     ParentProfile? @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  childId    String?
+  parentId   String?
+
+  @@index([ownerId])
+  @@index([timestamp])
+}
+
+model Investment {
+  id             String   @id @default(cuid())
+  childId        String
+  name           String
+  type           String   // Equity | Bond | Savings Bond | Treasury Bill | Unit Trust
+  amountInvested Int      @default(0)
+  currentValue   Int      @default(0)
+  status         String   @default("active")  // active | closed
+  openedAt       BigInt                          @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  child          Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+}
+
+model TokenLedgerEntry {
+  id        String   @id @default(cuid())
+  childId   String
+  type      String   // parent_give | redeem
+  tokens    Int      @default(0)
+  note      String
+  timestamp BigInt                          @default(0)
+  createdAt DateTime @default(now())
+
+  child     Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  @@index([childId])
+}
+
+model Goal {
+  id            String   @id @default(cuid())
+  ownerId       String   // child id OR parent id
+  ownerKind     String   // "parent" | "child"
+  ownerName     String
+  title         String
+  type          String   // save | spend_less
+  cadence       String   // weekly | monthly | annual
+  visibility    String   // private | revealed
+  targetAmount  Int      @default(0)
+  currentAmount Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  periodStart   BigInt                          @default(0)
+  note          String?
+
+  child         Child?   @relation("ChildGoals", fields: [childId], references: [id], onDelete: Cascade)
+  parent        ParentProfile? @relation("ParentGoals", fields: [parentId], references: [id], onDelete: Cascade)
+  childId       String?
+  parentId      String?
+
+  @@index([ownerId])
+}
+
+// ---- Family-level settings (single row) -----------------------------------
+
+model FamilySettings {
+  id           String   @id @default("singleton")
+  annualTheme  String   @default("")
+  monthlyQuote String   @default("")
+  updatedAt    DateTime @updatedAt
 }

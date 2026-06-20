@@ -68,6 +68,13 @@ import { ParentQuoteEditor } from "@/components/parent-quote-editor";
 import { GoalsTab } from "@/components/goals";
 import { Avatar } from "@/components/avatar";
 import {
+  setParentPhoto as persistSetParentPhoto,
+  setParentName as persistSetParentName,
+  setChildPhoto as persistSetChildPhoto,
+  setChildName as persistSetChildName,
+} from "@/lib/mutations";
+import { useHydratedState } from "@/lib/store-hydration";
+import {
   SavingsTrendChart,
   DistributionDonut,
   CashFlowBars,
@@ -87,6 +94,9 @@ export default function Home() {
   const [spendOwner, setSpendOwner] = useState<SpendingOwner | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Hydrate from /api/state on first mount — loads real DB data.
+  useHydratedState();
 
   // Cmd+K / Ctrl+K keyboard shortcut to open search.
   useEffect(() => {
@@ -1147,10 +1157,7 @@ function SettingsTab() {
   const netWorth = totalSavings + totalInvested;
   const parents = useStore((s) => s.parents);
   const children = useStore((s) => s.children);
-  const setParentPhoto = useStore((s) => s.setParentPhoto);
-  const setParentName = useStore((s) => s.setParentName);
-  const setChildPhoto = useStore((s) => s.setChildPhoto);
-  const setChildName = useStore((s) => s.setChildName);
+  // Profile mutations come from persisted mutations module
 
   return (
     <div className="space-y-6 animate-fade-up max-w-3xl">
@@ -1173,9 +1180,9 @@ function SettingsTab() {
               color={p.avatarColor}
               photo={p.avatarPhoto}
               roleLabel={p.role}
-              onUpload={(url) => setParentPhoto(p.id, url)}
-              onRemove={() => setParentPhoto(p.id, "")}
-              onNameChange={(n) => setParentName(p.id, n)}
+              onUpload={(url) => persistSetParentPhoto(p.id, url)}
+              onRemove={() => persistSetParentPhoto(p.id, "")}
+              onNameChange={(n) => persistSetParentName(p.id, n)}
             />
           ))}
           {children.map((c) => (
@@ -1185,9 +1192,9 @@ function SettingsTab() {
               color={c.avatarColor}
               photo={c.avatarPhoto}
               roleLabel={`Child · Age ${c.age}`}
-              onUpload={(url) => setChildPhoto(c.id, url)}
-              onRemove={() => setChildPhoto(c.id, "")}
-              onNameChange={(n) => setChildName(c.id, n)}
+              onUpload={(url) => persistSetChildPhoto(c.id, url)}
+              onRemove={() => persistSetChildPhoto(c.id, "")}
+              onNameChange={(n) => persistSetChildName(c.id, n)}
             />
           ))}
         </div>

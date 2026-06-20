@@ -23,6 +23,12 @@ import {
 } from "lucide-react";
 import { useStore } from "@/lib/store";
 import {
+  addTransaction as persistAddTransaction,
+  giveTokens as persistGiveTokens,
+  addSpendingEntry as persistAddSpendingEntry,
+  redeemTokens as persistRedeemTokens,
+} from "@/lib/mutations";
+import {
   TOKEN_BUY_RATE,
   TOKEN_REDEEM_RATE,
   formatUGX,
@@ -112,7 +118,7 @@ export function SaveMoneyModal({
   onClose: () => void;
 }) {
   const accounts = useStore((s) => s.accounts);
-  const addTransaction = useStore((s) => s.addTransaction);
+  // addTransaction comes from persisted mutations module (writes to DB)
 
   const childAccount = accounts.find((a) => a.childId === child.id);
   const [amount, setAmount] = useState<string>("");
@@ -125,7 +131,7 @@ export function SaveMoneyModal({
 
   const handleSubmit = () => {
     if (!canSubmit || !childAccount) return;
-    addTransaction({
+    persistAddTransaction({
       childId: child.id,
       type: "save",
       amount: amt,
@@ -253,7 +259,7 @@ export function GiveTokensModal({
   child: Child;
   onClose: () => void;
 }) {
-  const giveTokens = useStore((s) => s.giveTokens);
+  // giveTokens comes from persisted mutations module
   const [tokens, setTokens] = useState<string>("");
   const [note, setNote] = useState("");
   const [submitted, setSubmitted] = useState(false);
@@ -263,7 +269,7 @@ export function GiveTokensModal({
 
   const handleSubmit = () => {
     if (!canSubmit) return;
-    giveTokens(child.id, t, note || "Token award");
+    persistGiveTokens(child.id, t, note || "Token award");
     setSubmitted(true);
     setTimeout(onClose, 1100);
   };
@@ -379,7 +385,7 @@ export function AddSpendingModal({
   onClose: () => void;
 }) {
   const categories = useStore((s) => s.categories);
-  const addSpendingEntry = useStore((s) => s.addSpendingEntry);
+  // addSpendingEntry comes from persisted mutations module
 
   // Resolve the effective owner — prefer `owner`, fall back to `child`.
   const effectiveOwner: SpendingOwner = owner ?? (child
@@ -396,7 +402,7 @@ export function AddSpendingModal({
 
   const handleSubmit = () => {
     if (!canSubmit) return;
-    addSpendingEntry({
+    persistAddSpendingEntry({
       ownerId: effectiveOwner.id,
       ownerKind: effectiveOwner.kind,
       ownerName: effectiveOwner.name,
@@ -589,7 +595,7 @@ export function RedeemTokensModal({
   child: Child;
   onClose: () => void;
 }) {
-  const redeemTokens = useStore((s) => s.redeemTokens);
+  // redeemTokens comes from persisted mutations module
   const tokenBalance = useStore((s) =>
     s.tokenLedger
       .filter((t) => t.childId === child.id && t.type === "parent_give")
@@ -609,7 +615,7 @@ export function RedeemTokensModal({
 
   const handleSubmit = () => {
     if (!canSubmit) return;
-    const ok = redeemTokens(child.id, t);
+    const ok = persistRedeemTokens(child.id, t);
     if (!ok) {
       setError("Not enough tokens.");
       return;

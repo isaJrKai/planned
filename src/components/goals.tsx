@@ -27,6 +27,12 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { useStore } from "@/lib/store";
+import {
+  addGoal as persistAddGoal,
+  updateGoal as persistUpdateGoal,
+  deleteGoal as persistDeleteGoal,
+  contributeToGoal as persistContribute,
+} from "@/lib/mutations";
 import { formatUGX, formatUGXPlain } from "@/lib/phrases";
 import type {
   Goal,
@@ -106,8 +112,7 @@ export function GoalModal({
 }) {
   const parents = useStore((s) => s.parents);
   const children = useStore((s) => s.children);
-  const addGoal = useStore((s) => s.addGoal);
-  const updateGoal = useStore((s) => s.updateGoal);
+  // addGoal + updateGoal come from persisted mutations module
 
   const [draft, setDraft] = useState<GoalDraft>(() => {
     if (editGoal) {
@@ -158,7 +163,7 @@ export function GoalModal({
       return;
     }
     if (editGoal) {
-      updateGoal(editGoal.id, {
+      persistUpdateGoal(editGoal.id, {
         title: draft.title.trim(),
         type: draft.type,
         cadence: draft.cadence,
@@ -167,7 +172,7 @@ export function GoalModal({
         note: draft.note,
       });
     } else {
-      const result = addGoal({
+      const result = persistAddGoal({
         ownerId: draft.ownerId,
         ownerKind: draft.ownerKind,
         ownerName: draft.ownerName,
@@ -395,7 +400,7 @@ export function GoalModal({
 // ---- Contribute Modal — add to a savings goal -----------------------------
 
 export function ContributeModal({ goal, onClose }: { goal: Goal; onClose: () => void }) {
-  const contribute = useStore((s) => s.contributeToGoal);
+  // contribute comes from persisted mutations module
   const [amount, setAmount] = useState("");
   const [saved, setSaved] = useState(false);
 
@@ -403,7 +408,7 @@ export function ContributeModal({ goal, onClose }: { goal: Goal; onClose: () => 
 
   const handleSubmit = () => {
     if (amt <= 0) return;
-    contribute(goal.id, amt);
+    persistContribute(goal.id, amt);
     setSaved(true);
     setTimeout(onClose, 900);
   };
@@ -627,7 +632,7 @@ export function GoalsTab({
 }) {
   const goals = useStore((s) => s.goals);
   const children = childList;
-  const deleteGoal = useStore((s) => s.deleteGoal);
+  // deleteGoal comes from persisted mutations module
   const [showModal, setShowModal] = useState(false);
   const [editGoal, setEditGoal] = useState<Goal | null>(null);
   const [contributeGoal, setContributeGoal] = useState<Goal | null>(null);
@@ -871,7 +876,7 @@ export function GoalsTab({
         <ConfirmDeleteModal
           goal={confirmDelete}
           onConfirm={() => {
-            deleteGoal(confirmDelete.id);
+            persistDeleteGoal(confirmDelete.id);
             setConfirmDelete(null);
           }}
           onCancel={() => setConfirmDelete(null)}

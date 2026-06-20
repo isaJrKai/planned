@@ -339,6 +339,10 @@ interface StoreState {
   resetGoalPeriod: (id: string) => void;
   goalMaxPerOwner: number;
 
+  // Hydration status — set by store-hydration.ts when /api/state loads
+  hydrated: boolean;
+  hydrateError: string | null;
+
   // Mutations
   addTransaction: (tx: Omit<Transaction, "id" | "timestamp"> & { timestamp?: number }) => void;
   addSpendingEntry: (e: Omit<SpendingEntry, "id" | "timestamp"> & { timestamp?: number }) => void;
@@ -363,6 +367,8 @@ export const useStore = create<StoreState>((set, get) => ({
   parents: SEED_PARENTS,
   goals: SEED_GOALS,
   goalMaxPerOwner: GOAL_MAX_PER_OWNER,
+  hydrated: false,
+  hydrateError: null as string | null,
 
   setAnnualTheme: (t) => set({ annualTheme: t.trim() }),
   setMonthlyQuote: (q) => set({ monthlyQuote: q.trim() }),

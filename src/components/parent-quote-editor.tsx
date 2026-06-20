@@ -9,6 +9,10 @@
 
 import { useState, useEffect } from "react";
 import { useStore } from "@/lib/store";
+import {
+  setAnnualTheme as persistSetAnnualTheme,
+  setMonthlyQuote as persistSetMonthlyQuote,
+} from "@/lib/mutations";
 import { Sparkles, Check, RotateCcw, BookOpen } from "lucide-react";
 
 // A small library of suggested quotes parent can pick from.
@@ -34,8 +38,7 @@ const SUGGESTED_THEMES: string[] = [
 export function ParentQuoteEditor() {
   const annualTheme = useStore((s) => s.annualTheme);
   const monthlyQuote = useStore((s) => s.monthlyQuote);
-  const setAnnualTheme = useStore((s) => s.setAnnualTheme);
-  const setMonthlyQuote = useStore((s) => s.setMonthlyQuote);
+  // setAnnualTheme + setMonthlyQuote come from persisted mutations module
 
   // Local draft state — only commits to store on Save.
   const [themeDraft, setThemeDraft] = useState(annualTheme);
@@ -56,11 +59,11 @@ export function ParentQuoteEditor() {
   };
 
   const saveTheme = () => {
-    setAnnualTheme(themeDraft);
+    persistSetAnnualTheme(themeDraft);
     flash("theme");
   };
   const saveQuote = () => {
-    setMonthlyQuote(quoteDraft);
+    persistSetMonthlyQuote(quoteDraft);
     flash("quote");
   };
 
@@ -115,7 +118,7 @@ export function ParentQuoteEditor() {
                 key={t}
                 onClick={() => {
                   setThemeDraft(t);
-                  setAnnualTheme(t);
+                  persistSetAnnualTheme(t);
                   flash("theme");
                 }}
                 className="btn-outline px-3 py-1.5 rounded text-xs tracking-wide"
@@ -195,7 +198,7 @@ export function ParentQuoteEditor() {
                 key={q}
                 onClick={() => {
                   setQuoteDraft(q);
-                  setMonthlyQuote(q);
+                  persistSetMonthlyQuote(q);
                   flash("quote");
                 }}
                 className="btn-outline px-3 py-1.5 rounded text-xs tracking-wide text-left max-w-[260px] truncate"

@@ -526,3 +526,99 @@ Stage Summary:
 - Added: card-hover lift, row-hover, stagger entrance animation, progress bar shimmer, sticky table headers, button active press feedback.
 - Refined: surface transitions (smoother cubic-bezier), button hover (lift + ring), table padding (more breathing room).
 - All 4 themes verified — colors shift correctly throughout.
+
+---
+Task ID: backend-1
+Agent: main (Super Z)
+Task: Wire up Prisma + SQLite so data persists across refreshes. Replace the in-memory Zustand seed data with real database-backed persistence.
+
+Work Log:
+
+1. PRISMA SCHEMA (prisma/schema.prisma):
+   - Replaced boilerplate User/Post with 10 models matching the Zustand types:
+     Child, ParentProfile, Account, Transaction, SpendingCategory, SpendingEntry,
+     Investment, TokenLedgerEntry, Goal, FamilySettings
+   - All money fields as Int (UGX). All timestamps as BigInt (ms since epoch).
+   - Proper relations with cascade deletes (e.g. deleting a Child deletes their
+     Transactions, SpendingEntries, etc.)
+   - Indexes on childId + timestamp for fast queries
+   - FamilySettings is a singleton (id="singleton")
+
+2. DATABASE CREATION:
+   - bun run db:push → created SQLite database at db/custom.db with all 10 tables
+   - Verified via sqlite3: all tables present, 0 rows
+
+3. SEED SCRIPT (scripts/seed.ts):
+   - Mirrors the SEED_* constants from the old Zustand store exactly
+   - Populates: 2 parents, 3 children, 3 accounts, 6 categories, 16 spending entries,
+     3 investments, 6 token entries, 9 transactions, 5 goals, family settings
+   - Run via: bun run scripts/seed.ts
+   - Verified: all 10 tables populated correctly
+
+4. DATA ACCESS LAYER (src/lib/db-queries.ts):
+   - getFullState() — returns all 10 entities + family settings as a single AppState object
+     shape matches the Zustand store types exactly (1:1 mapping)
+   - Mutation functions: addTransaction (updates child.currentAmount + account.balance),
+     addSpendingEntry, giveTokens, redeemTokens (credits child savings), investNow
+     (debits savings + creates investment), createGoal, updateGoal, deleteGoal,
+     contributeToGoal, setFamilySettings, setParentPhoto/Name, setChildPhoto/Name
+   - BigInt → Number conversion for JSON serialization (timestamps fit safely)
+
+5. API ROUTES:
+   - /api/state (GET) — returns full AppState from DB for client hydration
+   - /api/mutations (POST) — dispatches based on `action` field, executes mutation,
+     returns fresh state for client re-hydration
+   - Both use `export const dynamic = "force-dynamic"` to prevent caching
+
+6. HYDRATION LAYER (src/lib/store-hydration.ts):
+   - hydrateState() — fetches /api/state, replaces entire store with DB data
+   - persistMutation(action, payload) — POSTs to /api/mutations, then re-hydrates
+     with server-confirmed state (eliminates optimistic-update drift)
+   - rehydrate() — forces re-fetch (used on mutation failure to roll back)
+   - useHydratedState() hook — called once on mount in Home() to trigger initial load
+   - Added `hydrated` + `hydrateError` fields to store state
+
+7. PERSISTED MUTATIONS MODULE (src/lib/mutations.ts):
+   - Wrapper functions for every mutation that:
+     1. Call the local Zustand mutation (optimistic update — UI updates instantly)
+     2. Fire persistMutation() to POST to /api/mutations
+     3. On success, server returns fresh state and store is re-hydrated
+     4. On failure, store is rolled back to server's last-known state
+   - Functions: addTransaction, addSpendingEntry, giveTokens, redeemTokens,
+     investNow, addGoal, updateGoal, deleteGoal, contributeToGoal,
+     setAnnualTheme, setMonthlyQuote, setParentPhoto/Name, setChildPhoto/Name
+
+8. COMPONENT REFACTOR:
+   - modals.tsx: swapped 4 raw store mutations for persisted versions
+     (addTransaction, giveTokens, addSpendingEntry, redeemTokens)
+   - goals.tsx: swapped 4 raw store mutations for persisted versions
+     (addGoal, updateGoal, deleteGoal, contributeToGoal)
+   - parent-quote-editor.tsx: swapped setAnnualTheme + setMonthlyQuote for persisted versions
+   - page.tsx SettingsTab: swapped setParentPhoto/Name + setChildPhoto/Name for persisted versions
+   - All components continue to import useStore for READ access (selectors) — only
+     mutations go through the persisted module
+
+VERIFICATION:
+- ESLint clean (0 errors, 0 warnings)
+- /api/state returns 200 with correct DB data
+- /api/mutations returns 200 with fresh state after each mutation
+- Hydration runs on page load — store is populated from SQLite, not seed data
+- Tested end-to-end: opened Zara's dashboard (balance: 312,500 from DB) → saved 8,000
+  → UI showed 320,500 immediately (optimistic) → DB updated to 320,500 → refreshed page
+  → Zara's balance STILL 320,500 (persisted!) → opened child dashboard → 320,500 confirmed
+- All money logic (bug #1-14 fixes) still works — the store's local mutations
+  run for optimistic updates, then the server confirms with DB truth
+- No console errors, no page errors
+
+WHAT THIS UNLOCKS:
+- Data survives page refresh (the #1 gap from the audit document)
+- Foundation for multi-user auth (each family can have their own DB record)
+- Foundation for audit trail (DB rows have createdAt/updatedAt)
+- Foundation for backup/restore (just copy db/custom.db)
+- Foundation for server-side validation (can add Zod schemas in API routes)
+
+Stage Summary:
+- Backend fully wired. Prisma + SQLite + API routes + hydration layer.
+- All mutations persist to DB. All reads hydrate from DB on mount.
+- Optimistic updates preserved for instant UI feedback.
+- The app is no longer a "mock data" MVP — it's a real persisted application.
