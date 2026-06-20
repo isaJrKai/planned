@@ -403,7 +403,7 @@ function SpendingTab({ child, onSpend }: { child: Child; onSpend: () => void }) 
       const spent = spending
         .filter(
           (e) =>
-            e.childId === child.id &&
+            e.ownerId === child.id &&
             e.category === category.name &&
             e.timestamp >= monthStartTime
         )
@@ -417,7 +417,7 @@ function SpendingTab({ child, onSpend }: { child: Child; onSpend: () => void }) 
   const childSpending = useMemo(
     () =>
       spending
-        .filter((e) => e.childId === child.id)
+        .filter((e) => e.ownerId === child.id)
         .sort((a, b) => b.timestamp - a.timestamp),
     [spending, child.id]
   );
@@ -546,7 +546,7 @@ function WorksheetTab({ child }: { child: Child }) {
     [allTransactions, child.id]
   );
   const spending = useMemo(
-    () => allSpending.filter((e) => e.childId === child.id),
+    () => allSpending.filter((e) => e.ownerId === child.id),
     [allSpending, child.id]
   );
 

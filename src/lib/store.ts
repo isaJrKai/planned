@@ -83,8 +83,12 @@ const SEED_CATEGORIES: SpendingCategory[] = [
   { id: "cat-transport", name: "Transport", budget: 12_000 },
 ];
 
-function seedSpending(childId: string): SpendingEntry[] {
-  // Distinct amounts per child so the per-child bug (#7) is visually obvious
+function seedSpending(
+  ownerId: string,
+  ownerKind: "parent" | "child",
+  ownerName: string
+): SpendingEntry[] {
+  // Distinct amounts per owner so the per-person bug (#7) is visually obvious
   // if it ever regresses.
   const base = {
     zara: [
@@ -102,11 +106,24 @@ function seedSpending(childId: string): SpendingEntry[] {
       { cat: "Snacks & Sweets", amt: 1_500, note: "Bubblegum", d: 3 },
       { cat: "School Supplies", amt: 6_000, note: "Crayons", d: 7 },
     ],
+    "parent-mum": [
+      { cat: "Snacks & Sweets", amt: 8_000, note: "Coffee with friend", d: 1 },
+      { cat: "Transport", amt: 10_000, note: "Boda to market", d: 3 },
+      { cat: "Gifts & Giving", amt: 25_000, note: "Sister's birthday gift", d: 6 },
+      { cat: "Airtime & Data", amt: 15_000, note: "Monthly data bundle", d: 10 },
+    ],
+    "parent-dad": [
+      { cat: "Transport", amt: 18_000, note: "Fuel — week", d: 2 },
+      { cat: "Snacks & Sweets", amt: 5_000, note: "Office tea round", d: 4 },
+      { cat: "School Supplies", amt: 12_000, note: "Textbooks for Zara", d: 8 },
+    ],
   } as const;
 
-  return (base[childId as keyof typeof base] ?? []).map((e, i) => ({
-    id: `spend-${childId}-${i}`,
-    childId,
+  return (base[ownerId as keyof typeof base] ?? []).map((e, i) => ({
+    id: `spend-${ownerId}-${i}`,
+    ownerId,
+    ownerKind,
+    ownerName,
     category: e.cat,
     amount: e.amt,
     note: e.note,
@@ -115,9 +132,11 @@ function seedSpending(childId: string): SpendingEntry[] {
 }
 
 const SEED_SPENDING: SpendingEntry[] = [
-  ...seedSpending("zara"),
-  ...seedSpending("enoch"),
-  ...seedSpending("amani"),
+  ...seedSpending("zara", "child", "Zara"),
+  ...seedSpending("enoch", "child", "Enoch"),
+  ...seedSpending("amani", "child", "Amani"),
+  ...seedSpending("parent-mum", "parent", "Mama"),
+  ...seedSpending("parent-dad", "parent", "Papa"),
 ];
 
 const SEED_INVESTMENTS: Investment[] = [
@@ -656,9 +675,9 @@ export const childTokensRedeemed = (childId: string): Sel<number> =>
 export const childTokenBalance = (childId: string): Sel<number> =>
   (s) => childTokensGiven(childId)(s) - childTokensRedeemed(childId)(s);
 
-// Bug #7 FIX: per-child spending categories. spent is computed from THIS
-// child's entries, not a shared static field.
-export const getChildCategories = (childId: string): Sel<
+// Bug #7 FIX: per-owner spending categories. spent is computed from THIS
+// owner's entries, not a shared static field. Works for both children and parents.
+export const getOwnerCategories = (ownerId: string): Sel<
   { category: SpendingCategory; spent: number; remaining: number; pct: number }[]
 > => (s) => {
   const monthStart = new Date();
@@ -669,7 +688,7 @@ export const getChildCategories = (childId: string): Sel<
     const spent = s.spending
       .filter(
         (e) =>
-          e.childId === childId &&
+          e.ownerId === ownerId &&
           e.category === category.name &&
           e.timestamp >= monthStart.getTime()
       )
@@ -680,11 +699,44 @@ export const getChildCategories = (childId: string): Sel<
   });
 };
 
-export const childSpendingThisMonth = (childId: string): Sel<number> =>
+// Backwards-compat alias — getChildCategories now routes to getOwnerCategories.
+export const getChildCategories = (childId: string) => getOwnerCategories(childId);
+
+export const ownerSpendingThisMonth = (ownerId: string): Sel<number> =>
   (s) =>
     s.spending
-      .filter((e) => e.childId === childId && isThisMonth(e.timestamp))
+      .filter((e) => e.ownerId === ownerId && isThisMonth(e.timestamp))
       .reduce((sum, e) => sum + e.amount, 0);
+
+// Backwards-compat alias.
+export const childSpendingThisMonth = (ownerId: string) => ownerSpendingThisMonth(ownerId);
+
+// Family-wide spending this month — sums across all owners (parents + children).
+export const familySpendingThisMonth: Sel<number> = (s) =>
+  s.spending
+    .filter((e) => isThisMonth(e.timestamp))
+    .reduce((sum, e) => sum + e.amount, 0);
+
+// Per-owner breakdown for the family overview — returns array of
+// { ownerId, ownerKind, ownerName, total } sorted by total descending.
+export const familySpendingBreakdown: Sel<
+  { ownerId: string; ownerKind: "parent" | "child"; ownerName: string; total: number }[]
+> = (s) => {
+  const now = Date.now();
+  const map = new Map<string, { ownerKind: "parent" | "child"; ownerName: string; total: number }>();
+  for (const e of s.spending) {
+    if (!isThisMonth(e.timestamp)) continue;
+    const existing = map.get(e.ownerId);
+    if (existing) {
+      existing.total += e.amount;
+    } else {
+      map.set(e.ownerId, { ownerKind: e.ownerKind, ownerName: e.ownerName, total: e.amount });
+    }
+  }
+  return Array.from(map.entries())
+    .map(([ownerId, v]) => ({ ownerId, ...v }))
+    .sort((a, b) => b.total - a.total);
+};
 
 export const childInvestments = (childId: string): Sel<Investment[]> =>
   (s) => s.investments.filter((i) => i.childId === childId);

@@ -331,3 +331,60 @@ Stage Summary:
 - Profile photos: implemented (Avatar component + Settings editor + all surfaces swapped)
 - Goals feature: implemented (5-15 cap, privacy, cadence, tabular with graph progress, per-owner summary)
 - Audit document: generated as .docx with 10 sections covering capabilities, gaps, fixability, and roadmap
+
+---
+Task ID: rebuild-5
+Agent: main (Super Z)
+Task: Parents (Mama, Papa) should be able to log spending too, visible at the family overview. Previously spending was children-only.
+
+Work Log:
+- Extended SpendingEntry type: replaced `childId: string` with `ownerId + ownerKind + ownerName` (mirrors the Goal pattern). Backward-compat aliases added.
+- Updated seedSpending() to take (ownerId, ownerKind, ownerName) and added parent seeds:
+    Mama: Coffee with friend 8k, Boda to market 10k, Sister's birthday 25k, Monthly data 15k
+    Papa: Fuel 18k, Office tea 5k, Textbooks for Zara 12k
+- Added store selectors: getOwnerCategories, ownerSpendingThisMonth, familySpendingThisMonth,
+  familySpendingBreakdown. Kept getChildCategories + childSpendingThisMonth as aliases.
+- Refactored AddSpendingModal in modals.tsx:
+    New `owner` prop (SpendingOwner: {id, kind, name}) — preferred
+    Backward-compat `child` prop still accepted (child dashboard uses this)
+    Resolves effective owner, passes ownerId/ownerKind/ownerName to addSpendingEntry
+    Exported SpendingOwner interface for type-safe callers
+- Updated child-dashboard.tsx SpendingTab + WorksheetTab:
+    Replaced e.childId === child.id with e.ownerId === child.id (3 locations)
+- Updated page.tsx OverviewTab:
+    Added `parents` + `onLogSpend` props
+    Added "Log Spend" button in children table footer (next to Award Tokens) — defaults to Mama
+    Added new "Family Spending · This Month" section below the main grid:
+      - Total family spending this month (gold foil)
+      - Per-person breakdown with avatars, parent/child pill, amount, progress bar, percentage
+      - Sorted by total descending
+      - "Log Spend" button at the bottom
+    Derived familySpending + spendingBreakdown via useMemo from raw spending state
+    (avoided familySpendingBreakdown selector directly — would cause infinite re-render
+    because it returns a new array each call; same pattern as previous chart fixes)
+- Added Wallet icon to lucide-react imports
+- Wired AddSpendingModal in Home() with spendOwner state
+
+Verification:
+- ESLint clean (0 errors, 0 warnings)
+- No console errors, no page errors
+- Parent logging: clicked "Log Spend" on parent overview → modal opened with
+  "Mama · Spending Entry" subtitle → entered 15,000 → "Log Entry" → modal closed
+- Family spending breakdown immediately updated:
+    Mama (parent): 73,000 (48%) — was 58,000, +15,000 confirmed
+    Papa (parent): 35,000 (23%)
+    Zara (child): 20,500 (13%)
+    Enoch (child): 17,000 (11%)
+    Amani (child): 7,500 (5%)
+    Total: 153,000 this month
+- Child logging: opened Amani's child dashboard → clicked floating "Log Spend" →
+  modal opened with "Amani Atuhaire · Spending Entry" (backward-compat child prop works)
+- Amani's Spending tab still shows ONLY her entries (Snacks, Crayons) — not polluted
+  by parent spending. Privacy per-owner preserved.
+- Screenshot: 12-family-spending.png shows the new section with all 5 family members
+
+Stage Summary:
+- Parents can now log spending from the family overview.
+- Spending is tracked per-owner (parent or child), with full breakdown visible on overview.
+- Child dashboard spending tab correctly filters to only that child's entries.
+- Backward compatibility preserved — child dashboard's Log Spend button still works unchanged.

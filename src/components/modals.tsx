@@ -357,18 +357,35 @@ export function GiveTokensModal({
 }
 
 // ---- Add Spending Modal ----------------------------------------------------
-// Bug #12 fix: store surfaces entries through getChildCategories which reads
+// Bug #12 fix: store surfaces entries through getOwnerCategories which reads
 // live spending array. New entries reflect immediately in budget bars.
+//
+// Supports BOTH children AND parents as the owner. The `owner` prop is
+// preferred; `child` is accepted for backward-compat with the child dashboard.
+
+export interface SpendingOwner {
+  id: string;
+  kind: "parent" | "child";
+  name: string;
+}
 
 export function AddSpendingModal({
+  owner,
   child,
   onClose,
 }: {
-  child: Child;
+  owner?: SpendingOwner;
+  child?: Child;
   onClose: () => void;
 }) {
   const categories = useStore((s) => s.categories);
   const addSpendingEntry = useStore((s) => s.addSpendingEntry);
+
+  // Resolve the effective owner — prefer `owner`, fall back to `child`.
+  const effectiveOwner: SpendingOwner = owner ?? (child
+    ? { id: child.id, kind: "child", name: child.name }
+    : { id: "parent-mum", kind: "parent", name: "Mama" });
+
   const [category, setCategory] = useState(categories[0]?.name ?? "");
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
@@ -380,7 +397,9 @@ export function AddSpendingModal({
   const handleSubmit = () => {
     if (!canSubmit) return;
     addSpendingEntry({
-      childId: child.id,
+      ownerId: effectiveOwner.id,
+      ownerKind: effectiveOwner.kind,
+      ownerName: effectiveOwner.name,
       category,
       amount: amt,
       note: note || "Spending entry",
@@ -392,7 +411,7 @@ export function AddSpendingModal({
   return (
     <ModalShell
       title="Log Spending"
-      subtitle={`${child.name} · Spending Entry`}
+      subtitle={`${effectiveOwner.name} · Spending Entry`}
       onClose={onClose}
       footer={
         submitted ? (

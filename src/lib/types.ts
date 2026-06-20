@@ -30,8 +30,10 @@ export interface Account {
 
 export interface SpendingEntry {
   id: string;
-  childId: string;
-  category: string;      // matches SpendingCategory.name
+  ownerId: string;        // child id OR parent id (e.g. "parent-mum")
+  ownerKind: "parent" | "child";
+  ownerName: string;      // display name (denormalized for convenience)
+  category: string;       // matches SpendingCategory.name
   amount: number;
   note: string;
   timestamp: number;

@@ -35,6 +35,7 @@ import {
   Target,
   Trophy,
   Calendar,
+  Wallet,
 } from "lucide-react";
 import {
   useStore,
@@ -55,7 +56,8 @@ import {
   timeAgo,
 } from "@/lib/phrases";
 import { ChildDashboard } from "@/components/child-dashboard";
-import { GiveTokensModal } from "@/components/modals";
+import { GiveTokensModal, AddSpendingModal } from "@/components/modals";
+import type { SpendingOwner } from "@/components/modals";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { ParentQuoteEditor } from "@/components/parent-quote-editor";
 import { GoalsTab } from "@/components/goals";
@@ -77,6 +79,7 @@ export default function Home() {
   // reference goes stale whenever the store updates the child's balance.
   const [activeChildId, setActiveChildId] = useState<string | null>(null);
   const [giveToChildId, setGiveToChildId] = useState<string | null>(null);
+  const [spendOwner, setSpendOwner] = useState<SpendingOwner | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const childList = useStore((s) => s.children);
@@ -234,8 +237,10 @@ export default function Home() {
           {tab === "overview" && (
             <OverviewTab
               childList={children}
+              parents={parents}
               onSelectChild={(c) => setActiveChildId(c.id)}
               onGiveTokens={(c) => setGiveToChildId(c.id)}
+              onLogSpend={(owner) => setSpendOwner(owner)}
             />
           )}
           {tab === "children" && (
@@ -260,6 +265,14 @@ export default function Home() {
           onClose={() => setGiveToChildId(null)}
         />
       )}
+
+      {/* Add Spending modal — supports parents AND children as owners */}
+      {spendOwner && (
+        <AddSpendingModal
+          owner={spendOwner}
+          onClose={() => setSpendOwner(null)}
+        />
+      )}
     </div>
   );
 }
@@ -269,18 +282,53 @@ export default function Home() {
 
 function OverviewTab({
   childList,
+  parents,
   onSelectChild,
   onGiveTokens,
+  onLogSpend,
 }: {
   childList: Child[];
+  parents: { id: string; name: string; role: string; avatarColor: string; avatarPhoto?: string }[];
   onSelectChild: (c: Child) => void;
   onGiveTokens: (c: Child) => void;
+  onLogSpend: (owner: SpendingOwner) => void;
 }) {
   const totalSavings = useStore(familyTotalSavings);
   const totalInvested = useStore(familyTotalInvested);
   const thisMonth = useStore(familyThisMonthSaved);
   const totalGoals = useStore(familyTotalGoals);
   const tokens = useStore(parentTokenBalance);
+  // Raw spending state — derive breakdown via useMemo to avoid infinite re-renders
+  // (familySpendingBreakdown selector returns a new array each call).
+  const allSpending = useStore((s) => s.spending);
+  const familySpending = useMemo(
+    () =>
+      allSpending
+        .filter((e) => {
+          const d = new Date(e.timestamp);
+          const now = new Date();
+          return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+        })
+        .reduce((sum, e) => sum + e.amount, 0),
+    [allSpending]
+  );
+  const spendingBreakdown = useMemo(() => {
+    const now = new Date();
+    const map = new Map<string, { ownerKind: "parent" | "child"; ownerName: string; total: number }>();
+    for (const e of allSpending) {
+      const d = new Date(e.timestamp);
+      if (d.getFullYear() !== now.getFullYear() || d.getMonth() !== now.getMonth()) continue;
+      const existing = map.get(e.ownerId);
+      if (existing) {
+        existing.total += e.amount;
+      } else {
+        map.set(e.ownerId, { ownerKind: e.ownerKind, ownerName: e.ownerName, total: e.amount });
+      }
+    }
+    return Array.from(map.entries())
+      .map(([ownerId, v]) => ({ ownerId, ...v }))
+      .sort((a, b) => b.total - a.total);
+  }, [allSpending]);
   // Raw state, derive recent slice via useMemo.
   const allTransactions = useStore((s) => s.transactions);
   const transactions = useMemo(
@@ -443,14 +491,28 @@ function OverviewTab({
             </tbody>
           </table>
 
-          <div className="px-6 py-4 border-t border-[rgba(201,168,76,0.06)] flex justify-between items-center">
+          <div className="px-6 py-4 border-t border-[rgba(201,168,76,0.06)] flex flex-wrap gap-2 justify-between items-center">
             <span className="micro-label">Click a row to open the child dashboard</span>
-            <button
-              onClick={() => onGiveTokens(children[0])}
-              className="btn-outline px-3 py-1.5 rounded text-xs tracking-wider flex items-center gap-2"
-            >
-              <Plus className="h-3 w-3" /> Award Tokens
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  const p = parents[0];
+                  if (p) {
+                    onLogSpend({ id: p.id, kind: "parent", name: p.name });
+                  }
+                }}
+                className="btn-outline px-3 py-1.5 rounded text-xs tracking-wider flex items-center gap-2"
+                title="Log spending for any family member"
+              >
+                <Wallet className="h-3 w-3" /> Log Spend
+              </button>
+              <button
+                onClick={() => onGiveTokens(children[0])}
+                className="btn-outline px-3 py-1.5 rounded text-xs tracking-wider flex items-center gap-2"
+              >
+                <Plus className="h-3 w-3" /> Award Tokens
+              </button>
+            </div>
           </div>
         </div>
 
@@ -514,6 +576,91 @@ function OverviewTab({
               );
             })}
           </div>
+        </div>
+      </div>
+
+      {/* Family Spending This Month — per-person breakdown */}
+      <div className="surface-wood rounded-lg p-6 mt-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <div className="micro-label-gold mb-1">Family Spending · This Month</div>
+            <h3 className="font-editorial text-lg text-foreground tracking-wide">
+              Who Spent What
+            </h3>
+          </div>
+          <div className="text-right">
+            <div className="font-editorial text-2xl text-gold-foil-static tabular-nums">
+              {formatUGX(familySpending)}
+            </div>
+            <div className="micro-label mt-1">total this month</div>
+          </div>
+        </div>
+        <div className="divider-gold mb-5" />
+
+        {spendingBreakdown.length === 0 ? (
+          <div className="text-center py-6 text-foreground/40 text-sm">
+            No spending logged this month yet.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {spendingBreakdown.map((row) => {
+              // Look up avatar info from parents or children.
+              const parent = parents.find((p) => p.id === row.ownerId);
+              const child = children.find((c) => c.id === row.ownerId);
+              const name = row.ownerName;
+              const color = parent?.avatarColor ?? child?.avatarColor ?? "#C9A84C";
+              const photo = parent?.avatarPhoto ?? child?.avatarPhoto;
+              const pct = familySpending > 0 ? (row.total / familySpending) * 100 : 0;
+              return (
+                <div key={row.ownerId} className="flex items-center gap-4">
+                  <Avatar name={name} color={color} photo={photo} size={32} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-baseline mb-1.5">
+                      <div className="text-sm text-foreground tracking-wide">
+                        {name}
+                        <span
+                          className="ml-2 pill pill-muted"
+                          style={{ fontSize: 9, padding: "1px 6px" }}
+                        >
+                          {row.ownerKind}
+                        </span>
+                      </div>
+                      <div className="text-xs tabular-nums text-foreground/70">
+                        {formatUGXPlain(row.total)}
+                      </div>
+                    </div>
+                    <div className="progress-thin">
+                      <div style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                  <div
+                    className="font-editorial text-sm tabular-nums w-12 text-right"
+                    style={{ color: "var(--chart-3)" }}
+                  >
+                    {pct.toFixed(0)}%
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <div className="divider-gold my-4" />
+        <div className="flex justify-between items-center">
+          <span className="micro-label">
+            Log spending for any family member — parents included.
+          </span>
+          <button
+            onClick={() => {
+              const p = parents[0];
+              if (p) {
+                onLogSpend({ id: p.id, kind: "parent", name: p.name });
+              }
+            }}
+            className="btn-gold px-3 py-1.5 rounded text-xs tracking-wider flex items-center gap-2"
+          >
+            <Wallet className="h-3 w-3" /> Log Spend
+          </button>
         </div>
       </div>
     </div>
