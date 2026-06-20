@@ -57,41 +57,43 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-:root {
+/* ===========================================================================
+   THEME SYSTEM — 4 editorial themes via [data-theme] on <html>
+   ===========================================================================
+   dark  : Green-black + gold         (private bank at dusk)
+   light : Warm ivory + gold          (private bank lobby in daylight)
+   pink  : Blush pink + gold          (fashion editorial, Vogue-like)
+   red   : Deep oxblood + gold        (regal, royal chamber)
+   =========================================================================== */
+
+:root,
+[data-theme="dark"] {
   --radius: 0.5rem;
 
-  /* Editorial luxe palette — applied as the default (no toggle) */
-  --background: #090C0A;           /* deep green-black canvas */
-  --foreground: #E8E4D8;           /* warm parchment text */
-
-  --card: #0E1310;                 /* slightly lighter than bg, for cards */
+  --background: #090C0A;
+  --foreground: #E8E4D8;
+  --card: #0E1310;
   --card-foreground: #E8E4D8;
   --popover: #0E1310;
   --popover-foreground: #E8E4D8;
-
-  --primary: #C9A84C;              /* gold */
+  --primary: #C9A84C;
   --primary-foreground: #090C0A;
-
-  --secondary: #1A332A;            /* green-wood */
+  --secondary: #1A332A;
   --secondary-foreground: #E8E4D8;
-
   --muted: #141A16;
   --muted-foreground: #8A8676;
-
   --accent: #2A4A3A;
   --accent-foreground: #E8E4D8;
-
   --destructive: #C45A4A;
-
-  --border: rgba(201, 168, 76, 0.14);    /* hairline gold */
+  --border: rgba(201, 168, 76, 0.14);
   --input: rgba(201, 168, 76, 0.18);
   --ring: #C9A84C;
 
-  --chart-1: #C9A84C;  /* gold */
-  --chart-2: #6BBF8A;  /* sage */
-  --chart-3: #D4943A;  /* amber */
-  --chart-4: #8A9B82;  /* moss */
-  --chart-5: #E8D5A0;  /* light gold */
+  --chart-1: #C9A84C;
+  --chart-2: #6BBF8A;
+  --chart-3: #D4943A;
+  --chart-4: #8A9B82;
+  --chart-5: #E8D5A0;
 
   --sidebar: #0B0F0D;
   --sidebar-foreground: #E8E4D8;
@@ -102,11 +104,185 @@
   --sidebar-border: rgba(201, 168, 76, 0.10);
   --sidebar-ring: #C9A84C;
 
+  /* Theme-specific helper tokens used by surface-wood, halos, etc. */
+  --surface-wood-bg: linear-gradient(160deg, rgba(26, 51, 42, 0.42) 0%, rgba(14, 19, 16, 0.85) 100%);
+  --surface-wood-strong-bg: linear-gradient(180deg, rgba(26, 51, 42, 0.55) 0%, rgba(11, 15, 13, 0.95) 100%);
+  --surface-flat-bg: rgba(14, 19, 16, 0.6);
+  --surface-wood-glow: rgba(201, 168, 76, 0.04);
+  --surface-wood-strong-glow: rgba(201, 168, 76, 0.07);
+  --hairline: rgba(201, 168, 76, 0.12);
+  --hairline-strong: rgba(201, 168, 76, 0.18);
+  --hairline-soft: rgba(201, 168, 76, 0.06);
+  --micro-label: rgba(232, 228, 216, 0.55);
+  --text-soft: rgba(232, 228, 216, 0.85);
+  --text-softer: rgba(232, 228, 216, 0.60);
+  --text-faint: rgba(232, 228, 216, 0.45);
+  --grain-opacity: 0.015;
+  --topbar-bg: rgba(9, 12, 10, 0.80);
+
   --font-mono-stack: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
+/* ---- LIGHT / IVORY + GOLD ------------------------------------------------ */
+[data-theme="light"] {
+  --background: #FAF7EF;            /* warm ivory */
+  --foreground: #1C1A14;            /* deep ink */
+  --card: #FFFFFF;
+  --card-foreground: #1C1A14;
+  --popover: #FFFFFF;
+  --popover-foreground: #1C1A14;
+  --primary: #B8941F;               /* darker gold for contrast on white */
+  --primary-foreground: #FFFFFF;
+  --secondary: #F0E9D6;             /* warm cream */
+  --secondary-foreground: #1C1A14;
+  --muted: #F5F0E2;
+  --muted-foreground: #6B6557;
+  --accent: #E8D5A0;
+  --accent-foreground: #1C1A14;
+  --destructive: #B4452F;
+  --border: rgba(184, 148, 31, 0.22);
+  --input: rgba(184, 148, 31, 0.18);
+  --ring: #B8941F;
+
+  --chart-1: #B8941F;
+  --chart-2: #6B8E5A;
+  --chart-3: #C77D33;
+  --chart-4: #A8967A;
+  --chart-5: #D4B05A;
+
+  --sidebar: #F5F0E2;
+  --sidebar-foreground: #1C1A14;
+  --sidebar-primary: #B8941F;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #EDE5D2;
+  --sidebar-accent-foreground: #1C1A14;
+  --sidebar-border: rgba(184, 148, 31, 0.16);
+  --sidebar-ring: #B8941F;
+
+  --surface-wood-bg: linear-gradient(160deg, rgba(255, 255, 255, 0.95) 0%, rgba(245, 240, 226, 0.85) 100%);
+  --surface-wood-strong-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 233, 214, 0.92) 100%);
+  --surface-flat-bg: rgba(255, 255, 255, 0.7);
+  --surface-wood-glow: rgba(184, 148, 31, 0.06);
+  --surface-wood-strong-glow: rgba(184, 148, 31, 0.10);
+  --hairline: rgba(184, 148, 31, 0.20);
+  --hairline-strong: rgba(184, 148, 31, 0.30);
+  --hairline-soft: rgba(184, 148, 31, 0.10);
+  --micro-label: rgba(28, 26, 20, 0.55);
+  --text-soft: rgba(28, 26, 20, 0.85);
+  --text-softer: rgba(28, 26, 20, 0.60);
+  --text-faint: rgba(28, 26, 20, 0.45);
+  --grain-opacity: 0.025;
+  --topbar-bg: rgba(250, 247, 239, 0.85);
+}
+
+/* ---- PINK + GOLD (Fashion Editorial) ------------------------------------- */
+/* Soft blush ivory canvas with deep rose text + warm gold. Vogue-like. */
+[data-theme="pink"] {
+  --background: #FDF4F1;            /* blush ivory */
+  --foreground: #4A1F2E;            /* deep rose text */
+  --card: #FFFFFF;
+  --card-foreground: #4A1F2E;
+  --popover: #FFFFFF;
+  --popover-foreground: #4A1F2E;
+  --primary: #C9A84C;               /* gold stays warm */
+  --primary-foreground: #FFFFFF;
+  --secondary: #F5E0DC;             /* dusty rose tint */
+  --secondary-foreground: #4A1F2E;
+  --muted: #FAEAE5;
+  --muted-foreground: #8A5A6E;
+  --accent: #D4869A;                /* dusty rose accent */
+  --accent-foreground: #FFFFFF;
+  --destructive: #B4452F;
+  --border: rgba(201, 168, 76, 0.22);
+  --input: rgba(201, 168, 76, 0.18);
+  --ring: #C9A84C;
+
+  --chart-1: #C9A84C;
+  --chart-2: #D4869A;
+  --chart-3: #B86A7E;
+  --chart-4: #E8B4C0;
+  --chart-5: #E8D5A0;
+
+  --sidebar: #F8E8E3;
+  --sidebar-foreground: #4A1F2E;
+  --sidebar-primary: #C9A84C;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #F2DCD6;
+  --sidebar-accent-foreground: #4A1F2E;
+  --sidebar-border: rgba(201, 168, 76, 0.16);
+  --sidebar-ring: #C9A84C;
+
+  --surface-wood-bg: linear-gradient(160deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 232, 227, 0.85) 100%);
+  --surface-wood-strong-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(245, 224, 220, 0.92) 100%);
+  --surface-flat-bg: rgba(255, 255, 255, 0.7);
+  --surface-wood-glow: rgba(201, 168, 76, 0.06);
+  --surface-wood-strong-glow: rgba(212, 134, 154, 0.10);
+  --hairline: rgba(201, 168, 76, 0.22);
+  --hairline-strong: rgba(201, 168, 76, 0.32);
+  --hairline-soft: rgba(201, 168, 76, 0.10);
+  --micro-label: rgba(74, 31, 46, 0.55);
+  --text-soft: rgba(74, 31, 46, 0.85);
+  --text-softer: rgba(74, 31, 46, 0.60);
+  --text-faint: rgba(74, 31, 46, 0.45);
+  --grain-opacity: 0.020;
+  --topbar-bg: rgba(253, 244, 241, 0.85);
+}
+
+/* ---- RED + GOLD (Regal Oxblood) ------------------------------------------ */
+/* Deep oxblood canvas, cream text, warm gold. Velvet royal chamber. */
+[data-theme="red"] {
+  --background: #1F0606;            /* deep oxblood */
+  --foreground: #F5E6C8;            /* cream */
+  --card: #2A0808;
+  --card-foreground: #F5E6C8;
+  --popover: #2A0808;
+  --popover-foreground: #F5E6C8;
+  --primary: #D4AF37;               /* warmer gold for red bg */
+  --primary-foreground: #1F0606;
+  --secondary: #3D0F0F;
+  --secondary-foreground: #F5E6C8;
+  --muted: #2E0A0A;
+  --muted-foreground: #C8A48C;
+  --accent: #8B2635;                /* deeper red */
+  --accent-foreground: #F5E6C8;
+  --destructive: #E8584A;
+  --border: rgba(212, 175, 55, 0.18);
+  --input: rgba(212, 175, 55, 0.20);
+  --ring: #D4AF37;
+
+  --chart-1: #D4AF37;
+  --chart-2: #E8584A;
+  --chart-3: #B86A4E;
+  --chart-4: #8B2635;
+  --chart-5: #F5E6C8;
+
+  --sidebar: #1A0505;
+  --sidebar-foreground: #F5E6C8;
+  --sidebar-primary: #D4AF37;
+  --sidebar-primary-foreground: #1F0606;
+  --sidebar-accent: #2E0A0A;
+  --sidebar-accent-foreground: #F5E6C8;
+  --sidebar-border: rgba(212, 175, 55, 0.12);
+  --sidebar-ring: #D4AF37;
+
+  --surface-wood-bg: linear-gradient(160deg, rgba(61, 15, 15, 0.55) 0%, rgba(42, 8, 8, 0.92) 100%);
+  --surface-wood-strong-bg: linear-gradient(180deg, rgba(61, 15, 15, 0.70) 0%, rgba(26, 5, 5, 0.96) 100%);
+  --surface-flat-bg: rgba(42, 8, 8, 0.7);
+  --surface-wood-glow: rgba(212, 175, 55, 0.06);
+  --surface-wood-strong-glow: rgba(212, 175, 55, 0.10);
+  --hairline: rgba(212, 175, 55, 0.16);
+  --hairline-strong: rgba(212, 175, 55, 0.24);
+  --hairline-soft: rgba(212, 175, 55, 0.08);
+  --micro-label: rgba(245, 230, 200, 0.55);
+  --text-soft: rgba(245, 230, 200, 0.85);
+  --text-softer: rgba(245, 230, 200, 0.60);
+  --text-faint: rgba(245, 230, 200, 0.45);
+  --grain-opacity: 0.020;
+  --topbar-bg: rgba(31, 6, 6, 0.82);
+}
+
 .dark {
-  /* Mirror — the design IS dark by default. Kept for shadcn compatibility. */
+  /* Mirror of [data-theme="dark"] for shadcn compatibility */
   --background: #090C0A;
   --foreground: #E8E4D8;
   --card: #0E1310;
@@ -155,11 +331,10 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: rgba(201, 168, 76, 0.18);
-    border-radius: 4px;
+    background: var(--hairline-strong);
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(201, 168, 76, 0.35);
+    background: var(--primary);
   }
 }
 
@@ -188,7 +363,7 @@
   font-size: 9px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: rgba(232, 228, 216, 0.55);
+  color: var(--micro-label);
   font-weight: 500;
 }
 
@@ -197,7 +372,7 @@
   font-size: 9px;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: #C9A84C;
+  color: var(--primary);
   font-weight: 500;
 }
 
@@ -241,25 +416,25 @@
 
 .surface-wood {
   background:
-    radial-gradient(120% 100% at 0% 0%, rgba(201, 168, 76, 0.04) 0%, transparent 50%),
-    linear-gradient(160deg, rgba(26, 51, 42, 0.42) 0%, rgba(14, 19, 16, 0.85) 100%);
-  border: 1px solid rgba(201, 168, 76, 0.12);
+    radial-gradient(120% 100% at 0% 0%, var(--surface-wood-glow) 0%, transparent 50%),
+    var(--surface-wood-bg);
+  border: 1px solid var(--hairline);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
 
 .surface-wood-strong {
   background:
-    radial-gradient(140% 120% at 50% 0%, rgba(201, 168, 76, 0.07) 0%, transparent 55%),
-    linear-gradient(180deg, rgba(26, 51, 42, 0.55) 0%, rgba(11, 15, 13, 0.95) 100%);
-  border: 1px solid rgba(201, 168, 76, 0.18);
+    radial-gradient(140% 120% at 50% 0%, var(--surface-wood-strong-glow) 0%, transparent 55%),
+    var(--surface-wood-strong-bg);
+  border: 1px solid var(--hairline-strong);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 }
 
 .surface-flat {
-  background: rgba(14, 19, 16, 0.6);
-  border: 1px solid rgba(201, 168, 76, 0.08);
+  background: var(--surface-flat-bg);
+  border: 1px solid var(--hairline-soft);
 }
 
 /* Ethereal halo glow behind child avatars */
@@ -306,20 +481,20 @@
   inset: 0;
   pointer-events: none;
   z-index: 9999;
-  opacity: 0.015;
+  opacity: var(--grain-opacity);
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
 }
 
 /* Progress bars — thin, editorial */
 .progress-thin {
   height: 3px;
-  background: rgba(201, 168, 76, 0.10);
+  background: var(--hairline-soft);
   border-radius: 2px;
   overflow: hidden;
 }
 .progress-thin > div {
   height: 100%;
-  background: linear-gradient(90deg, #C9A84C 0%, #E8D5A0 100%);
+  background: linear-gradient(90deg, var(--primary) 0%, var(--chart-5) 100%);
   transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -337,38 +512,38 @@
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
 }
 .pill-gold {
-  background: rgba(201, 168, 76, 0.10);
-  color: #E8D5A0;
-  border: 1px solid rgba(201, 168, 76, 0.30);
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  color: var(--primary);
+  border: 1px solid color-mix(in srgb, var(--primary) 35%, transparent);
 }
 .pill-green {
-  background: rgba(107, 191, 138, 0.10);
-  color: #6BBF8A;
-  border: 1px solid rgba(107, 191, 138, 0.30);
+  background: color-mix(in srgb, var(--chart-2) 12%, transparent);
+  color: var(--chart-2);
+  border: 1px solid color-mix(in srgb, var(--chart-2) 35%, transparent);
 }
 .pill-amber {
-  background: rgba(212, 148, 58, 0.10);
-  color: #D4943A;
-  border: 1px solid rgba(212, 148, 58, 0.30);
+  background: color-mix(in srgb, var(--chart-3) 12%, transparent);
+  color: var(--chart-3);
+  border: 1px solid color-mix(in srgb, var(--chart-3) 35%, transparent);
 }
 .pill-muted {
-  background: rgba(232, 228, 216, 0.06);
-  color: rgba(232, 228, 216, 0.55);
-  border: 1px solid rgba(232, 228, 216, 0.10);
+  background: color-mix(in srgb, var(--foreground) 6%, transparent);
+  color: var(--micro-label);
+  border: 1px solid color-mix(in srgb, var(--foreground) 10%, transparent);
 }
 
 /* Gold primary button */
 .btn-gold {
-  background: linear-gradient(180deg, #E8D5A0 0%, #C9A84C 100%);
-  color: #090C0A;
+  background: linear-gradient(180deg, var(--chart-5) 0%, var(--primary) 100%);
+  color: var(--primary-foreground);
   font-weight: 600;
   letter-spacing: 0.04em;
-  border: 1px solid #C9A84C;
+  border: 1px solid var(--primary);
   transition: all 0.2s ease;
 }
 .btn-gold:hover:not(:disabled) {
-  background: linear-gradient(180deg, #E8D5A0 0%, #D4AF37 100%);
-  box-shadow: 0 0 24px rgba(201, 168, 76, 0.35);
+  background: linear-gradient(180deg, var(--chart-5) 0%, var(--chart-3) 100%);
+  box-shadow: 0 0 24px color-mix(in srgb, var(--primary) 35%, transparent);
 }
 .btn-gold:disabled {
   opacity: 0.4;
@@ -377,42 +552,42 @@
 
 .btn-outline {
   background: transparent;
-  color: #C9A84C;
-  border: 1px solid rgba(201, 168, 76, 0.35);
+  color: var(--primary);
+  border: 1px solid color-mix(in srgb, var(--primary) 35%, transparent);
   transition: all 0.2s ease;
 }
 .btn-outline:hover:not(:disabled) {
-  background: rgba(201, 168, 76, 0.08);
-  border-color: rgba(201, 168, 76, 0.55);
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
+  border-color: color-mix(in srgb, var(--primary) 55%, transparent);
 }
 
 .btn-ghost {
   background: transparent;
-  color: rgba(232, 228, 216, 0.7);
+  color: var(--text-softer);
   border: 1px solid transparent;
   transition: all 0.2s ease;
 }
 .btn-ghost:hover {
-  color: #E8D5A0;
-  background: rgba(201, 168, 76, 0.06);
+  color: var(--chart-5);
+  background: color-mix(in srgb, var(--primary) 6%, transparent);
 }
 
-/* Input fields — dark with gold focus ring */
+/* Input fields — theme-aware with gold focus ring */
 .input-editorial {
-  background: rgba(14, 19, 16, 0.7);
-  border: 1px solid rgba(201, 168, 76, 0.18);
-  color: #E8E4D8;
+  background: var(--surface-flat-bg);
+  border: 1px solid var(--hairline-strong);
+  color: var(--foreground);
   border-radius: 4px;
   transition: all 0.2s ease;
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
 }
 .input-editorial:focus {
   outline: none;
-  border-color: rgba(201, 168, 76, 0.55);
-  box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.10);
+  border-color: color-mix(in srgb, var(--primary) 55%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 10%, transparent);
 }
 .input-editorial::placeholder {
-  color: rgba(232, 228, 216, 0.35);
+  color: var(--text-faint);
 }
 
 /* Sidebar nav item */
@@ -422,7 +597,7 @@
   align-items: center;
   gap: 12px;
   padding: 10px 14px;
-  color: rgba(232, 228, 216, 0.55);
+  color: var(--micro-label);
   font-size: 13px;
   letter-spacing: 0.04em;
   border-radius: 4px;
@@ -430,12 +605,12 @@
   transition: all 0.2s ease;
 }
 .nav-item:hover {
-  color: #E8E4D8;
-  background: rgba(201, 168, 76, 0.04);
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--primary) 4%, transparent);
 }
 .nav-item.active {
-  color: #E8D5A0;
-  background: rgba(201, 168, 76, 0.08);
+  color: var(--chart-5);
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
 }
 .nav-item.active::before {
   content: "";
@@ -444,7 +619,7 @@
   top: 8px;
   bottom: 8px;
   width: 2px;
-  background: linear-gradient(180deg, #C9A84C 0%, #E8D5A0 100%);
+  background: linear-gradient(180deg, var(--primary) 0%, var(--chart-5) 100%);
   border-radius: 1px;
 }
 
@@ -463,18 +638,18 @@
   letter-spacing: 0.22em;
   text-transform: uppercase;
   font-weight: 500;
-  color: rgba(232, 228, 216, 0.45);
-  border-bottom: 1px solid rgba(201, 168, 76, 0.18);
+  color: var(--text-faint);
+  border-bottom: 1px solid var(--hairline-strong);
   background: transparent;
 }
 .ledger-table td {
   padding: 14px 16px;
-  color: rgba(232, 228, 216, 0.85);
-  border-bottom: 1px solid rgba(201, 168, 76, 0.06);
+  color: var(--text-soft);
+  border-bottom: 1px solid var(--hairline-soft);
   vertical-align: middle;
 }
 .ledger-table tbody tr:hover td {
-  background: rgba(201, 168, 76, 0.03);
+  background: color-mix(in srgb, var(--primary) 3%, transparent);
 }
 .ledger-table tbody tr:last-child td {
   border-bottom: none;

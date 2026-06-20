@@ -88,3 +88,70 @@ Stage Summary:
 - Files: src/lib/{types,phrases,store}.ts, src/components/{modals,child-dashboard}.tsx,
   src/app/{layout,globals.css,page.tsx}.
 - Screenshots in /home/z/my-project/download/01-07-*.png.
+
+---
+Task ID: rebuild-2
+Agent: main (Super Z)
+Task: Add 4-theme system (dark/ivory/pink/red, all gold-paired), build editorial SVG visualizations for parent overview (parents prefer graphs over SQL), and provide the preview link to the user.
+
+Work Log:
+- Refactored src/app/globals.css: replaced :root + .dark blocks with a proper
+  [data-theme="..."] system. Added 4 fully-tokenized themes:
+    dark  : Green-black #090C0A + gold #C9A84C (existing, preserved)
+    light : Warm ivory #FAF7EF + darker gold #B8941F (contrast on white)
+    pink  : Blush #FDF4F1 + deep rose #4A1F2E text + warm gold + dusty rose accent
+    red   : Deep oxblood #1F0606 + cream #F5E6C8 text + warmer gold #D4AF37
+  Each theme defines: background/foreground/card/popover/primary/secondary/
+  muted/accent/border/ring/chart-1..5/sidebar-*/surface-wood-bg/-strong-bg/
+  -flat-bg/-glow/-strong-glow/hairline/-strong/-soft/micro-label/text-soft/
+  -softer/-faint/grain-opacity/topbar-bg.
+- Refactored all hardcoded color references in component CSS classes
+  (.surface-wood, .surface-wood-strong, .surface-flat, .pill-*, .btn-gold,
+  .btn-outline, .btn-ghost, .input-editorial, .nav-item, .ledger-table th/td,
+  .progress-thin, .micro-label, .grain-overlay, scrollbar) to use the
+  theme tokens via var() and color-mix(). Now every element adapts to theme.
+- Added src/components/theme-switcher.tsx:
+    useTheme() hook with lazy useState initializer (no setState-in-effect lint error)
+    reads localStorage on first render, applies data-theme to <html>, persists on change
+    ThemeSwitcher component: 4-swatch dropdown button in topbar
+- Added src/components/charts.tsx with 4 editorial SVG charts:
+    SavingsTrendChart   — 6-month line chart, smooth bezier, gold gradient stroke,
+                          gradient area fill, hairline gridlines, Playfair labels
+    DistributionDonut   — per-child donut with center total, color-coded legend
+                          (uses reduce to avoid post-render reassignment lint error)
+    CashFlowBars        — savings vs spending bars per month, paired bars with
+                          gold (saved) + amber (spent) colors, hairline gridlines
+    GoalRadials         — 3 radial progress circles for each child's goal
+                          with animated stroke-dashoffset transition
+  All charts use CSS variables for colors so they recolor instantly with theme.
+- Updated src/app/layout.tsx: added data-theme="dark" default + inline script
+  that reads localStorage BEFORE paint (prevents FOUC on reload).
+- Updated src/app/page.tsx:
+    Imported ThemeSwitcher + 4 chart components
+    Added ThemeSwitcher to topbar between Notifications and avatar
+    Added "Visualizations" section to OverviewTab with 4 charts in a 2x2 grid
+      placed between KPI cards and the children table / activity feed
+    Replaced hardcoded color values in topbar avatar with theme tokens
+  Renamed `children` prop to `childList` in DistributionDonut and GoalRadials
+  (React reserves `children` as a special prop name — lint error).
+
+Iteration/bug-fixing pass:
+- Fixed 4 ESLint errors:
+    page.tsx: `children` prop on chart components → renamed to `childList`
+    charts.tsx: donut chart reassigned `cumulativeAngle` in .map() callback
+                → refactored to use .reduce() accumulator pattern
+    theme-switcher.tsx: setState inside useEffect (cascading render risk)
+                → replaced with lazy useState initializer
+- Re-verified in browser: all 4 themes apply correctly (background colors
+  confirmed via getComputedStyle: dark=rgb(9,12,10), light=rgb(250,247,239),
+  pink=rgb(253,244,241), red=rgb(31,6,6)). 32 SVGs render. No console errors.
+  No page errors.
+
+Stage Summary:
+- 4 themes implemented and verified.
+- 4 editorial SVG charts added to parent Overview tab.
+- ThemeSwitcher in topbar (next to Notifications icon).
+- Themes persist across reloads via localStorage (loaded before paint to
+  avoid FOUC).
+- All charts recolor instantly with theme changes (CSS variables).
+- Lint clean. Build compiles. 8 screenshots in /download/ (4 themes × overview).

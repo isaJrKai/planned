@@ -56,6 +56,13 @@ import {
 } from "@/lib/phrases";
 import { ChildDashboard } from "@/components/child-dashboard";
 import { GiveTokensModal } from "@/components/modals";
+import { ThemeSwitcher } from "@/components/theme-switcher";
+import {
+  SavingsTrendChart,
+  DistributionDonut,
+  CashFlowBars,
+  GoalRadials,
+} from "@/components/charts";
 import type { Child } from "@/lib/types";
 import { useShallow } from "zustand/react/shallow";
 
@@ -198,11 +205,19 @@ export default function Home() {
               </button>
               <button className="btn-ghost p-2 rounded relative" aria-label="Notifications">
                 <Bell className="h-4 w-4" />
-                <span className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full bg-[#C9A84C]" />
+                <span
+                  className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full"
+                  style={{ background: "var(--primary)" }}
+                />
               </button>
+              <ThemeSwitcher />
               <div
-                className="h-9 w-9 rounded-full flex items-center justify-center font-editorial text-sm ml-2"
-                style={{ background: "linear-gradient(135deg, #1A332A, #0E1310)", border: "1px solid rgba(201,168,76,0.30)", color: "#E8D5A0" }}
+                className="h-9 w-9 rounded-full flex items-center justify-center font-editorial text-sm ml-1"
+                style={{
+                  background: "linear-gradient(135deg, var(--secondary), var(--card))",
+                  border: "1px solid var(--hairline-strong)",
+                  color: "var(--chart-5)",
+                }}
               >
                 M
               </div>
@@ -326,6 +341,27 @@ function OverviewTab({
             )}
           </div>
         ))}
+      </div>
+
+      {/* Visualizations section — editorial SVG charts.
+          Parents understand graphs better than ledger tables. */}
+      <div className="space-y-3 mb-2">
+        <div className="flex items-center justify-between px-1">
+          <div>
+            <div className="micro-label-gold mb-1">Visualizations</div>
+            <h2 className="font-editorial text-lg text-foreground tracking-wide">
+              Family Insights
+            </h2>
+          </div>
+          <span className="micro-label">last 6 months</span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+        <SavingsTrendChart />
+        <DistributionDonut childList={children} />
+        <CashFlowBars />
+        <GoalRadials childList={children} />
       </div>
 
       {/* Main grid: children table + activity feed */}
