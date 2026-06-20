@@ -17,7 +17,7 @@
 //   #13 — no dead Prisma import (Zustand-only store)
 // ============================================================================
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   LayoutDashboard,
   Users,
@@ -59,6 +59,11 @@ import { ChildDashboard } from "@/components/child-dashboard";
 import { GiveTokensModal, AddSpendingModal } from "@/components/modals";
 import type { SpendingOwner } from "@/components/modals";
 import { ThemeSwitcher } from "@/components/theme-switcher";
+import {
+  SearchOverlay,
+  NotificationsButton,
+  LogSpendFab,
+} from "@/components/parent-actions";
 import { ParentQuoteEditor } from "@/components/parent-quote-editor";
 import { GoalsTab } from "@/components/goals";
 import { Avatar } from "@/components/avatar";
@@ -80,7 +85,20 @@ export default function Home() {
   const [activeChildId, setActiveChildId] = useState<string | null>(null);
   const [giveToChildId, setGiveToChildId] = useState<string | null>(null);
   const [spendOwner, setSpendOwner] = useState<SpendingOwner | null>(null);
+  const [searchOpen, setSearchOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // Cmd+K / Ctrl+K keyboard shortcut to open search.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setSearchOpen(true);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   const childList = useStore((s) => s.children);
   const parents = useStore((s) => s.parents);
@@ -210,16 +228,15 @@ export default function Home() {
               </h1>
             </div>
             <div className="flex items-center gap-2">
-              <button className="btn-ghost p-2 rounded" aria-label="Search">
+              <button
+                onClick={() => setSearchOpen(true)}
+                className="btn-ghost p-2 rounded"
+                aria-label="Search"
+                title="Search (children, goals, transactions, spending)"
+              >
                 <Search className="h-4 w-4" />
               </button>
-              <button className="btn-ghost p-2 rounded relative" aria-label="Notifications">
-                <Bell className="h-4 w-4" />
-                <span
-                  className="absolute top-1 right-1 h-1.5 w-1.5 rounded-full"
-                  style={{ background: "var(--primary)" }}
-                />
-              </button>
+              <NotificationsButton childList={children} parents={parents} />
               <ThemeSwitcher />
               <Avatar
                 name={parents[0]?.name ?? "M"}
@@ -273,6 +290,17 @@ export default function Home() {
           onClose={() => setSpendOwner(null)}
         />
       )}
+
+      {/* Search overlay — Cmd+K or click search icon */}
+      {searchOpen && (
+        <SearchOverlay
+          onClose={() => setSearchOpen(false)}
+          onNavigateChild={(c) => setActiveChildId(c.id)}
+        />
+      )}
+
+      {/* Floating Log Spend button — always visible on parent dashboard */}
+      <LogSpendFab childList={children} parents={parents} />
     </div>
   );
 }

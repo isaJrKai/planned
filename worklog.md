@@ -388,3 +388,81 @@ Stage Summary:
 - Spending is tracked per-owner (parent or child), with full breakdown visible on overview.
 - Child dashboard spending tab correctly filters to only that child's entries.
 - Backward compatibility preserved — child dashboard's Log Spend button still works unchanged.
+
+---
+Task ID: rebuild-6
+Agent: main (Super Z)
+Task: Three fixes — (1) /download/Planned_App_Audit.docx not working. (2) Search + Notification icons must actually do something. (3) Log Spend should be a floating button (FAB) always visible, not just "down below".
+
+Work Log:
+
+PART 1 — Audit document download fixed
+- Root cause: /download/ is an internal project path, NOT served by Next.js. The file
+  existed at /home/z/my-project/download/Planned_App_Audit.docx (45KB, valid docx)
+  but was unreachable via the preview URL.
+- Fix: copied the docx to /home/z/my-project/public/Planned_App_Audit.docx so
+  Next.js serves it as a static asset at /Planned_App_Audit.docx
+- Also converted to PDF via libreoffice --headless --convert-to pdf, so
+  /home/z/my-project/public/Planned_App_Audit.pdf (214KB) is available too.
+- Verified via curl: both files return HTTP 200 with correct byte counts.
+
+PART 2 — Search + Notifications now functional
+- Created src/components/parent-actions.tsx with 3 components:
+
+  SearchOverlay (command palette):
+    - Opens via Search icon click OR Cmd+K / Ctrl+K keyboard shortcut
+    - Searches across ALL entities: children, parents, goals, transactions, spending
+    - Each result shows: icon/avatar, title, subtitle, amount (if relevant)
+    - Clicking a child result navigates to that child's dashboard
+    - Empty state shows suggestion chips (Zara, Emergency, Coffee, save, Snacks)
+    - ESC closes; body scroll locked while open
+    - Limited to 30 results (20 tx + 20 spending capped) for performance
+
+  NotificationsButton (dropdown):
+    - Replaces the decorative bell icon
+    - Derives notifications from last 30 days of store activity:
+      * Recent saves ("X saved UGX Y")
+      * Token awards ("Awarded N tokens to X")
+      * Goal milestones (>= 50% halfway, >= 75% nearly there, >= 100% reached)
+    - Each notification has tone-based icon color (good=green, neutral=gold, warning=amber)
+    - Shows timestamp via timeAgo()
+    - Unread indicator dot on the bell when notifications exist
+    - Click outside to close
+
+  LogSpendFab (floating action button):
+    - Fixed position bottom-right, always visible on parent dashboard
+    - Gold circular button (h-14 w-14) with Wallet icon, shadow + glow
+    - Click expands an owner-picker above the FAB showing all 5 family members
+      (Mama, Papa, Zara, Enoch, Amani) with their avatars + parent/child pills
+    - Selecting an owner opens AddSpendingModal with that owner pre-selected
+    - Click FAB again (X icon) to close the picker without action
+
+- Updated page.tsx:
+    Imported SearchOverlay, NotificationsButton, LogSpendFab
+    Added searchOpen state + useEffect for Cmd+K shortcut
+    Replaced decorative Search button with onClick={() => setSearchOpen(true)}
+    Replaced decorative Notifications button with <NotificationsButton>
+    Rendered <SearchOverlay> + <LogSpendFab> at bottom of parent dashboard
+    Added useEffect import
+
+PART 3 — Verification (browser)
+- Search: clicked Search icon → overlay opened → typed "Zara" → 12 results found
+  (child + transactions + spending). Typed "Emergency" → 1 result (goal with
+  progress 1,850,000 / 5,000,000). Typed "Coffee" → 2 results (goal + spending
+  entry "Coffee with friend −8,000"). ESC closes.
+- Cmd+K shortcut works — opens search without clicking.
+- Notifications: clicked bell → dropdown showed "Enoch Okello saved UGX 15,000",
+  "Zara Namutebi saved UGX 20,000 — Birthday gift — 20d ago", goal milestones, etc.
+  Unread dot visible on bell.
+- FAB: clicked the fixed bottom-right gold button → owner picker expanded with
+  all 5 family members. Clicked Papa → modal opened with "Papa · Spending Entry"
+  subtitle. Entered 25,000 → "Log Entry" → modal closed. Verified Papa's spending
+  in family breakdown went from 35,000 → 60,000 (+25,000) and he's now #1 at 37%.
+- ESLint clean. No console errors. No page errors.
+- 3 new screenshots: 13-search-overlay, 14-notifications, 15-log-spend-fab
+
+Stage Summary:
+- Audit document now downloadable at /Planned_App_Audit.docx and /Planned_App_Audit.pdf
+- Search icon opens a command palette (also Cmd+K) that searches everything
+- Notifications icon opens a dropdown with recent milestones
+- Log Spend FAB is always visible bottom-right, opens an owner picker, then the modal
