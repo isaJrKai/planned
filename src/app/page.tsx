@@ -397,15 +397,15 @@ function OverviewTab({
   return (
     <div className="space-y-8 animate-fade-up">
       {/* KPI grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 stagger">
         {kpis.map((k) => (
           <div
             key={k.label}
-            className={`rounded-lg p-6 ${k.hero ? "surface-wood-strong" : "surface-wood"}`}
+            className={`rounded-lg p-6 ${k.hero ? "surface-wood-strong" : "surface-wood card-hover"}`}
           >
             <div className="flex items-center justify-between mb-4">
               <div className="micro-label">{k.label}</div>
-              <k.icon className="h-3.5 w-3.5 text-[#C9A84C]" />
+              <k.icon className="h-3.5 w-3.5" style={{ color: "var(--primary)" }} />
             </div>
             <div
               className={`font-editorial tabular-nums leading-none ${
@@ -438,7 +438,7 @@ function OverviewTab({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8 stagger">
         <SavingsTrendChart />
         <DistributionDonut childList={children} />
         <CashFlowBars />
@@ -567,14 +567,14 @@ function OverviewTab({
                       className="h-7 w-7 rounded-full flex items-center justify-center shrink-0 mt-0.5"
                       style={{
                         background: credit
-                          ? "rgba(107,191,138,0.10)"
-                          : "rgba(212,148,58,0.10)",
+                          ? "color-mix(in srgb, var(--chart-2) 12%, transparent)"
+                          : "color-mix(in srgb, var(--chart-3) 12%, transparent)",
                       }}
                     >
                       {credit ? (
-                        <ArrowDownRight className="h-3 w-3 text-[#6BBF8A]" />
+                        <ArrowDownRight className="h-3 w-3" style={{ color: "var(--chart-2)" }} />
                       ) : (
-                        <ArrowUpRight className="h-3 w-3 text-[#D4943A]" />
+                        <ArrowUpRight className="h-3 w-3" style={{ color: "var(--chart-3)" }} />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -594,7 +594,7 @@ function OverviewTab({
                         </div>
                       )}
                       {t.tokenDelta > 0 && (
-                        <div className="font-editorial tabular-nums text-sm text-[#E8D5A0]">
+                        <div className="font-editorial tabular-nums text-sm" style={{ color: "var(--chart-5)" }}>
                           +{t.tokenDelta} ◈
                         </div>
                       )}
@@ -709,13 +709,13 @@ function ChildrenTab({
   const children = childList;
   return (
     <div className="space-y-6 animate-fade-up">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 stagger">
         {children.map((c) => {
           const pct = (c.currentAmount / c.goalAmount) * 100;
           return (
             <div
               key={c.id}
-              className="surface-wood rounded-lg p-6 hover:border-[rgba(201,168,76,0.35)] transition-all cursor-pointer"
+              className="surface-wood rounded-lg p-6 card-hover"
               onClick={() => onSelectChild(c)}
             >
               <div className="flex items-start justify-between mb-5">
@@ -850,7 +850,7 @@ function TransactionsTab() {
                         ? `${credit ? "+" : "−"}${formatUGXPlain(t.amount)}`
                         : "—"}
                     </td>
-                    <td className="text-right tabular-nums text-[#E8D5A0]">
+                    <td className="text-right tabular-nums" style={{ color: "var(--chart-5)" }}>
                       {t.tokenDelta > 0 ? `+${t.tokenDelta} ◈` : "—"}
                     </td>
                   </tr>
@@ -1057,7 +1057,7 @@ function TokensTab({
                   </td>
                   <td className="text-right tabular-nums text-foreground/70">{given}</td>
                   <td className="text-right tabular-nums text-foreground/70">{redeemed}</td>
-                  <td className="text-right tabular-nums font-editorial text-[#E8D5A0]">
+                  <td className="text-right tabular-nums font-editorial" style={{ color: "var(--chart-5)" }}>
                     {bal} ◈
                   </td>
                   <td className="text-right tabular-nums text-foreground/70">
@@ -1120,9 +1120,10 @@ function TokensTab({
                   </td>
                   <td className="text-foreground/70 text-sm">{t.note}</td>
                   <td
-                    className={`text-right tabular-nums font-editorial ${
-                      t.type === "parent_give" ? "text-[#E8D5A0]" : "text-[#6BBF8A]"
-                    }`}
+                    className="text-right tabular-nums font-editorial"
+                    style={{
+                      color: t.type === "parent_give" ? "var(--chart-5)" : "var(--chart-2)",
+                    }}
                   >
                     {t.type === "parent_give" ? "+" : "−"}
                     {t.tokens} ◈
@@ -1233,7 +1234,7 @@ function SettingsTab() {
         <div className="divider-gold my-5" />
         <div className="flex justify-between items-center">
           <span className="micro-label">Incentive Spread</span>
-          <span className="font-editorial text-lg text-[#6BBF8A] tabular-nums">
+          <span className="font-editorial text-lg tabular-nums" style={{ color: "var(--chart-2)" }}>
             +{((TOKEN_REDEEM_RATE / TOKEN_BUY_RATE - 1) * 100).toFixed(0)}%
           </span>
         </div>

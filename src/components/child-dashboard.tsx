@@ -286,36 +286,36 @@ function OverviewTab({
       </div>
 
       {/* Quick actions */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 stagger">
         <button
           onClick={() => onAction("save")}
-          className="surface-wood rounded-lg p-4 text-left hover:border-[rgba(201,168,76,0.35)] transition-all group"
+          className="surface-wood rounded-lg p-4 text-left card-hover"
         >
-          <PiggyBank className="h-4 w-4 text-[#C9A84C] mb-3" />
+          <PiggyBank className="h-4 w-4 mb-3" style={{ color: "var(--primary)" }} />
           <div className="font-editorial text-sm text-foreground tracking-wide">Save Money</div>
           <div className="micro-label mt-1">From linked account</div>
         </button>
         <button
           onClick={() => onAction("redeem")}
-          className="surface-wood rounded-lg p-4 text-left hover:border-[rgba(201,168,76,0.35)] transition-all group"
+          className="surface-wood rounded-lg p-4 text-left card-hover"
         >
-          <Sparkles className="h-4 w-4 text-[#E8D5A0] mb-3" />
+          <Sparkles className="h-4 w-4 mb-3" style={{ color: "var(--chart-5)" }} />
           <div className="font-editorial text-sm text-foreground tracking-wide">Redeem Tokens</div>
           <div className="micro-label mt-1">Convert to savings</div>
         </button>
         <button
           onClick={() => onAction("spend")}
-          className="surface-wood rounded-lg p-4 text-left hover:border-[rgba(201,168,76,0.35)] transition-all group"
+          className="surface-wood rounded-lg p-4 text-left card-hover"
         >
-          <Wallet className="h-4 w-4 text-[#D4943A] mb-3" />
+          <Wallet className="h-4 w-4 mb-3" style={{ color: "var(--chart-3)" }} />
           <div className="font-editorial text-sm text-foreground tracking-wide">Log Spending</div>
           <div className="micro-label mt-1">Track a purchase</div>
         </button>
         <button
           onClick={() => onAction("give")}
-          className="surface-wood rounded-lg p-4 text-left hover:border-[rgba(201,168,76,0.35)] transition-all group"
+          className="surface-wood rounded-lg p-4 text-left card-hover"
         >
-          <Trophy className="h-4 w-4 text-[#6BBF8A] mb-3" />
+          <Trophy className="h-4 w-4 mb-3" style={{ color: "var(--chart-2)" }} />
           <div className="font-editorial text-sm text-foreground tracking-wide">View Tokens</div>
           <div className="micro-label mt-1">Parent awards</div>
         </button>
@@ -342,14 +342,14 @@ function OverviewTab({
                     className="h-8 w-8 rounded-full flex items-center justify-center"
                     style={{
                       background: credit
-                        ? "rgba(107,191,138,0.10)"
-                        : "rgba(212,148,58,0.10)",
+                        ? "color-mix(in srgb, var(--chart-2) 12%, transparent)"
+                        : "color-mix(in srgb, var(--chart-3) 12%, transparent)",
                     }}
                   >
                     {credit ? (
-                      <ArrowDownRight className="h-3.5 w-3.5 text-[#6BBF8A]" />
+                      <ArrowDownRight className="h-3.5 w-3.5" style={{ color: "var(--chart-2)" }} />
                     ) : (
-                      <ArrowUpRight className="h-3.5 w-3.5 text-[#D4943A]" />
+                      <ArrowUpRight className="h-3.5 w-3.5" style={{ color: "var(--chart-3)" }} />
                     )}
                   </div>
                   <div>
@@ -363,14 +363,14 @@ function OverviewTab({
                   {t.amount > 0 && (
                     <div
                       className="font-editorial tabular-nums text-sm"
-                      style={{ color: credit ? "#6BBF8A" : "#D4943A" }}
+                      style={{ color: credit ? "var(--chart-2)" : "var(--chart-3)" }}
                     >
                       {credit ? "+" : "−"}
                       {formatUGXPlain(t.amount)}
                     </div>
                   )}
                   {t.tokenDelta > 0 && (
-                    <div className="font-editorial tabular-nums text-sm text-[#E8D5A0]">
+                    <div className="font-editorial tabular-nums text-sm" style={{ color: "var(--chart-5)" }}>
                       +{t.tokenDelta} ◈
                     </div>
                   )}
@@ -504,7 +504,7 @@ function SpendingTab({ child, onSpend }: { child: Child; onSpend: () => void }) 
                   </td>
                   <td className="text-foreground/85">{e.category}</td>
                   <td className="text-foreground/60">{e.note}</td>
-                  <td className="text-right font-editorial tabular-nums text-[#D4943A]">
+                  <td className="text-right font-editorial tabular-nums" style={{ color: "var(--chart-3)" }}>
                     −{formatUGXPlain(e.amount)}
                   </td>
                 </tr>
@@ -614,7 +614,7 @@ function WorksheetTab({ child }: { child: Child }) {
       <div className="grid md:grid-cols-2 gap-4">
         <div className="surface-wood rounded-lg p-5">
           <div className="flex items-center gap-2 mb-3">
-            <Target className="h-3.5 w-3.5 text-[#C9A84C]" />
+            <Target className="h-3.5 w-3.5" style={{ color: "var(--primary)" }} />
             <span className="micro-label-gold">Goal Progress</span>
           </div>
           <div className="font-editorial text-2xl tabular-nums text-foreground">
@@ -631,7 +631,7 @@ function WorksheetTab({ child }: { child: Child }) {
         </div>
         <div className="surface-wood rounded-lg p-5">
           <div className="flex items-center gap-2 mb-3">
-            <Calendar className="h-3.5 w-3.5 text-[#C9A84C]" />
+            <Calendar className="h-3.5 w-3.5" style={{ color: "var(--primary)" }} />
             <span className="micro-label-gold">Daily Save Avg</span>
           </div>
           <div className="font-editorial text-2xl tabular-nums text-foreground">
