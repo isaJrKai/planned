@@ -430,7 +430,7 @@ export function AddSpendingModal({
             className="input-editorial w-full px-4 py-2.5 text-sm"
           >
             {categories.map((c) => (
-              <option key={c.id} value={c.name} className="bg-[#0E1310]">
+              <option key={c.id} value={c.name} className="bg-sidebar text-sidebar-foreground">
                 {c.name} · budget {formatUGX(c.budget)}
               </option>
             ))}

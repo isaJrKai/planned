@@ -43,6 +43,7 @@ import {
   InvestmentDetailModal,
 } from "./modals";
 import { FamilyThemeFooter } from "./family-theme-footer";
+import { Avatar } from "./avatar";
 import type { Investment } from "@/lib/types";
 
 type Tab = "overview" | "spending" | "worksheet" | "investments";
@@ -77,12 +78,12 @@ export function ChildDashboard({
             ← Family Overview
           </button>
           <div className="flex items-center gap-3">
-            <div
-              className="halo-glow h-9 w-9 rounded-full flex items-center justify-center font-editorial text-sm"
-              style={{ ["--halo-color" as any]: child.avatarColor, background: child.avatarColor, color: "#090C0A" }}
-            >
-              {child.name.charAt(0)}
-            </div>
+            <Avatar
+              name={child.name}
+              color={child.avatarColor}
+              photo={child.avatarPhoto}
+              size={36}
+            />
             <div className="text-right">
               <div className="font-editorial text-sm tracking-wide text-foreground">{child.name}</div>
               <div className="micro-label">Age {child.age}</div>

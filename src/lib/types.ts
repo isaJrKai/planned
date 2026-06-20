@@ -70,7 +70,48 @@ export interface Child {
   name: string;
   age: number;
   avatarColor: string;   // hex used for the halo glow
+  avatarPhoto?: string;  // base64 data URL — optional profile photo
   currentAmount: number; // live savings balance UGX (Fixes bug #1 — kept in sync)
   goalAmount: number;
   goalName: string;
+}
+
+// ============================================================================
+// GOALS — flexible savings/spend-less goals for parents and children
+// ============================================================================
+// Goals support:
+//   - Owner: any family member (parent or child)
+//   - Type: "save" (build toward a target) or "spend_less" (stay under budget)
+//   - Cadence: weekly, monthly, annual
+//   - Privacy: private (owner only) or revealed (whole family sees it)
+//   - Cap: 5 per owner minimum enforcement, 15 per owner maximum
+
+export type GoalCadence = "weekly" | "monthly" | "annual";
+export type GoalType = "save" | "spend_less";
+export type GoalVisibility = "private" | "revealed";
+export type GoalOwnerKind = "parent" | "child";
+
+export interface Goal {
+  id: string;
+  ownerId: string;          // child id, or "parent-mum" / "parent-dad"
+  ownerKind: GoalOwnerKind;
+  ownerName: string;        // display name
+  title: string;
+  type: GoalType;
+  cadence: GoalCadence;
+  visibility: GoalVisibility;
+  targetAmount: number;     // for "save": amount to reach. For "spend_less": budget cap.
+  currentAmount: number;    // for "save": progress saved. For "spend_less": amount spent so far this period.
+  createdAt: number;
+  periodStart: number;      // start of current cadence period (auto-resets when period rolls over)
+  note?: string;
+}
+
+// Parent profile — mother/father
+export interface ParentProfile {
+  id: string;               // "parent-mum" | "parent-dad"
+  name: string;
+  role: string;             // "Mother" | "Father" | "Guardian"
+  avatarColor: string;
+  avatarPhoto?: string;     // base64 data URL
 }

@@ -33,8 +33,8 @@ import {
   Bell,
   PiggyBank,
   Target,
-  Calendar,
   Trophy,
+  Calendar,
 } from "lucide-react";
 import {
   useStore,
@@ -58,6 +58,8 @@ import { ChildDashboard } from "@/components/child-dashboard";
 import { GiveTokensModal } from "@/components/modals";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { ParentQuoteEditor } from "@/components/parent-quote-editor";
+import { GoalsTab } from "@/components/goals";
+import { Avatar } from "@/components/avatar";
 import {
   SavingsTrendChart,
   DistributionDonut,
@@ -67,7 +69,7 @@ import {
 import type { Child } from "@/lib/types";
 import { useShallow } from "zustand/react/shallow";
 
-type Tab = "overview" | "children" | "transactions" | "investments" | "tokens" | "settings";
+type Tab = "overview" | "children" | "transactions" | "investments" | "tokens" | "goals" | "settings";
 
 export default function Home() {
   const [tab, setTab] = useState<Tab>("overview");
@@ -78,6 +80,7 @@ export default function Home() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const childList = useStore((s) => s.children);
+  const parents = useStore((s) => s.parents);
   const sidebarTokenBalance = useStore(parentTokenBalance);
 
   // Always look the child up from the live store so balance updates propagate.
@@ -106,6 +109,7 @@ export default function Home() {
     { id: "transactions", label: "Transactions", icon: ArrowLeftRight },
     { id: "investments", label: "Investments", icon: TrendingUp },
     { id: "tokens", label: "Tokens", icon: Sparkles },
+    { id: "goals", label: "Goals", icon: Target },
     { id: "settings", label: "Settings", icon: Settings },
   ];
 
@@ -132,10 +136,11 @@ export default function Home() {
 
       <aside
         className={`
-          fixed md:static z-40 w-64 shrink-0 border-r border-[rgba(201,168,76,0.10)] bg-[#0B0F0D]
+          fixed md:static z-40 w-64 shrink-0 border-r bg-sidebar text-sidebar-foreground
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
           transition-transform duration-300 min-h-screen flex flex-col
         `}
+        style={{ borderColor: "var(--sidebar-border)" }}
       >
         {/* Brand */}
         <div className="px-7 pt-8 pb-6">
@@ -197,6 +202,7 @@ export default function Home() {
                 {tab === "transactions" && "Transaction Ledger"}
                 {tab === "investments" && "Investment Portfolio"}
                 {tab === "tokens" && "Token Economy"}
+                {tab === "goals" && "Family Goals"}
                 {tab === "settings" && "Settings"}
               </h1>
             </div>
@@ -212,16 +218,13 @@ export default function Home() {
                 />
               </button>
               <ThemeSwitcher />
-              <div
-                className="h-9 w-9 rounded-full flex items-center justify-center font-editorial text-sm ml-1"
-                style={{
-                  background: "linear-gradient(135deg, var(--secondary), var(--card))",
-                  border: "1px solid var(--hairline-strong)",
-                  color: "var(--chart-5)",
-                }}
-              >
-                M
-              </div>
+              <Avatar
+                name={parents[0]?.name ?? "M"}
+                color={parents[0]?.avatarColor ?? "#C9A84C"}
+                photo={parents[0]?.avatarPhoto}
+                size={36}
+                className="ml-1"
+              />
             </div>
           </div>
         </header>
@@ -245,6 +248,7 @@ export default function Home() {
           {tab === "transactions" && <TransactionsTab />}
           {tab === "investments" && <InvestmentsTab />}
           {tab === "tokens" && <TokensTab childList={children} onGive={(c) => setGiveToChildId(c.id)} />}
+          {tab === "goals" && <GoalsTab parents={parents} childList={children} />}
           {tab === "settings" && <SettingsTab />}
         </div>
       </main>
@@ -400,16 +404,12 @@ function OverviewTab({
                   >
                     <td>
                       <div className="flex items-center gap-3">
-                        <div
-                          className="halo-glow h-8 w-8 rounded-full flex items-center justify-center font-editorial text-xs"
-                          style={{
-                            ["--halo-color" as any]: c.avatarColor,
-                            background: c.avatarColor,
-                            color: "#090C0A",
-                          }}
-                        >
-                          {c.name.charAt(0)}
-                        </div>
+                        <Avatar
+                          name={c.name}
+                          color={c.avatarColor}
+                          photo={c.avatarPhoto}
+                          size={32}
+                        />
                         <div>
                           <div className="font-editorial text-sm tracking-wide text-foreground">
                             {c.name}
@@ -545,16 +545,12 @@ function ChildrenTab({
             >
               <div className="flex items-start justify-between mb-5">
                 <div className="flex items-center gap-3">
-                  <div
-                    className="halo-glow h-12 w-12 rounded-full flex items-center justify-center font-editorial"
-                    style={{
-                      ["--halo-color" as any]: c.avatarColor,
-                      background: c.avatarColor,
-                      color: "#090C0A",
-                    }}
-                  >
-                    {c.name.charAt(0)}
-                  </div>
+                  <Avatar
+                    name={c.name}
+                    color={c.avatarColor}
+                    photo={c.avatarPhoto}
+                    size={48}
+                  />
                   <div>
                     <div className="font-editorial text-base text-foreground tracking-wide">
                       {c.name}
@@ -650,15 +646,12 @@ function TransactionsTab() {
                     </td>
                     <td>
                       <div className="flex items-center gap-2">
-                        <div
-                          className="h-5 w-5 rounded-full flex items-center justify-center text-[10px] font-editorial"
-                          style={{
-                            background: child?.avatarColor ?? "#666",
-                            color: "#090C0A",
-                          }}
-                        >
-                          {child?.name.charAt(0) ?? "?"}
-                        </div>
+                        <Avatar
+                          name={child?.name ?? "?"}
+                          color={child?.avatarColor ?? "#666"}
+                          photo={child?.avatarPhoto}
+                          size={20}
+                        />
                         <span className="text-foreground/80 text-sm">
                           {child?.name.split(" ")[0]}
                         </span>
@@ -878,12 +871,12 @@ function TokensTab({
                 <tr key={c.id}>
                   <td>
                     <div className="flex items-center gap-2">
-                      <div
-                        className="h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-editorial"
-                        style={{ background: c.avatarColor, color: "#090C0A" }}
-                      >
-                        {c.name.charAt(0)}
-                      </div>
+                      <Avatar
+                        name={c.name}
+                        color={c.avatarColor}
+                        photo={c.avatarPhoto}
+                        size={24}
+                      />
                       <span className="text-foreground/80 text-sm">{c.name}</span>
                     </div>
                   </td>
@@ -976,9 +969,54 @@ function SettingsTab() {
   const totalSavings = useStore(familyTotalSavings);
   const totalInvested = useStore(familyTotalInvested);
   const netWorth = totalSavings + totalInvested;
+  const parents = useStore((s) => s.parents);
+  const children = useStore((s) => s.children);
+  const setParentPhoto = useStore((s) => s.setParentPhoto);
+  const setParentName = useStore((s) => s.setParentName);
+  const setChildPhoto = useStore((s) => s.setChildPhoto);
+  const setChildName = useStore((s) => s.setChildName);
 
   return (
     <div className="space-y-6 animate-fade-up max-w-3xl">
+      {/* Family profiles — photos + names */}
+      <div className="surface-wood rounded-lg p-6">
+        <div className="micro-label-gold mb-1">Family Profiles</div>
+        <h2 className="font-editorial text-xl text-foreground tracking-wide mb-2">
+          Photos &amp; Names
+        </h2>
+        <p className="text-xs text-foreground/55 mb-5 leading-relaxed">
+          Click an avatar to upload a photo. Photos appear in the sidebar,
+          tables, and child dashboards.
+        </p>
+        <div className="divider-gold mb-5" />
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {parents.map((p) => (
+            <ProfileEditorCard
+              key={p.id}
+              name={p.name}
+              color={p.avatarColor}
+              photo={p.avatarPhoto}
+              roleLabel={p.role}
+              onUpload={(url) => setParentPhoto(p.id, url)}
+              onRemove={() => setParentPhoto(p.id, "")}
+              onNameChange={(n) => setParentName(p.id, n)}
+            />
+          ))}
+          {children.map((c) => (
+            <ProfileEditorCard
+              key={c.id}
+              name={c.name}
+              color={c.avatarColor}
+              photo={c.avatarPhoto}
+              roleLabel={`Child · Age ${c.age}`}
+              onUpload={(url) => setChildPhoto(c.id, url)}
+              onRemove={() => setChildPhoto(c.id, "")}
+              onNameChange={(n) => setChildName(c.id, n)}
+            />
+          ))}
+        </div>
+      </div>
+
       {/* Family theme + monthly quote editor — parent sets what children see */}
       <div>
         <div className="mb-4">
@@ -1078,6 +1116,70 @@ function SettingsTab() {
           math, token economics, and module-level randomness are all corrected.
         </p>
       </div>
+    </div>
+  );
+}
+
+// ---- Profile Editor Card — used in SettingsTab for photo + name editing ----
+
+function ProfileEditorCard({
+  name,
+  color,
+  photo,
+  roleLabel,
+  onUpload,
+  onRemove,
+  onNameChange,
+}: {
+  name: string;
+  color: string;
+  photo?: string;
+  roleLabel: string;
+  onUpload: (dataUrl: string) => void;
+  onRemove: () => void;
+  onNameChange: (name: string) => void;
+}) {
+  const [draftName, setDraftName] = useState(name);
+  const [dirty, setDirty] = useState(false);
+
+  return (
+    <div className="surface-flat rounded-lg p-5 text-center">
+      <div className="flex justify-center mb-4">
+        <Avatar
+          name={name}
+          color={color}
+          photo={photo}
+          size={72}
+          showUploadButton
+          onUpload={onUpload}
+          onRemove={photo ? onRemove : undefined}
+        />
+      </div>
+      <input
+        type="text"
+        value={draftName}
+        onChange={(e) => {
+          setDraftName(e.target.value);
+          setDirty(e.target.value !== name);
+        }}
+        onBlur={() => {
+          if (dirty && draftName.trim()) {
+            onNameChange(draftName);
+            setDirty(false);
+          } else {
+            setDraftName(name);
+            setDirty(false);
+          }
+        }}
+        maxLength={40}
+        className="input-editorial w-full px-3 py-2 text-center font-editorial text-sm tracking-wide"
+      />
+      <div className="micro-label mt-2">{roleLabel}</div>
+      {dirty && (
+        <div className="micro-label mt-1" style={{ color: "var(--chart-3)" }}>
+          Press Tab/blur to save
+        </div>
+      )}
     </div>
   );
 }

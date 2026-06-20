@@ -248,3 +248,86 @@ Stage Summary:
   with theme-specific gold foil, richer palettes, depth shadows, and ambient glow.
 - Parents can set annual theme + monthly quote from Settings; children see them
   in an editorial footer at the bottom of their dashboard.
+
+---
+Task ID: rebuild-4
+Agent: main (Super Z)
+Task: Multiple requests — (1) Profile photo upload. (2) Goals feature: parents and children set savings/spend-less goals, private or revealed, weekly/monthly/annual cadence, 5-15 per person, tabular with graph progress. (3) Fix sidebar theme bug. (4) Complete audit document.
+
+Work Log:
+
+PART 1 — Sidebar theme bug fix
+- Root cause: aside element in page.tsx used hardcoded bg-[#0B0F0D] (dark green-black),
+  ignoring the theme system. Also one hardcoded bg-[#0E1310] in modals.tsx <option>.
+- Fix: replaced with bg-sidebar + text-sidebar-foreground + borderColor: var(--sidebar-border).
+  The [data-theme] blocks already define --sidebar + --sidebar-foreground + --sidebar-border
+  for all 4 themes.
+- Verified via getComputedStyle across all 4 themes:
+    dark=rgb(11,15,13), light=rgb(237,227,200), pink=rgb(245,221,216), red=rgb(17,3,3)
+
+PART 2 — Profile photo upload
+- Added avatarPhoto? field to Child + ParentProfile types.
+- Created src/components/avatar.tsx:
+    Avatar component with halo glow, photo or initials fallback, optional upload button
+    File input → canvas resize to 256x256 → base64 JPEG → onUpload callback
+    Remove photo button (X) when photo exists
+- Added store methods: setParentPhoto, setParentName, setChildPhoto, setChildName
+- Added SEED_PARENTS (Mama + Papa) with their own avatarColors
+- Built ProfileEditorCard component in page.tsx (used in SettingsTab):
+    Large avatar with upload button, name input (blur to save), role label
+- Swapped all hardcoded avatar divs throughout the app to use <Avatar>:
+    Parent topbar (36px), children table (32px), children cards (48px),
+    transactions table (20px), tokens table (24px), child dashboard header (36px)
+- Added "Family Profiles" section to top of SettingsTab with grid of 5 cards (Mama, Papa, Zara, Enoch, Amani)
+
+PART 3 — Goals feature
+- Added types: Goal, GoalCadence (weekly/monthly/annual), GoalType (save/spend_less),
+  GoalVisibility (private/revealed), GoalOwnerKind (parent/child), ParentProfile
+- Added SEED_GOALS: 5 goals (Emergency Fund for Mum, Family Holiday for Papa,
+  Spend Less on Coffee for Mum private, Zara's tablet, Enoch's weekly save)
+- Added store methods: addGoal (with 15-per-owner cap enforcement), updateGoal,
+  deleteGoal, contributeToGoal, resetGoalPeriod, goalMaxPerOwner field
+- Added startOfPeriod() helper that computes week/month/year start timestamp
+- Created src/components/goals.tsx (900+ lines):
+    GoalModal — create/edit with owner picker, title, type, cadence, visibility, target, note
+    ContributeModal — add to a savings goal
+    ConfirmDeleteModal — prevents accidental deletes
+    GoalRow — single tabular row with avatar, pills, progress bar, action buttons
+    GoalsTab — full tabular view with:
+      - Summary cards (total goals, on track, saved toward goals, family progress)
+      - Filters (by owner, by type)
+      - Tabular table with 9 columns including GRAPH PROGRESS column
+      - Per-owner progress graph section at bottom
+- Added "Goals" tab to parent dashboard nav (between Tokens and Settings)
+- Verified: created "Spend Less on Eating Out" goal with Monthly cadence + Private
+  visibility → appeared in table immediately with 0% progress + period label "1 Jun – 30 Jun"
+
+PART 4 — Audit document
+- Generated /download/Planned_App_Audit.docx (45 KB, 10 sections):
+    1. Executive Summary (with build stats table)
+    2. What the App Can Do (parent/child/goals/photos/themes/editorial)
+    3. What the App Can't Do Yet (persistence, auth, broker, notifications, mobile, multi-currency, reporting, audit trail)
+    4. What the App Has (data model, components, design system, money logic)
+    5. What the App Lacks (critical/important/nice-to-have gaps)
+    6. What Can Be Fixed vs What Can't (3 tables: easily fixable, hard but possible, cannot be fixed by design)
+    7. What Is Finished (12 production-ready items)
+    8. What Is Unfinished (8 known gaps)
+    9. v3.0 Changes (bug fixes, new features, verification)
+    10. Recommended Next Steps (priority 1-4 with 15 numbered items)
+
+Verification:
+- ESLint clean (0 errors, 0 warnings)
+- All 4 themes switch sidebar correctly (verified via getComputedStyle)
+- Goals tab renders with table + graph progress column (5/5 rows have progress bars)
+- Per-owner progress graph section renders ("How Everyone Is Doing")
+- Profile editor renders 5 cards with upload buttons
+- Renamed Zara → propagated to Overview table → reverted successfully
+- No console errors, no page errors
+- 6 new screenshots: 08-sidebar-theme-fix, 09-goals-tab, 10-settings-profiles, 11-goals-pink
+
+Stage Summary:
+- All 4 user requests fully shipped and browser-verified.
+- Sidebar theme bug: FIXED (was hardcoded color, now uses bg-sidebar token)
+- Profile photos: implemented (Avatar component + Settings editor + all surfaces swapped)
+- Goals feature: implemented (5-15 cap, privacy, cadence, tabular with graph progress, per-owner summary)
+- Audit document: generated as .docx with 10 sections covering capabilities, gaps, fixability, and roadmap

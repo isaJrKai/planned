@@ -15,7 +15,12 @@ import { create } from "zustand";
 import type {
   Account,
   Child,
+  Goal,
+  GoalCadence,
+  GoalType,
+  GoalVisibility,
   Investment,
+  ParentProfile,
   SpendingCategory,
   SpendingEntry,
   TokenLedgerEntry,
@@ -184,6 +189,106 @@ const SEED_ANNUAL_THEME = "2026 — The Year of Disciplined Wealth";
 const SEED_MONTHLY_QUOTE =
   "A shilling saved is a step toward the future you are building.";
 
+// ---- Parent profiles + goals -----------------------------------------------
+
+const SEED_PARENTS: ParentProfile[] = [
+  { id: "parent-mum", name: "Mama", role: "Mother", avatarColor: "#D4869A" },
+  { id: "parent-dad", name: "Papa", role: "Father", avatarColor: "#6BBF8A" },
+];
+
+function startOfPeriod(cadence: GoalCadence, now: number = Date.now()): number {
+  const d = new Date(now);
+  if (cadence === "weekly") {
+    const day = d.getDay(); // 0 = Sun
+    d.setDate(d.getDate() - day);
+    d.setHours(0, 0, 0, 0);
+    return d.getTime();
+  }
+  if (cadence === "monthly") {
+    return new Date(d.getFullYear(), d.getMonth(), 1).getTime();
+  }
+  // annual
+  return new Date(d.getFullYear(), 0, 1).getTime();
+}
+
+const SEED_GOALS: Goal[] = [
+  {
+    id: "goal-1",
+    ownerId: "parent-mum",
+    ownerKind: "parent",
+    ownerName: "Mama",
+    title: "Emergency Fund",
+    type: "save",
+    cadence: "annual",
+    visibility: "revealed",
+    targetAmount: 5_000_000,
+    currentAmount: 1_850_000,
+    createdAt: NOW - 90 * DAY,
+    periodStart: startOfPeriod("annual"),
+    note: "Six months of family expenses",
+  },
+  {
+    id: "goal-2",
+    ownerId: "parent-dad",
+    ownerKind: "parent",
+    ownerName: "Papa",
+    title: "Family Holiday — December",
+    type: "save",
+    cadence: "annual",
+    visibility: "revealed",
+    targetAmount: 3_500_000,
+    currentAmount: 2_100_000,
+    createdAt: NOW - 60 * DAY,
+    periodStart: startOfPeriod("annual"),
+  },
+  {
+    id: "goal-3",
+    ownerId: "parent-mum",
+    ownerKind: "parent",
+    ownerName: "Mama",
+    title: "Spend Less on Coffee",
+    type: "spend_less",
+    cadence: "monthly",
+    visibility: "private",
+    targetAmount: 80_000,    // monthly cap
+    currentAmount: 52_000,   // spent so far this month
+    createdAt: NOW - 14 * DAY,
+    periodStart: startOfPeriod("monthly"),
+    note: "Cap at UGX 80k/month — currently UGX 52k",
+  },
+  {
+    id: "goal-4",
+    ownerId: "zara",
+    ownerKind: "child",
+    ownerName: "Zara",
+    title: "Secondary School Tablet",
+    type: "save",
+    cadence: "annual",
+    visibility: "revealed",
+    targetAmount: 500_000,
+    currentAmount: 312_500,
+    createdAt: NOW - 45 * DAY,
+    periodStart: startOfPeriod("annual"),
+  },
+  {
+    id: "goal-5",
+    ownerId: "enoch",
+    ownerKind: "child",
+    ownerName: "Enoch",
+    title: "Weekly Save UGX 5,000",
+    type: "save",
+    cadence: "weekly",
+    visibility: "revealed",
+    targetAmount: 5_000,
+    currentAmount: 3_200,
+    createdAt: NOW - 7 * DAY,
+    periodStart: startOfPeriod("weekly"),
+  },
+];
+
+const GOAL_MIN_PER_OWNER = 0;  // no minimum enforced — parents decide
+const GOAL_MAX_PER_OWNER = 15;
+
 interface StoreState {
   children: Child[];
   accounts: Account[];
@@ -198,6 +303,22 @@ interface StoreState {
   monthlyQuote: string;
   setAnnualTheme: (t: string) => void;
   setMonthlyQuote: (q: string) => void;
+
+  // Parent profiles + photos
+  parents: ParentProfile[];
+  setParentPhoto: (parentId: string, photoDataUrl: string) => void;
+  setParentName: (parentId: string, name: string) => void;
+  setChildPhoto: (childId: string, photoDataUrl: string) => void;
+  setChildName: (childId: string, name: string) => void;
+
+  // Goals — flexible savings/spend-less goals with privacy + cadence
+  goals: Goal[];
+  addGoal: (goal: Omit<Goal, "id" | "createdAt" | "periodStart">) => { ok: boolean; error?: string };
+  updateGoal: (id: string, patch: Partial<Goal>) => void;
+  deleteGoal: (id: string) => void;
+  contributeToGoal: (id: string, amount: number) => void;
+  resetGoalPeriod: (id: string) => void;
+  goalMaxPerOwner: number;
 
   // Mutations
   addTransaction: (tx: Omit<Transaction, "id" | "timestamp"> & { timestamp?: number }) => void;
@@ -220,9 +341,83 @@ export const useStore = create<StoreState>((set, get) => ({
   tokenLedger: SEED_TOKEN_LEDGER,
   annualTheme: SEED_ANNUAL_THEME,
   monthlyQuote: SEED_MONTHLY_QUOTE,
+  parents: SEED_PARENTS,
+  goals: SEED_GOALS,
+  goalMaxPerOwner: GOAL_MAX_PER_OWNER,
 
   setAnnualTheme: (t) => set({ annualTheme: t.trim() }),
   setMonthlyQuote: (q) => set({ monthlyQuote: q.trim() }),
+
+  setParentPhoto: (parentId, photoDataUrl) =>
+    set((s) => ({
+      parents: s.parents.map((p) =>
+        p.id === parentId ? { ...p, avatarPhoto: photoDataUrl } : p
+      ),
+    })),
+  setParentName: (parentId, name) =>
+    set((s) => ({
+      parents: s.parents.map((p) =>
+        p.id === parentId ? { ...p, name: name.trim() || p.name } : p
+      ),
+    })),
+  setChildPhoto: (childId, photoDataUrl) =>
+    set((s) => ({
+      children: s.children.map((c) =>
+        c.id === childId ? { ...c, avatarPhoto: photoDataUrl } : c
+      ),
+    })),
+  setChildName: (childId, name) =>
+    set((s) => ({
+      children: s.children.map((c) =>
+        c.id === childId ? { ...c, name: name.trim() || c.name } : c
+      ),
+    })),
+
+  addGoal: (goal) => {
+    const s = get();
+    const ownerCount = s.goals.filter((g) => g.ownerId === goal.ownerId).length;
+    if (ownerCount >= GOAL_MAX_PER_OWNER) {
+      return { ok: false, error: `Maximum ${GOAL_MAX_PER_OWNER} goals per person reached.` };
+    }
+    const newGoal: Goal = {
+      ...goal,
+      id: `goal-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      createdAt: Date.now(),
+      periodStart: startOfPeriod(goal.cadence),
+    };
+    set({ goals: [newGoal, ...s.goals] });
+    return { ok: true };
+  },
+
+  updateGoal: (id, patch) =>
+    set((s) => ({
+      goals: s.goals.map((g) => (g.id === id ? { ...g, ...patch } : g)),
+    })),
+
+  deleteGoal: (id) =>
+    set((s) => ({ goals: s.goals.filter((g) => g.id !== id) })),
+
+  contributeToGoal: (id, amount) =>
+    set((s) => ({
+      goals: s.goals.map((g) =>
+        g.id === id
+          ? { ...g, currentAmount: Math.max(0, g.currentAmount + amount) }
+          : g
+      ),
+    })),
+
+  resetGoalPeriod: (id) =>
+    set((s) => ({
+      goals: s.goals.map((g) =>
+        g.id === id
+          ? {
+              ...g,
+              periodStart: startOfPeriod(g.cadence),
+              currentAmount: g.type === "spend_less" ? 0 : g.currentAmount,
+            }
+          : g
+      ),
+    })),
 
   addTransaction: (tx) =>
     set((s) => {
@@ -413,6 +608,8 @@ export const useStore = create<StoreState>((set, get) => ({
       tokenLedger: SEED_TOKEN_LEDGER,
       annualTheme: SEED_ANNUAL_THEME,
       monthlyQuote: SEED_MONTHLY_QUOTE,
+      parents: SEED_PARENTS,
+      goals: SEED_GOALS,
     }),
 }));
 
