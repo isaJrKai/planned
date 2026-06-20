@@ -42,6 +42,7 @@ import {
   RedeemTokensModal,
   InvestmentDetailModal,
 } from "./modals";
+import { FamilyThemeFooter } from "./family-theme-footer";
 import type { Investment } from "@/lib/types";
 
 type Tab = "overview" | "spending" | "worksheet" | "investments";
@@ -159,6 +160,11 @@ export function ChildDashboard({
           <InvestmentsTab child={child} onSelect={setDetailInvestment} />
         )}
       </main>
+
+      {/* Family theme footer — annual theme + monthly quote from parent */}
+      <div className="max-w-6xl mx-auto px-6">
+        <FamilyThemeFooter />
+      </div>
 
       {/* Modals */}
       {modal === "save" && <SaveMoneyModal child={child} onClose={() => setModal(null)} />}

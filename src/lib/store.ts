@@ -174,6 +174,16 @@ const SEED_TRANSACTIONS: Transaction[] = [
 
 // ---- Store shape -----------------------------------------------------------
 
+// ---- Family theme + monthly quote (parent-set, shown on child dashboard) --
+//
+// The parent sets an annual "theme" (like a motto for the year) and a monthly
+// quote. Both appear at the bottom of the child dashboard as a quiet,
+// editorial reminder of the family's wealth-building intention.
+
+const SEED_ANNUAL_THEME = "2026 — The Year of Disciplined Wealth";
+const SEED_MONTHLY_QUOTE =
+  "A shilling saved is a step toward the future you are building.";
+
 interface StoreState {
   children: Child[];
   accounts: Account[];
@@ -182,6 +192,12 @@ interface StoreState {
   categories: SpendingCategory[];
   investments: Investment[];
   tokenLedger: TokenLedgerEntry[];
+
+  // Family editorial — annual theme + monthly quote
+  annualTheme: string;
+  monthlyQuote: string;
+  setAnnualTheme: (t: string) => void;
+  setMonthlyQuote: (q: string) => void;
 
   // Mutations
   addTransaction: (tx: Omit<Transaction, "id" | "timestamp"> & { timestamp?: number }) => void;
@@ -202,6 +218,11 @@ export const useStore = create<StoreState>((set, get) => ({
   categories: SEED_CATEGORIES,
   investments: SEED_INVESTMENTS,
   tokenLedger: SEED_TOKEN_LEDGER,
+  annualTheme: SEED_ANNUAL_THEME,
+  monthlyQuote: SEED_MONTHLY_QUOTE,
+
+  setAnnualTheme: (t) => set({ annualTheme: t.trim() }),
+  setMonthlyQuote: (q) => set({ monthlyQuote: q.trim() }),
 
   addTransaction: (tx) =>
     set((s) => {
@@ -390,6 +411,8 @@ export const useStore = create<StoreState>((set, get) => ({
       categories: SEED_CATEGORIES,
       investments: SEED_INVESTMENTS,
       tokenLedger: SEED_TOKEN_LEDGER,
+      annualTheme: SEED_ANNUAL_THEME,
+      monthlyQuote: SEED_MONTHLY_QUOTE,
     }),
 }));
 

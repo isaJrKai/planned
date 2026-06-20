@@ -58,7 +58,9 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${playfair.variable} ${jetbrainsMono.variable} antialiased bg-background text-foreground`}
       >
-        {children}
+        {/* Ambient backdrop — slow drifting gold glow */}
+        <div className="ambient-backdrop" aria-hidden />
+        <div className="relative z-10">{children}</div>
         <Toaster />
         {/* Ultra-fine noise grain for organic warmth */}
         <div className="grain-overlay" aria-hidden />

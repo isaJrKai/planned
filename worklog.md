@@ -155,3 +155,96 @@ Stage Summary:
   avoid FOUC).
 - All charts recolor instantly with theme changes (CSS variables).
 - Lint clean. Build compiles. 8 screenshots in /download/ (4 themes × overview).
+
+---
+Task ID: rebuild-3
+Agent: main (Super Z)
+Task: Two requests — (1) Parents can send an annual theme or monthly quote that appears at the bottom of the child dashboard. (2) The other 3 themes (light, pink, red) were "not working" — rework them to actually wow.
+
+Work Log:
+
+PART 1 — Family theme + monthly quote feature
+- Added to store.ts:
+    SEED_ANNUAL_THEME = "2026 — The Year of Disciplined Wealth"
+    SEED_MONTHLY_QUOTE = "A shilling saved is a step toward the future..."
+    StoreState.annualTheme + monthlyQuote fields
+    setAnnualTheme() + setMonthlyQuote() setters
+    resetSeed() now resets both
+- Created src/components/family-theme-footer.tsx:
+    FamilyThemeFooter component — shows at bottom of child dashboard
+    Annual theme as gold-foil banner with corner flourishes + Sparkles icon
+    Monthly quote in italic Playfair, large quote marks in primary color,
+    ornamental rules with center diamond above and below,
+    "Set with love · by Parent" micro-label at bottom
+- Created src/components/parent-quote-editor.tsx:
+    ParentQuoteEditor with two cards (annual theme + monthly quote)
+    Each card has: label, input field with char counter, suggestion chips,
+    Save + Revert buttons, "Saved · visible to children" confirmation flash
+    SUGGESTED_THEMES (5) + SUGGESTED_QUOTES (8) libraries
+    LIVE PREVIEW card showing exactly what children will see
+- Added FamilyThemeFooter to child-dashboard.tsx (below main, above modals)
+- Added ParentQuoteEditor to top of SettingsTab in page.tsx with intro
+  header "Theme & Quote for the Children"
+- Verified end-to-end: edited annual theme to "2026 — Building Generational
+  Wealth Together" + quote to "Wealth is built quietly, one decision at a
+  time." via parent Settings tab, then opened Zara's child dashboard — both
+  appear in the footer.
+
+PART 2 — Reworked 3 non-dark themes to actually wow
+
+Root cause of "not working": the gold foil gradient (#C9A84C → #E8D5A0 → #D4AF37)
+was designed for dark backgrounds — on light/pink/red backgrounds it became
+invisible or flat. Plus the surface gradients were tuned for dark mode.
+
+Fix: introduced theme-specific --gold-foil-1/2/3 + --gold-foil-static-1/2/3
+tokens. Each theme now has its own foil gradient optimized for its background:
+
+  DARK  (preserved): #C9A84C → #E8D5A0 → #D4AF37 (bright shimmer)
+  LIGHT "Hermès Private Bank": #9A7B1F → #C9A84C → #B8941F (antique gold, darker for ivory)
+  PINK  "Chanel Boutique":     #8B3A4A → #B76E79 → #C9A84C (wine → rose-gold → gold)
+  RED   "Venetian Royal Chamber": #D4AF37 → #FFD700 → #B8860B (antique gold with bright pop)
+
+Each theme also got richer palette tuning:
+  LIGHT: warmer aged-paper ivory #F5EFE0, deep ink #1A1610, antique gold #9A7B1F,
+         olive/burnt-amber/bronze chart colors, cream gradients, paper grain 0.04
+  PINK:  warmer blush #FCEBE4, deep wine text #3D1521, rose-gold primary #B76E79,
+         deep wine accent #8B3A4A, dusty rose surfaces with rose-gold glow
+  RED:   deeper oxblood #170404 (near-black with red undertone), cream #F0DDB5,
+         antique gold #D4AF37, dark goldenrod accent, velvet surfaces with gold glow
+
+Plus added card depth system:
+  --card-shadow + --card-shadow-hover tokens per theme
+  Dark: deep black shadows + gold glow on hover
+  Light: warm gold-tinted shadows (paper-like)
+  Pink: rose-tinted shadows
+  Red: deep black + gold glow on hover
+  .surface-wood + .surface-wood-strong now have box-shadow + transitions
+  .card-hover utility for interactive lift effect (translateY -2px + glow)
+
+Plus ambient backdrop (slow drifting gold glow):
+  .ambient-backdrop with two radial gradients that drift via 32s + 40s
+  animations, using theme-specific --surface-wood-glow tokens
+  Added to layout.tsx behind all content (z-0, content sits at z-10)
+
+Plus divider-gold + ornamental-rule classes refactored to use color-mix()
+with --primary, so they recolor per theme.
+
+Plus .family-banner class with corner flourish pseudo-elements + .ornamental-rule
+with center diamond — used by FamilyThemeFooter for editorial flourish.
+
+Verification:
+- ESLint clean (0 errors)
+- All 4 themes apply correctly via getComputedStyle check:
+    dark=rgb(9,12,10), light=rgb(245,239,224), pink=rgb(252,235,228), red=rgb(23,4,4)
+- Gold foil text now visible on all 4 themes (was invisible on light/pink before)
+- FamilyThemeFooter renders on child dashboard with both fields
+- ParentQuoteEditor saves and updates child view in real time
+- No console errors, no page errors
+- 7 screenshots in /download/: 4 themes (overview) + child footer (dark + pink) + settings quote editor
+
+Stage Summary:
+- Both requests fully shipped and browser-verified.
+- The 3 reworked themes now have distinct identities (Hermès / Chanel / Venetian)
+  with theme-specific gold foil, richer palettes, depth shadows, and ambient glow.
+- Parents can set annual theme + monthly quote from Settings; children see them
+  in an editorial footer at the bottom of their dashboard.

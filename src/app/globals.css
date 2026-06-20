@@ -120,165 +120,226 @@
   --grain-opacity: 0.015;
   --topbar-bg: rgba(9, 12, 10, 0.80);
 
+  /* Theme-specific gold foil — bright gold shimmer for dark canvas */
+  --gold-foil-1: #C9A84C;
+  --gold-foil-2: #E8D5A0;
+  --gold-foil-3: #D4AF37;
+  --gold-foil-static-1: #E8D5A0;
+  --gold-foil-static-2: #C9A84C;
+  --gold-foil-static-3: #D4AF37;
+
+  /* Card shadows — dark theme uses deep black + gold glow */
+  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.5);
+  --card-shadow-hover: 0 2px 4px rgba(0, 0, 0, 0.5), 0 16px 40px rgba(201, 168, 76, 0.18);
+
   --font-mono-stack: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
-/* ---- LIGHT / IVORY + GOLD ------------------------------------------------ */
+/* ---- LIGHT / IVORY + GOLD — "Hermès Private Bank" ------------------------ */
+/* Warm ivory paper, deep ink, antique gold. Should feel like a leather-bound
+   ledger in a private bank lobby — never flat, never clinical. */
 [data-theme="light"] {
-  --background: #FAF7EF;            /* warm ivory */
-  --foreground: #1C1A14;            /* deep ink */
-  --card: #FFFFFF;
-  --card-foreground: #1C1A14;
-  --popover: #FFFFFF;
-  --popover-foreground: #1C1A14;
-  --primary: #B8941F;               /* darker gold for contrast on white */
-  --primary-foreground: #FFFFFF;
-  --secondary: #F0E9D6;             /* warm cream */
-  --secondary-foreground: #1C1A14;
-  --muted: #F5F0E2;
-  --muted-foreground: #6B6557;
-  --accent: #E8D5A0;
-  --accent-foreground: #1C1A14;
-  --destructive: #B4452F;
-  --border: rgba(184, 148, 31, 0.22);
-  --input: rgba(184, 148, 31, 0.18);
-  --ring: #B8941F;
+  --background: #F5EFE0;            /* warm aged-paper ivory */
+  --foreground: #1A1610;            /* deep ink, almost black */
+  --card: #FFFCF3;                  /* warm white card */
+  --card-foreground: #1A1610;
+  --popover: #FFFCF3;
+  --popover-foreground: #1A1610;
+  --primary: #9A7B1F;               /* rich antique gold (darker for contrast) */
+  --primary-foreground: #FFFCF3;
+  --secondary: #EDE3C8;             /* warm cream secondary */
+  --secondary-foreground: #1A1610;
+  --muted: #F0E8D2;
+  --muted-foreground: #6B6353;      /* warm gray-brown */
+  --accent: #C9A84C;                /* lighter gold accent */
+  --accent-foreground: #1A1610;
+  --destructive: #A0381F;
+  --border: rgba(154, 123, 31, 0.22);
+  --input: rgba(154, 123, 31, 0.18);
+  --ring: #9A7B1F;
 
-  --chart-1: #B8941F;
-  --chart-2: #6B8E5A;
-  --chart-3: #C77D33;
-  --chart-4: #A8967A;
-  --chart-5: #D4B05A;
+  --chart-1: #9A7B1F;               /* antique gold */
+  --chart-2: #6B7A3F;               /* olive */
+  --chart-3: #B8651F;               /* burnt amber */
+  --chart-4: #8A6E3F;               /* bronze */
+  --chart-5: #D4AF37;               /* light gold */
 
-  --sidebar: #F5F0E2;
-  --sidebar-foreground: #1C1A14;
-  --sidebar-primary: #B8941F;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #EDE5D2;
-  --sidebar-accent-foreground: #1C1A14;
-  --sidebar-border: rgba(184, 148, 31, 0.16);
-  --sidebar-ring: #B8941F;
+  --sidebar: #EDE3C8;
+  --sidebar-foreground: #1A1610;
+  --sidebar-primary: #9A7B1F;
+  --sidebar-primary-foreground: #FFFCF3;
+  --sidebar-accent: #F0E8D2;
+  --sidebar-accent-foreground: #1A1610;
+  --sidebar-border: rgba(154, 123, 31, 0.18);
+  --sidebar-ring: #9A7B1F;
 
-  --surface-wood-bg: linear-gradient(160deg, rgba(255, 255, 255, 0.95) 0%, rgba(245, 240, 226, 0.85) 100%);
-  --surface-wood-strong-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(240, 233, 214, 0.92) 100%);
-  --surface-flat-bg: rgba(255, 255, 255, 0.7);
-  --surface-wood-glow: rgba(184, 148, 31, 0.06);
-  --surface-wood-strong-glow: rgba(184, 148, 31, 0.10);
-  --hairline: rgba(184, 148, 31, 0.20);
-  --hairline-strong: rgba(184, 148, 31, 0.30);
-  --hairline-soft: rgba(184, 148, 31, 0.10);
-  --micro-label: rgba(28, 26, 20, 0.55);
-  --text-soft: rgba(28, 26, 20, 0.85);
-  --text-softer: rgba(28, 26, 20, 0.60);
-  --text-faint: rgba(28, 26, 20, 0.45);
-  --grain-opacity: 0.025;
-  --topbar-bg: rgba(250, 247, 239, 0.85);
+  /* Surfaces — soft warm shadow + cream gradient, like fine paper */
+  --surface-wood-bg: linear-gradient(160deg, #FFFCF3 0%, #F5EFE0 100%);
+  --surface-wood-strong-bg: linear-gradient(180deg, #FFFCF3 0%, #EDE3C8 100%);
+  --surface-flat-bg: rgba(255, 252, 243, 0.85);
+  --surface-wood-glow: rgba(154, 123, 31, 0.06);
+  --surface-wood-strong-glow: rgba(201, 168, 76, 0.10);
+  --hairline: rgba(154, 123, 31, 0.22);
+  --hairline-strong: rgba(154, 123, 31, 0.35);
+  --hairline-soft: rgba(154, 123, 31, 0.10);
+  --micro-label: rgba(26, 22, 16, 0.55);
+  --text-soft: rgba(26, 22, 16, 0.85);
+  --text-softer: rgba(26, 22, 16, 0.60);
+  --text-faint: rgba(26, 22, 16, 0.42);
+  --grain-opacity: 0.04;
+  --topbar-bg: rgba(245, 239, 224, 0.88);
+
+  /* Theme-specific gold foil — darker stops so text shows on ivory */
+  --gold-foil-1: #9A7B1F;
+  --gold-foil-2: #C9A84C;
+  --gold-foil-3: #B8941F;
+  --gold-foil-static-1: #B8941F;
+  --gold-foil-static-2: #9A7B1F;
+  --gold-foil-static-3: #D4AF37;
+
+  /* Soft shadow for cards (only on light themes) */
+  --card-shadow: 0 1px 2px rgba(154, 123, 31, 0.04), 0 8px 24px rgba(154, 123, 31, 0.06);
+  --card-shadow-hover: 0 2px 4px rgba(154, 123, 31, 0.06), 0 16px 40px rgba(154, 123, 31, 0.12);
+
+  --font-mono-stack: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
-/* ---- PINK + GOLD (Fashion Editorial) ------------------------------------- */
-/* Soft blush ivory canvas with deep rose text + warm gold. Vogue-like. */
+/* ---- PINK + GOLD — "Chanel Boutique / Vogue Editorial" ------------------- */
+/* Blush ivory with deep wine text and ROSE GOLD accents. Should feel like a
+   fashion magazine — high contrast typography, rose-gold shimmer, dusty rose
+   surfaces. Never bubblegum, always sophisticated. */
 [data-theme="pink"] {
-  --background: #FDF4F1;            /* blush ivory */
-  --foreground: #4A1F2E;            /* deep rose text */
-  --card: #FFFFFF;
-  --card-foreground: #4A1F2E;
-  --popover: #FFFFFF;
-  --popover-foreground: #4A1F2E;
-  --primary: #C9A84C;               /* gold stays warm */
-  --primary-foreground: #FFFFFF;
-  --secondary: #F5E0DC;             /* dusty rose tint */
-  --secondary-foreground: #4A1F2E;
-  --muted: #FAEAE5;
-  --muted-foreground: #8A5A6E;
-  --accent: #D4869A;                /* dusty rose accent */
-  --accent-foreground: #FFFFFF;
-  --destructive: #B4452F;
-  --border: rgba(201, 168, 76, 0.22);
-  --input: rgba(201, 168, 76, 0.18);
-  --ring: #C9A84C;
+  --background: #FCEBE4;            /* warmer blush, more saturated */
+  --foreground: #3D1521;            /* deep wine text */
+  --card: #FFF8F4;                  /* warm white card */
+  --card-foreground: #3D1521;
+  --popover: #FFF8F4;
+  --popover-foreground: #3D1521;
+  --primary: #B76E79;               /* rose gold */
+  --primary-foreground: #FFF8F4;
+  --secondary: #F5DDD8;             /* dusty rose */
+  --secondary-foreground: #3D1521;
+  --muted: #FAE5DE;
+  --muted-foreground: #7A4858;      /* mauve */
+  --accent: #8B3A4A;                /* deep wine accent */
+  --accent-foreground: #FFF8F4;
+  --destructive: #A0381F;
+  --border: rgba(183, 110, 121, 0.26);
+  --input: rgba(183, 110, 121, 0.20);
+  --ring: #B76E79;
 
-  --chart-1: #C9A84C;
-  --chart-2: #D4869A;
-  --chart-3: #B86A7E;
-  --chart-4: #E8B4C0;
-  --chart-5: #E8D5A0;
+  --chart-1: #B76E79;               /* rose gold */
+  --chart-2: #8B3A4A;               /* deep wine */
+  --chart-3: #C9A84C;               /* warm gold for contrast */
+  --chart-4: #D4869A;               /* light rose */
+  --chart-5: #E8B4A0;               /* peach rose */
 
-  --sidebar: #F8E8E3;
-  --sidebar-foreground: #4A1F2E;
-  --sidebar-primary: #C9A84C;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #F2DCD6;
-  --sidebar-accent-foreground: #4A1F2E;
-  --sidebar-border: rgba(201, 168, 76, 0.16);
-  --sidebar-ring: #C9A84C;
+  --sidebar: #F5DDD8;
+  --sidebar-foreground: #3D1521;
+  --sidebar-primary: #B76E79;
+  --sidebar-primary-foreground: #FFF8F4;
+  --sidebar-accent: #FAE5DE;
+  --sidebar-accent-foreground: #3D1521;
+  --sidebar-border: rgba(183, 110, 121, 0.20);
+  --sidebar-ring: #B76E79;
 
-  --surface-wood-bg: linear-gradient(160deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 232, 227, 0.85) 100%);
-  --surface-wood-strong-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(245, 224, 220, 0.92) 100%);
-  --surface-flat-bg: rgba(255, 255, 255, 0.7);
-  --surface-wood-glow: rgba(201, 168, 76, 0.06);
-  --surface-wood-strong-glow: rgba(212, 134, 154, 0.10);
-  --hairline: rgba(201, 168, 76, 0.22);
-  --hairline-strong: rgba(201, 168, 76, 0.32);
-  --hairline-soft: rgba(201, 168, 76, 0.10);
-  --micro-label: rgba(74, 31, 46, 0.55);
-  --text-soft: rgba(74, 31, 46, 0.85);
-  --text-softer: rgba(74, 31, 46, 0.60);
-  --text-faint: rgba(74, 31, 46, 0.45);
-  --grain-opacity: 0.020;
-  --topbar-bg: rgba(253, 244, 241, 0.85);
+  /* Surfaces — blush gradient with rose-gold glow */
+  --surface-wood-bg: linear-gradient(160deg, #FFF8F4 0%, #FCEBE4 100%);
+  --surface-wood-strong-bg: linear-gradient(180deg, #FFF8F4 0%, #F5DDD8 100%);
+  --surface-flat-bg: rgba(255, 248, 244, 0.85);
+  --surface-wood-glow: rgba(183, 110, 121, 0.08);
+  --surface-wood-strong-glow: rgba(183, 110, 121, 0.14);
+  --hairline: rgba(183, 110, 121, 0.26);
+  --hairline-strong: rgba(183, 110, 121, 0.40);
+  --hairline-soft: rgba(183, 110, 121, 0.12);
+  --micro-label: rgba(61, 21, 33, 0.55);
+  --text-soft: rgba(61, 21, 33, 0.85);
+  --text-softer: rgba(61, 21, 33, 0.60);
+  --text-faint: rgba(61, 21, 33, 0.42);
+  --grain-opacity: 0.035;
+  --topbar-bg: rgba(252, 235, 228, 0.88);
+
+  /* Rose gold foil — wine → rose-gold → wine */
+  --gold-foil-1: #8B3A4A;
+  --gold-foil-2: #B76E79;
+  --gold-foil-3: #C9A84C;
+  --gold-foil-static-1: #B76E79;
+  --gold-foil-static-2: #8B3A4A;
+  --gold-foil-static-3: #E8B4A0;
+
+  --card-shadow: 0 1px 2px rgba(183, 110, 121, 0.05), 0 8px 24px rgba(139, 58, 74, 0.08);
+  --card-shadow-hover: 0 2px 4px rgba(183, 110, 121, 0.08), 0 16px 40px rgba(139, 58, 74, 0.16);
+
+  --font-mono-stack: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
-/* ---- RED + GOLD (Regal Oxblood) ------------------------------------------ */
-/* Deep oxblood canvas, cream text, warm gold. Velvet royal chamber. */
+/* ---- RED + GOLD — "Venetian Royal Chamber" ------------------------------- */
+/* Deep oxblood velvet with cream text and ANTIQUE gold. Should feel like a
+   Venetian palazzo library — opulent, regal, candlelit. Never bright red,
+   always oxblood/burgundy depth. */
 [data-theme="red"] {
-  --background: #1F0606;            /* deep oxblood */
-  --foreground: #F5E6C8;            /* cream */
-  --card: #2A0808;
-  --card-foreground: #F5E6C8;
-  --popover: #2A0808;
-  --popover-foreground: #F5E6C8;
-  --primary: #D4AF37;               /* warmer gold for red bg */
-  --primary-foreground: #1F0606;
-  --secondary: #3D0F0F;
-  --secondary-foreground: #F5E6C8;
-  --muted: #2E0A0A;
-  --muted-foreground: #C8A48C;
-  --accent: #8B2635;                /* deeper red */
-  --accent-foreground: #F5E6C8;
+  --background: #170404;            /* deeper oxblood, near-black with red undertone */
+  --foreground: #F0DDB5;            /* warm cream/parchment */
+  --card: #210606;                  /* slightly lifted oxblood */
+  --card-foreground: #F0DDB5;
+  --popover: #210606;
+  --popover-foreground: #F0DDB5;
+  --primary: #D4AF37;               /* antique gold */
+  --primary-foreground: #170404;
+  --secondary: #340A0A;             /* lifted oxblood */
+  --secondary-foreground: #F0DDB5;
+  --muted: #2A0707;
+  --muted-foreground: #B89A78;      /* warm beige */
+  --accent: #B8860B;                /* dark goldenrod for variation */
+  --accent-foreground: #170404;
   --destructive: #E8584A;
-  --border: rgba(212, 175, 55, 0.18);
-  --input: rgba(212, 175, 55, 0.20);
+  --border: rgba(212, 175, 55, 0.22);
+  --input: rgba(212, 175, 55, 0.22);
   --ring: #D4AF37;
 
-  --chart-1: #D4AF37;
-  --chart-2: #E8584A;
-  --chart-3: #B86A4E;
-  --chart-4: #8B2635;
-  --chart-5: #F5E6C8;
+  --chart-1: #D4AF37;               /* antique gold */
+  --chart-2: #B8860B;               /* dark goldenrod */
+  --chart-3: #C45A4A;               /* warm terracotta */
+  --chart-4: #8B2635;               /* deep red */
+  --chart-5: #F0DDB5;               /* cream */
 
-  --sidebar: #1A0505;
-  --sidebar-foreground: #F5E6C8;
+  --sidebar: #110303;
+  --sidebar-foreground: #F0DDB5;
   --sidebar-primary: #D4AF37;
-  --sidebar-primary-foreground: #1F0606;
-  --sidebar-accent: #2E0A0A;
-  --sidebar-accent-foreground: #F5E6C8;
-  --sidebar-border: rgba(212, 175, 55, 0.12);
+  --sidebar-primary-foreground: #170404;
+  --sidebar-accent: #2A0707;
+  --sidebar-accent-foreground: #F0DDB5;
+  --sidebar-border: rgba(212, 175, 55, 0.14);
   --sidebar-ring: #D4AF37;
 
-  --surface-wood-bg: linear-gradient(160deg, rgba(61, 15, 15, 0.55) 0%, rgba(42, 8, 8, 0.92) 100%);
-  --surface-wood-strong-bg: linear-gradient(180deg, rgba(61, 15, 15, 0.70) 0%, rgba(26, 5, 5, 0.96) 100%);
-  --surface-flat-bg: rgba(42, 8, 8, 0.7);
-  --surface-wood-glow: rgba(212, 175, 55, 0.06);
-  --surface-wood-strong-glow: rgba(212, 175, 55, 0.10);
-  --hairline: rgba(212, 175, 55, 0.16);
-  --hairline-strong: rgba(212, 175, 55, 0.24);
-  --hairline-soft: rgba(212, 175, 55, 0.08);
-  --micro-label: rgba(245, 230, 200, 0.55);
-  --text-soft: rgba(245, 230, 200, 0.85);
-  --text-softer: rgba(245, 230, 200, 0.60);
-  --text-faint: rgba(245, 230, 200, 0.45);
-  --grain-opacity: 0.020;
-  --topbar-bg: rgba(31, 6, 6, 0.82);
+  /* Surfaces — velvet oxblood with antique gold glow */
+  --surface-wood-bg: linear-gradient(160deg, rgba(52, 10, 10, 0.65) 0%, rgba(33, 6, 6, 0.95) 100%);
+  --surface-wood-strong-bg: linear-gradient(180deg, rgba(52, 10, 10, 0.80) 0%, rgba(23, 4, 4, 0.98) 100%);
+  --surface-flat-bg: rgba(33, 6, 6, 0.75);
+  --surface-wood-glow: rgba(212, 175, 55, 0.08);
+  --surface-wood-strong-glow: rgba(212, 175, 55, 0.14);
+  --hairline: rgba(212, 175, 55, 0.20);
+  --hairline-strong: rgba(212, 175, 55, 0.32);
+  --hairline-soft: rgba(212, 175, 55, 0.10);
+  --micro-label: rgba(240, 221, 181, 0.55);
+  --text-soft: rgba(240, 221, 181, 0.85);
+  --text-softer: rgba(240, 221, 181, 0.60);
+  --text-faint: rgba(240, 221, 181, 0.42);
+  --grain-opacity: 0.025;
+  --topbar-bg: rgba(23, 4, 4, 0.85);
+
+  /* Antique gold foil — deep gold → bright gold → deep gold */
+  --gold-foil-1: #D4AF37;
+  --gold-foil-2: #FFD700;
+  --gold-foil-3: #B8860B;
+  --gold-foil-static-1: #FFD700;
+  --gold-foil-static-2: #D4AF37;
+  --gold-foil-static-3: #B8860B;
+
+  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.30), 0 8px 24px rgba(0, 0, 0, 0.40);
+  --card-shadow-hover: 0 2px 4px rgba(0, 0, 0, 0.40), 0 16px 40px rgba(212, 175, 55, 0.18);
+
+  --font-mono-stack: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 .dark {
@@ -378,16 +439,19 @@
 
 /* ===========================================================================
    GOLD FOIL — animated shimmer text for key financial figures
+   Each theme defines its own --gold-foil-* tokens so the foil always
+   contrasts correctly with the background (e.g. dark stops on ivory,
+   rose-gold stops on pink, antique gold on oxblood).
    =========================================================================== */
 
 .text-gold-foil {
   background: linear-gradient(
     100deg,
-    #C9A84C 0%,
-    #E8D5A0 25%,
-    #D4AF37 50%,
-    #E8D5A0 75%,
-    #C9A84C 100%
+    var(--gold-foil-1) 0%,
+    var(--gold-foil-2) 25%,
+    var(--gold-foil-3) 50%,
+    var(--gold-foil-2) 75%,
+    var(--gold-foil-1) 100%
   );
   background-size: 200% auto;
   -webkit-background-clip: text;
@@ -398,7 +462,12 @@
 }
 
 .text-gold-foil-static {
-  background: linear-gradient(180deg, #E8D5A0 0%, #C9A84C 50%, #D4AF37 100%);
+  background: linear-gradient(
+    180deg,
+    var(--gold-foil-static-1) 0%,
+    var(--gold-foil-static-2) 50%,
+    var(--gold-foil-static-3) 100%
+  );
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -411,7 +480,7 @@
 }
 
 /* ===========================================================================
-   TENEBRIST SURFACES — cards emerge from darkness with subtle green-wood glow
+   TENEBRIST SURFACES — cards with theme-aware depth + shadow + hover lift
    =========================================================================== */
 
 .surface-wood {
@@ -421,6 +490,8 @@
   border: 1px solid var(--hairline);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  box-shadow: var(--card-shadow);
+  transition: box-shadow 0.3s ease, transform 0.3s ease, border-color 0.3s ease;
 }
 
 .surface-wood-strong {
@@ -430,11 +501,20 @@
   border: 1px solid var(--hairline-strong);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  box-shadow: var(--card-shadow);
+  transition: box-shadow 0.3s ease, transform 0.3s ease, border-color 0.3s ease;
 }
 
 .surface-flat {
   background: var(--surface-flat-bg);
   border: 1px solid var(--hairline-soft);
+}
+
+/* Hover lift effect — only on interactive cards (add .card-hover) */
+.card-hover:hover {
+  box-shadow: var(--card-shadow-hover);
+  transform: translateY(-2px);
+  border-color: var(--hairline-strong);
 }
 
 /* Ethereal halo glow behind child avatars */
@@ -452,14 +532,14 @@
   z-index: 0;
 }
 
-/* Hairline gold gradient dividers */
+/* Hairline gold gradient dividers — theme-aware via primary color */
 .divider-gold {
   height: 1px;
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(201, 168, 76, 0.20) 15%,
-    rgba(201, 168, 76, 0.08) 85%,
+    color-mix(in srgb, var(--primary) 35%, transparent) 15%,
+    color-mix(in srgb, var(--primary) 15%, transparent) 85%,
     transparent 100%
   );
 }
@@ -469,8 +549,8 @@
   background: linear-gradient(
     180deg,
     transparent 0%,
-    rgba(201, 168, 76, 0.20) 15%,
-    rgba(201, 168, 76, 0.08) 85%,
+    color-mix(in srgb, var(--primary) 35%, transparent) 15%,
+    color-mix(in srgb, var(--primary) 15%, transparent) 85%,
     transparent 100%
   );
 }
@@ -483,6 +563,49 @@
   z-index: 9999;
   opacity: var(--grain-opacity);
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+
+/* Ambient backdrop — very slow drifting radial glow, sets the mood.
+   Sits behind everything (z-0), uses primary color at low opacity. */
+.ambient-backdrop {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+.ambient-backdrop::before,
+.ambient-backdrop::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.5;
+}
+.ambient-backdrop::before {
+  width: 60vw;
+  height: 60vw;
+  top: -20vw;
+  right: -10vw;
+  background: radial-gradient(circle, var(--surface-wood-strong-glow) 0%, transparent 70%);
+  animation: ambient-drift-1 32s ease-in-out infinite;
+}
+.ambient-backdrop::after {
+  width: 50vw;
+  height: 50vw;
+  bottom: -15vw;
+  left: -10vw;
+  background: radial-gradient(circle, var(--surface-wood-glow) 0%, transparent 70%);
+  animation: ambient-drift-2 40s ease-in-out infinite;
+}
+
+@keyframes ambient-drift-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(-30px, 40px) scale(1.1); }
+}
+@keyframes ambient-drift-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(40px, -30px) scale(1.15); }
 }
 
 /* Progress bars — thin, editorial */
@@ -678,4 +801,79 @@
 }
 @media (min-width: 769px) {
   .hide-desktop { display: none !important; }
+}
+
+/* ===========================================================================
+   FAMILY THEME BANNER — annual theme + monthly quote footer for child view
+   =========================================================================== */
+.family-banner {
+  position: relative;
+  overflow: hidden;
+}
+.family-banner::before {
+  /* Subtle gold corner flourish — top left */
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 80px;
+  height: 80px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--primary) 30%, transparent) 0%, transparent 60%);
+  pointer-events: none;
+  opacity: 0.6;
+}
+.family-banner::after {
+  /* Subtle gold corner flourish — bottom right */
+  content: "";
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 80px;
+  height: 80px;
+  background:
+    linear-gradient(315deg, color-mix(in srgb, var(--primary) 30%, transparent) 0%, transparent 60%);
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+/* Ornamental rule with center diamond */
+.ornamental-rule {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ornamental-rule::before,
+.ornamental-rule::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--primary) 35%, transparent) 50%,
+    transparent 100%
+  );
+}
+.ornamental-rule::before {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--primary) 35%, transparent) 100%
+  );
+}
+.ornamental-rule::after {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--primary) 35%, transparent) 0%,
+    transparent 100%
+  );
+}
+.ornamental-diamond {
+  width: 6px;
+  height: 6px;
+  background: var(--primary);
+  transform: rotate(45deg);
+  flex-shrink: 0;
+  opacity: 0.7;
 }

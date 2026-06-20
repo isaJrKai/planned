@@ -57,6 +57,7 @@ import {
 import { ChildDashboard } from "@/components/child-dashboard";
 import { GiveTokensModal } from "@/components/modals";
 import { ThemeSwitcher } from "@/components/theme-switcher";
+import { ParentQuoteEditor } from "@/components/parent-quote-editor";
 import {
   SavingsTrendChart,
   DistributionDonut,
@@ -978,6 +979,22 @@ function SettingsTab() {
 
   return (
     <div className="space-y-6 animate-fade-up max-w-3xl">
+      {/* Family theme + monthly quote editor — parent sets what children see */}
+      <div>
+        <div className="mb-4">
+          <div className="micro-label-gold mb-1">Family Editorial</div>
+          <h2 className="font-editorial text-xl text-foreground tracking-wide">
+            Theme &amp; Quote for the Children
+          </h2>
+          <p className="text-xs text-foreground/55 mt-1 leading-relaxed max-w-xl">
+            Set an annual theme and a monthly quote. Both appear at the bottom
+            of every child dashboard — a quiet reminder of the family&apos;s
+            wealth-building intention.
+          </p>
+        </div>
+        <ParentQuoteEditor />
+      </div>
+
       <div className="surface-wood rounded-lg p-6">
         <div className="micro-label-gold mb-1">Token Economics</div>
         <h2 className="font-editorial text-xl text-foreground tracking-wide mb-5">
