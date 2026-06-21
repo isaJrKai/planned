@@ -188,13 +188,22 @@ model User {
   email               String   @unique
   passwordHash        String?
   name                String
-  role                String   @default("PARENT")  // ADMIN | PARENT | CHILD
+  role                String   @default("USER")  // SUPER_ADMIN | USER
   familyId            String?
   childId             String?  // Links to Child if role=CHILD
   emailVerified       DateTime?
   image               String?
+  // Founder-only security: security question + hashed answer for recovery
+  securityQuestion    String?
+  securityAnswerHash  String?
+  // TOTP 2FA
+  twoFactorSecret     String?
+  twoFactorEnabled    Boolean  @default(false)
+  twoFactorEnrolledAt DateTime?
+  twoFactorBackupCodesHash String?
   failedLoginAttempts Int      @default(0)
   lockedUntil         DateTime?
+  lastLoginAt         DateTime?
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
   deletedAt           DateTime?
@@ -212,6 +221,19 @@ model User {
   @@index([familyId])
   @@index([email])
   @@index([deletedAt])
+  @@index([role])
+}
+
+// ---- System Settings (singleton) -----------------------------------------
+// superAdminUserId is AUTHORITATIVE. superAdminEmail is metadata only.
+model SystemSettings {
+  id                String   @id @default("singleton")
+  isInitialized     Boolean  @default(false)
+  superAdminUserId  String?
+  superAdminEmail   String?
+  setupCompletedAt  DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 }
 
 model Session {
@@ -249,13 +271,14 @@ model AuditLog {
   id         String   @id @default(cuid())
   userId     String?
   familyId   String?
-  action     String   // LOGIN | LOGOUT | CREATE | UPDATE | DELETE | TOKEN_AWARD | etc.
+  action     String
   entityType String
   entityId   String
   before     String?  // JSON
   after      String?  // JSON
   ipAddress  String?
   userAgent  String?
+  success    Boolean  @default(true)
   createdAt  DateTime @default(now())
 
   user       User?    @relation(fields: [userId], references: [id])
