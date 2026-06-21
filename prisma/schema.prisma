@@ -517,3 +517,28 @@ model SavingStreak {
   @@unique([childId])
   @@index([childId])
 }
+
+// ---- Rate Limiting (DB-backed, survives restarts) ------------------------
+model RateLimitEntry {
+  id        String   @id @default(cuid())
+  key       String   // e.g. "login:ip:127.0.0.1"
+  count     Int      @default(1)
+  resetAt   DateTime
+  createdAt DateTime @default(now())
+
+  @@unique([key])
+  @@index([resetAt])
+}
+
+// ---- 2FA Challenges (DB-backed, auto-expiring) ---------------------------
+model TwoFactorChallenge {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  consumed  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([expiresAt])
+}

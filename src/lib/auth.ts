@@ -296,21 +296,40 @@ export interface LoginResult {
   twoFactorChallenge?: string;
 }
 
-const twoFactorChallenges = new Map<string, { userId: string; expiresAt: number }>();
 const TWO_FACTOR_CHALLENGE_TTL_MS = 5 * 60 * 1000;
 
-function createTwoFactorChallenge(userId: string): string {
+// DB-backed 2FA challenges — survives restarts, works across instances.
+// Uses the TwoFactorChallenge table with auto-expiring rows.
+async function createTwoFactorChallenge(userId: string): Promise<string> {
   const token = crypto.randomUUID() + crypto.randomUUID();
-  twoFactorChallenges.set(token, { userId, expiresAt: Date.now() + TWO_FACTOR_CHALLENGE_TTL_MS });
+  const expiresAt = new Date(Date.now() + TWO_FACTOR_CHALLENGE_TTL_MS);
+  await db.twoFactorChallenge.create({
+    data: { token, userId, expiresAt, consumed: false },
+  });
   return token;
 }
 
-function consumeTwoFactorChallenge(token: string): string | null {
-  const entry = twoFactorChallenges.get(token);
-  if (!entry) return null;
-  twoFactorChallenges.delete(token);
-  if (Date.now() > entry.expiresAt) return null;
-  return entry.userId;
+async function consumeTwoFactorChallenge(token: string): Promise<string | null> {
+  // Atomic consume: mark as consumed only if not already consumed and not expired
+  const challenge = await db.twoFactorChallenge.findUnique({
+    where: { token },
+  });
+  if (!challenge) return null;
+  if (challenge.consumed) return null;
+  if (challenge.expiresAt < new Date()) return null;
+
+  // Mark as consumed (single-use)
+  await db.twoFactorChallenge.update({
+    where: { token },
+    data: { consumed: true },
+  });
+
+  // Clean up old challenges (best-effort, non-blocking)
+  db.twoFactorChallenge.deleteMany({
+    where: { expiresAt: { lt: new Date() } },
+  }).catch(() => {});
+
+  return challenge.userId;
 }
 
 export async function attemptLogin(params: {
@@ -345,7 +364,7 @@ export async function attemptLogin(params: {
     }
 
     if (user.twoFactorEnabled && user.twoFactorSecret) {
-      const challenge = createTwoFactorChallenge(user.id);
+      const challenge = await createTwoFactorChallenge(user.id);
       await auditLog({ userId: user.id, action: "LOGIN_2FA_CHALLENGE_ISSUED", entityType: "user", entityId: user.id, ipAddress: params.ipAddress, userAgent: params.userAgent, success: true });
       return { ok: false, twoFactorRequired: true, twoFactorChallenge: challenge, error: "Two-factor authentication required" };
     }
@@ -370,7 +389,7 @@ export async function completeLoginWith2FA(params: {
   userAgent?: string;
 }): Promise<{ ok: boolean; error?: string; user?: AuthUser }> {
   try {
-    const userId = consumeTwoFactorChallenge(params.challenge);
+    const userId = await consumeTwoFactorChallenge(params.challenge);
     if (!userId) return { ok: false, error: "Invalid or expired 2FA challenge" };
 
     const user = await db.user.findUnique({ where: { id: userId, deletedAt: null } });

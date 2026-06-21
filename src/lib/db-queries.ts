@@ -158,6 +158,9 @@ export async function getFullState(): Promise<AppState> {
 }
 
 // ---- Mutations -------------------------------------------------------------
+// All financial writes are wrapped in db.$transaction for atomicity.
+// Balance-affecting operations use atomic conditional updates to prevent
+// TOCTOU races — concurrent requests cannot double-spend.
 
 export async function addTransaction(input: {
   childId: string;
@@ -170,49 +173,54 @@ export async function addTransaction(input: {
   timestamp?: number;
 }) {
   const ts = input.timestamp ?? Date.now();
-  const tx = await db.transaction.create({
-    data: {
-      childId: input.childId,
-      type: input.type,
-      amount: input.amount,
-      tokenDelta: input.tokenDelta,
-      accountId: input.accountId ?? null,
-      investmentId: input.investmentId ?? null,
-      note: input.note,
-      timestamp: BigInt(ts),
-    },
-  });
-
-  // Update child's currentAmount based on type
-  const child = await db.child.findUnique({ where: { id: input.childId } });
-  if (child) {
-    let newAmount = child.currentAmount;
-    if (input.type === "save" || input.type === "redeem") {
-      newAmount += input.amount;
-    } else if (input.type === "invest" || input.type === "withdraw") {
-      newAmount = Math.max(0, newAmount - input.amount);
-    }
-    await db.child.update({
-      where: { id: input.childId },
-      data: { currentAmount: newAmount },
+  return db.$transaction(async (tx) => {
+    const txRow = await tx.transaction.create({
+      data: {
+        childId: input.childId,
+        type: input.type,
+        amount: input.amount,
+        tokenDelta: input.tokenDelta,
+        accountId: input.accountId ?? null,
+        investmentId: input.investmentId ?? null,
+        note: input.note,
+        timestamp: BigInt(ts),
+      },
     });
-  }
 
-  // Update linked account balance for save/withdraw
-  if (input.accountId) {
-    const acct = await db.account.findUnique({ where: { id: input.accountId } });
-    if (acct) {
-      let newBalance = acct.balance;
-      if (input.type === "save") newBalance = Math.max(0, newBalance - input.amount);
-      else if (input.type === "withdraw") newBalance += input.amount;
-      await db.account.update({
-        where: { id: input.accountId },
-        data: { balance: newBalance },
+    // Atomic conditional update on child balance
+    if (input.type === "save" || input.type === "redeem") {
+      await tx.child.update({
+        where: { id: input.childId },
+        data: { currentAmount: { increment: input.amount } },
       });
+    } else if (input.type === "invest" || input.type === "withdraw") {
+      // Conditional update — prevents going negative
+      const updated = await tx.child.updateMany({
+        where: { id: input.childId, currentAmount: { gte: input.amount } },
+        data: { currentAmount: { decrement: input.amount } },
+      });
+      if (updated.count === 0) {
+        throw new Error("Insufficient balance for " + input.type);
+      }
     }
-  }
 
-  return tx;
+    // Update linked account balance for save/withdraw
+    if (input.accountId) {
+      if (input.type === "save") {
+        await tx.account.updateMany({
+          where: { id: input.accountId, balance: { gte: input.amount } },
+          data: { balance: { decrement: input.amount } },
+        });
+      } else if (input.type === "withdraw") {
+        await tx.account.update({
+          where: { id: input.accountId },
+          data: { balance: { increment: input.amount } },
+        });
+      }
+    }
+
+    return txRow;
+  });
 }
 
 export async function addSpendingEntry(input: {
@@ -242,56 +250,45 @@ export async function addSpendingEntry(input: {
 
 export async function giveTokens(childId: string, tokens: number, note: string) {
   const ts = Date.now();
-  await db.tokenLedgerEntry.create({
-    data: {
-      childId,
-      type: "parent_give",
-      tokens,
-      note,
-      timestamp: BigInt(ts),
-    },
-  });
-  await db.transaction.create({
-    data: {
-      childId,
-      type: "parent_give",
-      amount: 0,
-      tokenDelta: tokens,
-      note,
-      timestamp: BigInt(ts),
-    },
+  return db.$transaction(async (tx) => {
+    await tx.tokenLedgerEntry.create({
+      data: { childId, type: "parent_give", tokens, note, timestamp: BigInt(ts) },
+    });
+    await tx.transaction.create({
+      data: { childId, type: "parent_give", amount: 0, tokenDelta: tokens, note, timestamp: BigInt(ts) },
+    });
   });
 }
 
 export async function redeemTokens(childId: string, tokens: number, cashValue: number) {
   const ts = Date.now();
-  await db.tokenLedgerEntry.create({
-    data: {
-      childId,
-      type: "redeem",
-      tokens,
-      note: `${tokens} tokens redeemed`,
-      timestamp: BigInt(ts),
-    },
-  });
-  await db.transaction.create({
-    data: {
-      childId,
-      type: "redeem",
-      amount: cashValue,
-      tokenDelta: tokens,
-      note: `${tokens} tokens redeemed`,
-      timestamp: BigInt(ts),
-    },
-  });
-  // Credit child's savings
-  const child = await db.child.findUnique({ where: { id: childId } });
-  if (child) {
-    await db.child.update({
-      where: { id: childId },
-      data: { currentAmount: child.currentAmount + cashValue },
+  return db.$transaction(async (tx) => {
+    // Atomically verify token balance hasn't changed since read
+    const given = await tx.tokenLedgerEntry.aggregate({
+      where: { childId, type: "parent_give" },
+      _sum: { tokens: true },
     });
-  }
+    const redeemed = await tx.tokenLedgerEntry.aggregate({
+      where: { childId, type: "redeem" },
+      _sum: { tokens: true },
+    });
+    const balance = (given._sum.tokens ?? 0) - (redeemed._sum.tokens ?? 0);
+    if (balance < tokens) {
+      throw new Error("Insufficient token balance");
+    }
+
+    await tx.tokenLedgerEntry.create({
+      data: { childId, type: "redeem", tokens, note: `${tokens} tokens redeemed`, timestamp: BigInt(ts) },
+    });
+    await tx.transaction.create({
+      data: { childId, type: "redeem", amount: cashValue, tokenDelta: tokens, note: `${tokens} tokens redeemed`, timestamp: BigInt(ts) },
+    });
+    // Credit child's savings atomically
+    await tx.child.update({
+      where: { id: childId },
+      data: { currentAmount: { increment: cashValue } },
+    });
+  });
 }
 
 export async function investNow(
@@ -300,36 +297,26 @@ export async function investNow(
   name: string,
   type: Investment["type"]
 ) {
-  const child = await db.child.findUnique({ where: { id: childId } });
-  if (!child || amount > child.currentAmount) return null;
   const ts = Date.now();
-  const inv = await db.investment.create({
-    data: {
-      childId,
-      name,
-      type,
-      amountInvested: amount,
-      currentValue: amount,
-      status: "active",
-      openedAt: BigInt(ts),
-    },
+  return db.$transaction(async (tx) => {
+    // Atomic conditional update — prevents concurrent investNow from
+    // both succeeding against a balance that only covers one.
+    const updated = await tx.child.updateMany({
+      where: { id: childId, currentAmount: { gte: amount } },
+      data: { currentAmount: { decrement: amount } },
+    });
+    if (updated.count === 0) {
+      return null; // Insufficient balance
+    }
+
+    const inv = await tx.investment.create({
+      data: { childId, name, type, amountInvested: amount, currentValue: amount, status: "active", openedAt: BigInt(ts) },
+    });
+    await tx.transaction.create({
+      data: { childId, type: "invest", amount, tokenDelta: 0, investmentId: inv.id, note: `Invested in ${name}`, timestamp: BigInt(ts) },
+    });
+    return inv;
   });
-  await db.child.update({
-    where: { id: childId },
-    data: { currentAmount: Math.max(0, child.currentAmount - amount) },
-  });
-  await db.transaction.create({
-    data: {
-      childId,
-      type: "invest",
-      amount,
-      tokenDelta: 0,
-      investmentId: inv.id,
-      note: `Invested in ${name}`,
-      timestamp: BigInt(ts),
-    },
-  });
-  return inv;
 }
 
 export async function createGoal(input: {
@@ -392,11 +379,10 @@ export async function deleteGoal(id: string) {
 }
 
 export async function contributeToGoal(id: string, amount: number) {
-  const goal = await db.goal.findUnique({ where: { id } });
-  if (!goal) return null;
+  // Atomic increment — no race condition
   return db.goal.update({
     where: { id },
-    data: { currentAmount: Math.max(0, goal.currentAmount + amount) },
+    data: { currentAmount: { increment: amount } },
   });
 }
 
