@@ -74,6 +74,7 @@ import {
   setChildName as persistSetChildName,
 } from "@/lib/mutations";
 import { useHydratedState } from "@/lib/store-hydration";
+import { RecommendationsPanel } from "@/components/recommendations-panel";
 import {
   SavingsTrendChart,
   DistributionDonut,
@@ -453,6 +454,11 @@ function OverviewTab({
         <DistributionDonut childList={children} />
         <CashFlowBars />
         <GoalRadials childList={children} />
+      </div>
+
+      {/* Smart recommendations for the parent */}
+      <div className="mb-6">
+        <RecommendationsPanel familyId="singleton" variant="parent" />
       </div>
 
       {/* Main grid: children table + activity feed */}

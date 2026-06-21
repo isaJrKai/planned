@@ -622,3 +622,139 @@ Stage Summary:
 - All mutations persist to DB. All reads hydrate from DB on mount.
 - Optimistic updates preserved for instant UI feedback.
 - The app is no longer a "mock data" MVP — it's a real persisted application.
+
+---
+Task ID: domain-engines
+Agent: main (Super Z)
+Task: Build BOTH prompts into the actual app — production infrastructure layer (Prompt 1) AND business domain layer (Prompt 2). User said "BUILD THEM ALL" and went to sleep.
+
+Work Log:
+
+PROMPT 1 — PRODUCTION INFRASTRUCTURE:
+
+1. PRISMA SCHEMA EXTENDED (prisma/schema.prisma):
+   Added 15 new models with UUIDs, timestamps, soft deletes, indexes:
+   - User (email, passwordHash, role, familyId, childId, failedLoginAttempts, lockedUntil)
+   - Session (sessionToken, userId, expires, ipAddress, userAgent)
+   - PasswordResetToken (userId, token, expires, usedAt)
+   - AuditLog (userId, familyId, action, entityType, entityId, before, after, ipAddress)
+   - Notification (userId, channel, status, title, body, metadata)
+   - FileUpload (familyId, uploaderId, filename, mimeType, size, storageKey, storageUrl)
+   - Device (userId, name, userAgent, lastSeenAt)
+   - PushSubscription (userId, endpoint, keys)
+   - EmailLog (to, subject, template, status, providerId, error)
+   - Extended FamilySettings with currency, notification prefs, monthlyReportDay
+
+2. LIB UTILITIES:
+   - lib/currency.ts: multi-currency service (UGX, USD, KES, TZS, RWF) with formatCurrency, formatCurrencyPlain, getCurrencySymbol
+   - lib/logger.ts: structured logging (debug/info/warn/error) with JSON format for production, pretty print for dev
+   - lib/errors.ts: typed error classes (AppError, ValidationError, AuthorizationError, AuthenticationError, NotFoundError, ConcurrencyError, RateLimitError, BusinessRuleError)
+   - lib/rate-limit.ts: in-memory sliding window rate limiter (Redis-ready)
+
+3. PERMISSIONS LAYER (server/permissions/):
+   - roles.ts: ADMIN, PARENT, CHILD role definitions
+   - permissions.ts: 30+ permissions (FAMILY_VIEW, CHILD_CREATE, TRANSACTION_CREATE, GOAL_CONTRIBUTE, TOKEN_AWARD, etc.) with ROLE_PERMISSIONS matrix
+   - guards.ts: requireAuth(), requirePermission(), requireFamilyAccess(), requireChildAccess(), filterGoalsByViewer() + AuthUser interface + getCurrentUser() (mock for MVP, ready for NextAuth)
+
+4. DOMAIN EVENTS (server/domain/events.ts):
+   Full event catalog with 30+ domain event types:
+   FamilyCreated, FamilyThemeChanged, ChildCreated, SavingsDeposited, SavingsWithdrawn,
+   SavingsStreakExtended, SavingsStreakBroken, SavingsMilestone, SpendingLogged,
+   SpendingBudgetExceeded, GoalCreated, GoalUpdated, GoalContributed, GoalCompleted,
+   GoalArchived, GoalPeriodReset, InvestmentAdded, InvestmentUpdated, InvestmentClosed,
+   TokenAwarded, TokenRedeemed, LessonStarted, LessonCompleted, QuizPassed, QuizFailed,
+   BadgeEarned, StreakMilestone
+   + EventBus (subscribe/publish) for pub/sub
+
+5. TOKEN SERVICE (server/services/token.service.ts):
+   BLACK-BOX INTERFACE — TokenService with award(), redeem(), getBalance(),
+   calculatePurchaseCost(), calculateRedeemValue(). Implementation delegates to
+   existing TOKEN_BUY_RATE/TOKEN_REDEEM_RATE constants. Never exposes internal
+   calculations.
+
+PROMPT 2 — BUSINESS DOMAIN:
+
+6. ACHIEVEMENT ENGINE (server/services/achievement.service.ts):
+   - 10 seeded achievements: First Steps, Consistent Saver (7-day streak), Unbreakable
+     (30-day streak), Goal Achieved, Goal Master (3 goals), Curious Mind (1 lesson),
+     Financial Scholar (5 lessons), Budget Keeper, Token Redeemer, First Investor
+   - AchievementService.evaluate() checks all requirements + awards badges
+   - Streak tracking: getStreak(), updateStreak() with 48h grace period
+   - Categories: savings, spending, goals, tokens, education, streaks
+   - Tiers: bronze, silver, gold, platinum with color-coded badges
+   - Design: motivates healthy habits, NO gambling psychology, NO loot boxes
+
+7. EDUCATION ENGINE (server/services/education.service.ts):
+   - 6 full financial literacy lessons with content + quizzes:
+     1. What Is Saving? (beginner, ages 7-12, 8 min, 3 quiz questions)
+     2. Needs vs Wants (beginner, ages 7-14, 7 min, 2 quiz questions)
+     3. The Power of Compound Growth (intermediate, ages 10-18, 10 min, 3 quiz questions)
+     4. Making a Budget (beginner, ages 8-16, 9 min, 3 quiz questions)
+     5. Understanding Risk (intermediate, ages 11-18, 8 min, 3 quiz questions)
+     6. Delayed Gratification (beginner, ages 7-16, 7 min, 3 quiz questions)
+   - Each lesson has: slug, title, description, subject, difficulty, age range,
+     estimated time, markdown content, quiz with explanations
+   - Progress tracking: NOT_STARTED → IN_PROGRESS → COMPLETED
+   - Quiz scoring: 60% to pass, explanations shown after
+   - Triggers achievement evaluation on lesson completion
+
+8. RECOMMENDATION ENGINE (server/services/recommendation.service.ts):
+   - Rule-based suggestions for parents AND children
+   - Parent rules: no goals yet, child close to goal, child hasn't saved this month,
+     suggest education, suggest awarding tokens
+   - Child rules: close to goal, no goals yet, saving streak, spent less this month,
+     suggest next lesson
+   - Fallback recommendations ensure panel always shows something useful
+   - Design principles: educate, encourage, NEVER shame, NEVER manipulate,
+     never compare children, never use urgency tactics
+
+9. API ENDPOINTS:
+   - GET /api/lessons — list lessons with progress (raw SQL fallback for Prisma compat)
+   - GET /api/lessons/[slug] — single lesson
+   - POST /api/lessons/complete — submit quiz answers, mark complete, trigger achievements
+   - GET /api/achievements — list all achievements + earned + streak + total points
+   - GET /api/recommendations — smart suggestions for parent or child
+
+10. UI COMPONENTS:
+    - LearnTab (src/components/learn-tab.tsx): lesson list with progress summary,
+      lesson modal with content viewer + quiz + result screen
+    - AchievementsPanel (src/components/achievements-panel.tsx): streak counter,
+      total points, earned badges with tier colors, locked badges
+    - RecommendationsPanel (src/components/recommendations-panel.tsx): smart
+      suggestions with icons, action labels, priority sorting
+
+11. WIRED INTO DASHBOARDS:
+    - Child dashboard: added "Learn" tab + "Badges" tab (now 6 tabs total)
+    - Child overview: added RecommendationsPanel at bottom
+    - Parent overview: added RecommendationsPanel between charts and children table
+
+VERIFICATION:
+- ESLint clean (0 errors, 0 warnings)
+- No console errors, no page errors
+- Parent overview shows recommendations panel ✓
+- Child Learn tab shows all 6 lessons ✓
+- Child Badges tab shows all 10 achievements (locked) ✓
+- Child overview shows recommendations panel ✓
+- 3 screenshots: 16-parent-recommendations, 17-child-learn, 18-child-badges
+
+TECHNICAL NOTES:
+- Prisma client cache issue: the running dev server's Prisma client didn't have the
+  new models (Lesson, Achievement, etc.). Fixed by: (1) adding SCHEMA_VERSION
+  cache-busting in db.ts, (2) using raw SQL ($queryRaw) as fallback in API routes
+  when the typed Prisma accessor is unavailable. This ensures the app works even
+  before a full server restart.
+- All new tables were seeded via scripts/seed-domain.ts (10 achievements + 6 lessons
+  + default parent user)
+- The domain events catalog + EventBus are ready for wiring to subscribers
+  (AchievementService, NotificationService, AuditService) — currently the
+  AchievementService.evaluate() is called directly after lesson completion
+
+Stage Summary:
+- Both prompts built into the actual app. Not documents — real, running code.
+- 15 new Prisma models, 4 lib utilities, 3 permissions files, domain events catalog,
+  TokenService (black-box), AchievementService (10 badges + streaks),
+  EducationService (6 lessons + quizzes), RecommendationService (rule-based),
+  5 API endpoints, 3 new UI components, 2 new child dashboard tabs.
+- The app now has a Learn tab with interactive financial literacy lessons,
+  a Badges tab with achievement tracking, and smart recommendations on both
+  parent and child dashboards.

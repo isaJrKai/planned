@@ -44,9 +44,12 @@ import {
 } from "./modals";
 import { FamilyThemeFooter } from "./family-theme-footer";
 import { Avatar } from "./avatar";
+import { LearnTab } from "./learn-tab";
+import { AchievementsPanel } from "./achievements-panel";
+import { RecommendationsPanel } from "./recommendations-panel";
 import type { Investment } from "@/lib/types";
 
-type Tab = "overview" | "spending" | "worksheet" | "investments";
+type Tab = "overview" | "spending" | "worksheet" | "investments" | "learn" | "achievements";
 
 export function ChildDashboard({
   child,
@@ -64,6 +67,8 @@ export function ChildDashboard({
     { id: "spending", label: "Spending" },
     { id: "worksheet", label: "Worksheet" },
     { id: "investments", label: "Investments" },
+    { id: "learn", label: "Learn" },
+    { id: "achievements", label: "Badges" },
   ];
 
   return (
@@ -160,6 +165,8 @@ export function ChildDashboard({
         {tab === "investments" && (
           <InvestmentsTab child={child} onSelect={setDetailInvestment} />
         )}
+        {tab === "learn" && <LearnTab child={child} />}
+        {tab === "achievements" && <AchievementsPanel child={child} />}
       </main>
 
       {/* Family theme footer — annual theme + monthly quote from parent */}
@@ -380,6 +387,9 @@ function OverviewTab({
           })}
         </div>
       </div>
+
+      {/* Smart recommendations — educational, encouraging, never shaming */}
+      <RecommendationsPanel childId={child.id} />
     </div>
   );
 }
