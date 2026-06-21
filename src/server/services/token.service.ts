@@ -83,7 +83,7 @@ export const TokenServiceImpl: TokenService = {
         tokens: input.tokens,
         note: input.note,
         timestamp: BigInt(ts),
-      },
+      } as any,
     });
     const tx = await db.transaction.create({
       data: {
@@ -94,7 +94,7 @@ export const TokenServiceImpl: TokenService = {
         tokenDelta: input.tokens,
         note: input.note,
         timestamp: BigInt(ts),
-      },
+      } as any,
     });
     return {
       transactionId: tx.id,
@@ -120,7 +120,7 @@ export const TokenServiceImpl: TokenService = {
         tokens: input.tokens,
         note: `${input.tokens} tokens redeemed`,
         timestamp: BigInt(ts),
-      },
+      } as any,
     });
     const tx = await db.transaction.create({
       data: {
@@ -131,7 +131,7 @@ export const TokenServiceImpl: TokenService = {
         tokenDelta: input.tokens,
         note: `${input.tokens} tokens redeemed`,
         timestamp: BigInt(ts),
-      },
+      } as any,
     });
 
     // Credit child savings

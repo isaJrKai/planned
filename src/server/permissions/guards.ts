@@ -77,9 +77,9 @@ export async function requireChildAccess(childId: string): Promise<AuthUser> {
   if (user.role === "PARENT") {
     const child = await db.child.findUnique({
       where: { id: childId },
-      select: { familyId: true },
+      select: { familyId: true } as any,
     });
-    if (!child || child.familyId !== user.familyId) {
+    if (!child || (child as any).familyId !== user.familyId) {
       throw new AuthorizationError("Child not found in your family");
     }
     return user;

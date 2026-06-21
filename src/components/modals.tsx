@@ -390,7 +390,7 @@ export function AddSpendingModal({
   // Resolve the effective owner — prefer `owner`, fall back to `child`.
   const effectiveOwner: SpendingOwner = owner ?? (child
     ? { id: child.id, kind: "child", name: child.name }
-    : { id: "parent-mum", kind: "parent", name: "Mama" });
+    : { id: "", kind: "parent", name: "" });
 
   const [category, setCategory] = useState(categories[0]?.name ?? "");
   const [amount, setAmount] = useState("");

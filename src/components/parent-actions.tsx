@@ -224,7 +224,7 @@ export function SearchOverlay({
               <Search className="h-6 w-6 mx-auto mb-3 opacity-40" />
               Start typing to search across the whole family ledger.
               <div className="mt-4 flex flex-wrap gap-2 justify-center">
-                {["Zara", "Emergency", "Coffee", "save", "Snacks"].map((s) => (
+                {["Save", "Goal", "Tokens", "Invest", "Spending"].map((s) => (
                   <button
                     key={s}
                     onClick={() => setQuery(s)}

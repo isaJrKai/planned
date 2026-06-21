@@ -42,23 +42,44 @@ function formatMessage(level: LogLevel, msg: string, context?: LogContext): stri
 }
 
 export const logger = {
-  debug(msg: string, context?: LogContext) {
-    if (shouldLog("debug")) console.debug(formatMessage("debug", msg, context));
+  // Accept either (msg) | (msg, ctx) | (ctx, msg) for call-site flexibility
+  debug(a: string | LogContext, b?: string | LogContext) {
+    if (shouldLog("debug")) {
+      const [msg, ctx] = resolveArgs(a, b);
+      console.debug(formatMessage("debug", msg, ctx));
+    }
   },
 
-  info(msg: string, context?: LogContext) {
-    if (shouldLog("info")) console.info(formatMessage("info", msg, context));
+  info(a: string | LogContext, b?: string | LogContext) {
+    if (shouldLog("info")) {
+      const [msg, ctx] = resolveArgs(a, b);
+      console.info(formatMessage("info", msg, ctx));
+    }
   },
 
-  warn(msg: string, context?: LogContext) {
-    if (shouldLog("warn")) console.warn(formatMessage("warn", msg, context));
+  warn(a: string | LogContext, b?: string | LogContext) {
+    if (shouldLog("warn")) {
+      const [msg, ctx] = resolveArgs(a, b);
+      console.warn(formatMessage("warn", msg, ctx));
+    }
   },
 
-  error(msg: string, context?: LogContext) {
-    if (shouldLog("error")) console.error(formatMessage("error", msg, context));
-    // In production, also send to Sentry
+  error(a: string | LogContext, b?: string | LogContext) {
+    if (shouldLog("error")) {
+      const [msg, ctx] = resolveArgs(a, b);
+      console.error(formatMessage("error", msg, ctx));
+    }
     if (process.env.SENTRY_DSN && process.env.NODE_ENV === "production") {
       // Sentry capture would go here
     }
   },
 };
+
+function resolveArgs(a: unknown, b: unknown): [string, LogContext | undefined] {
+  if (typeof a === "string") return [a, typeof b === "object" && b !== null ? (b as LogContext) : undefined];
+  if (typeof a === "object" && a !== null) {
+    const ctx = a as LogContext;
+    return [typeof b === "string" ? b : (ctx.msg as string) ?? "", ctx];
+  }
+  return [String(a ?? ""), undefined];
+}

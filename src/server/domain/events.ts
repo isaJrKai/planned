@@ -33,7 +33,7 @@ export type DomainEvent =
   | { type: "SpendingBudgetExceeded"; familyId: string; ownerId: string; category: string; spent: number; budget: number }
 
   // Goal events
-  | { type: "GoalCreated"; familyId: string; goalId: string; ownerId: string; title: string; targetAmount: number; type: string; cadence: string; visibility: string }
+  | { type: "GoalCreated"; familyId: string; goalId: string; ownerId: string; title: string; targetAmount: number; goalType: string; cadence: string; visibility: string }
   | { type: "GoalUpdated"; familyId: string; goalId: string; changes: Record<string, any> }
   | { type: "GoalContributed"; familyId: string; goalId: string; contributorId: string; amount: number; newTotal: number; targetAmount: number }
   | { type: "GoalCompleted"; familyId: string; goalId: string; ownerId: string; title: string; finalAmount: number }
@@ -41,7 +41,7 @@ export type DomainEvent =
   | { type: "GoalPeriodReset"; familyId: string; goalId: string; cadence: string; newPeriodStart: number }
 
   // Investment events
-  | { type: "InvestmentAdded"; familyId: string; childId: string; investmentId: string; name: string; type: string; amount: number }
+  | { type: "InvestmentAdded"; familyId: string; childId: string; investmentId: string; name: string; investmentType: string; amount: number }
   | { type: "InvestmentUpdated"; familyId: string; investmentId: string; newValue: number; oldValue: number }
   | { type: "InvestmentClosed"; familyId: string; investmentId: string; finalValue: number }
 

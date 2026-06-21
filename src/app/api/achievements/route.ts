@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Get streak
-    let streak = null;
+    let streak: any = null;
     if (childId) {
       try {
         streak = await db.savingStreak.findUnique({ where: { childId } });

@@ -16,7 +16,7 @@ import { logger } from "@/lib/logger";
 
 export interface Recommendation {
   id?: string;
-  type: "savings" | "spending" | "goals" | "education" | "investment" | "general";
+  type: "savings" | "spending" | "goals" | "education" | "investment" | "tokens" | "general";
   priority: number;  // 1 (highest) to 10 (lowest)
   title: string;
   body: string;
