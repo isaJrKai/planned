@@ -26,7 +26,8 @@ export function LoginForm({ nextPath, style }: LoginFormProps) {
       const data = await res.json();
       if (data.twoFactorRequired && data.twoFactorChallenge) { setTwoFactorChallenge(data.twoFactorChallenge); setSubmitting(false); return; }
       if (!res.ok || !data.ok) { setError(data.error ?? "Login failed"); setSubmitting(false); return; }
-      window.location.href = nextPath;
+      // Force a full page reload to ensure the session cookie is picked up
+      window.location.assign(nextPath);
     } catch { setError("Network error. Please try again."); setSubmitting(false); }
   }
 
@@ -38,7 +39,7 @@ export function LoginForm({ nextPath, style }: LoginFormProps) {
       const res = await fetch("/api/auth/verify-2fa", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ challenge: twoFactorChallenge, code: totpCode }) });
       const data = await res.json();
       if (!res.ok || !data.ok) { setError(data.error ?? "Invalid 2FA code"); setSubmitting(false); return; }
-      window.location.href = nextPath;
+      window.location.assign(nextPath);
     } catch { setError("Network error. Please try again."); setSubmitting(false); }
   }
 
