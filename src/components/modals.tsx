@@ -392,13 +392,15 @@ export function AddSpendingModal({
     ? { id: child.id, kind: "child", name: child.name }
     : { id: "", kind: "parent", name: "" });
 
-  const [category, setCategory] = useState(categories[0]?.name ?? "");
+  const [category, setCategory] = useState("");
+  const [customCategory, setCustomCategory] = useState("");
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
+  const effectiveCategory = category === "__other__" ? (customCategory.trim() || "Other") : category;
   const amt = Number(amount) || 0;
-  const canSubmit = amt > 0 && category;
+  const canSubmit = amt > 0 && effectiveCategory;
 
   const handleSubmit = () => {
     if (!canSubmit) return;
@@ -406,7 +408,7 @@ export function AddSpendingModal({
       ownerId: effectiveOwner.id,
       ownerKind: effectiveOwner.kind,
       ownerName: effectiveOwner.name,
-      category,
+      category: effectiveCategory,
       amount: amt,
       note: note || "Spending entry",
     });
@@ -449,17 +451,65 @@ export function AddSpendingModal({
       <div className="space-y-5">
         <div>
           <label className="micro-label block mb-2">Category</label>
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className="input-editorial w-full px-4 py-2.5 text-sm"
-          >
-            {categories.map((c) => (
-              <option key={c.id} value={c.name} className="bg-sidebar text-sidebar-foreground">
-                {c.name} · budget {formatUGX(c.budget)}
-              </option>
+          {/* Preset category chips */}
+          <div className="flex flex-wrap gap-2 mb-2">
+            {[
+              "Snacks & Sweets", "Airtime & Data", "School Supplies",
+              "Toys & Games", "Gifts & Giving", "Transport",
+              "Food & Drinks", "Clothes", "Health", "Entertainment",
+            ].map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setCategory(cat)}
+                className={`px-3 py-1.5 rounded text-[10px] tracking-wider transition-all ${
+                  category === cat
+                    ? "btn-gold"
+                    : "btn-ghost"
+                }`}
+              >
+                {cat}
+              </button>
             ))}
-          </select>
+            {/* Show DB-seeded categories that aren't in the preset */}
+            {categories.filter(c => !["Snacks & Sweets", "Airtime & Data", "School Supplies", "Toys & Games", "Gifts & Giving", "Transport"].includes(c.name)).map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => setCategory(c.name)}
+                className={`px-3 py-1.5 rounded text-[10px] tracking-wider transition-all ${
+                  category === c.name ? "btn-gold" : "btn-ghost"
+                }`}
+              >
+                {c.name}
+              </button>
+            ))}
+            {/* Other option */}
+            <button
+              type="button"
+              onClick={() => setCategory("__other__")}
+              className={`px-3 py-1.5 rounded text-[10px] tracking-wider transition-all ${
+                category === "__other__" ? "btn-gold" : "btn-ghost"
+              }`}
+            >
+              + Other
+            </button>
+          </div>
+          {/* Custom category input when "Other" is selected */}
+          {category === "__other__" && (
+            <input
+              type="text"
+              value={customCategory}
+              onChange={(e) => setCustomCategory(e.target.value)}
+              placeholder="Type your own category..."
+              autoFocus
+              className="input-editorial w-full px-4 py-2.5 text-sm"
+            />
+          )}
+          {/* Show selected category */}
+          {category && category !== "__other__" && (
+            <div className="text-[10px] text-foreground/40 mt-1">Selected: {category}</div>
+          )}
         </div>
 
         <div>
