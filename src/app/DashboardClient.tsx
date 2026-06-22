@@ -73,7 +73,7 @@ import {
   setChildPhoto as persistSetChildPhoto,
   setChildName as persistSetChildName,
 } from "@/lib/mutations";
-import { useHydratedState } from "@/lib/store-hydration";
+import { useHydratedState, persistMutation } from "@/lib/store-hydration";
 import { RecommendationsPanel } from "@/components/recommendations-panel";
 import {
   SavingsTrendChart,
