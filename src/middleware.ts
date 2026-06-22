@@ -6,7 +6,7 @@
 // ============================================================================
 
 import { NextResponse, type NextRequest } from "next/server";
-import { getSessionFromCookieHeader } from "@/lib/auth";
+import { getSessionFromCookieHeader } from "@/lib/auth-edge";
 
 const PUBLIC_API_ROUTES = new Set([
   "/api/auth/setup",
