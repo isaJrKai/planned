@@ -21,6 +21,8 @@ import {
   setParentName,
   setChildPhoto,
   setChildName,
+  createChild,
+  createParent,
   getFullState,
 } from "@/lib/db-queries";
 
@@ -73,6 +75,12 @@ export async function POST(req: NextRequest) {
         break;
       case "setChildName":
         await setChildName(payload.childId, payload.name);
+        break;
+      case "createChild":
+        await createChild(payload);
+        break;
+      case "createParent":
+        await createParent(payload);
         break;
       default:
         return NextResponse.json(

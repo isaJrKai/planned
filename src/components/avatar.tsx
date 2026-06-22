@@ -20,6 +20,7 @@ interface AvatarProps {
   onUpload?: (dataUrl: string) => void;
   onRemove?: () => void;
   className?: string;
+  onClick?: () => void;
 }
 
 export function Avatar({
@@ -31,6 +32,7 @@ export function Avatar({
   onUpload,
   onRemove,
   className = "",
+  onClick,
 }: AvatarProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -58,6 +60,7 @@ export function Avatar({
         width: size,
         height: size,
       }}
+      onClick={onClick}
     >
       {/* Photo or initials */}
       <div

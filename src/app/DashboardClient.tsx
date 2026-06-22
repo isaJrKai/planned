@@ -259,7 +259,8 @@ export default function DashboardClient({ isAdmin = false, userEmail }: Dashboar
                 color={parents[0]?.avatarColor ?? "#C9A84C"}
                 photo={parents[0]?.avatarPhoto}
                 size={36}
-                className="ml-1"
+                className="ml-1 cursor-pointer"
+                onClick={() => setTab("settings")}
               />
             </div>
           </div>
@@ -728,11 +729,82 @@ function ChildrenTab({
   onGiveTokens: (c: Child) => void;
 }) {
   const children = childList;
+  const [showAddChild, setShowAddChild] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newAge, setNewAge] = useState("");
+  const [newGoalName, setNewGoalName] = useState("");
+  const [newGoalAmount, setNewGoalAmount] = useState("");
+  const [adding, setAdding] = useState(false);
+
+  async function handleAddChild() {
+    if (!newName.trim() || !newAge) return;
+    setAdding(true);
+    try {
+      await persistMutation("createChild", {
+        name: newName,
+        age: parseInt(newAge),
+        goalName: newGoalName || "Savings Goal",
+        goalAmount: parseInt(newGoalAmount) || 100000,
+      });
+      setNewName(""); setNewAge(""); setNewGoalName(""); setNewGoalAmount("");
+      setShowAddChild(false);
+    } catch {
+      // error handled by persistMutation
+    }
+    setAdding(false);
+  }
+
   return (
     <div className="space-y-6 animate-fade-up">
+      {/* Add Child button */}
+      <div className="flex items-center justify-between">
+        <h2 className="font-editorial text-lg text-foreground tracking-wide">
+          {children.length} {children.length === 1 ? "Child" : "Children"}
+        </h2>
+        <button
+          onClick={() => setShowAddChild(!showAddChild)}
+          className="btn-gold px-4 py-2 rounded text-xs tracking-wider flex items-center gap-2"
+        >
+          <Plus className="h-3.5 w-3.5" /> Add Child
+        </button>
+      </div>
+
+      {/* Add Child form */}
+      {showAddChild && (
+        <div className="surface-wood-strong rounded-lg p-6 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[10px] tracking-wider uppercase text-foreground/60 mb-1.5">Child Name</label>
+              <input type="text" value={newName} onChange={(e) => setNewName(e.target.value)} className="input-editorial" placeholder="e.g. Emma" />
+            </div>
+            <div>
+              <label className="block text-[10px] tracking-wider uppercase text-foreground/60 mb-1.5">Age</label>
+              <input type="number" value={newAge} onChange={(e) => setNewAge(e.target.value)} className="input-editorial" placeholder="e.g. 10" min="1" max="18" />
+            </div>
+            <div>
+              <label className="block text-[10px] tracking-wider uppercase text-foreground/60 mb-1.5">Savings Goal Name</label>
+              <input type="text" value={newGoalName} onChange={(e) => setNewGoalName(e.target.value)} className="input-editorial" placeholder="e.g. Bicycle" />
+            </div>
+            <div>
+              <label className="block text-[10px] tracking-wider uppercase text-foreground/60 mb-1.5">Goal Amount (UGX)</label>
+              <input type="number" value={newGoalAmount} onChange={(e) => setNewGoalAmount(e.target.value)} className="input-editorial" placeholder="e.g. 200000" />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={handleAddChild} disabled={adding || !newName.trim() || !newAge} className="btn-gold px-4 py-2 rounded text-xs tracking-wider disabled:opacity-50">
+              {adding ? "Adding..." : "Add Child"}
+            </button>
+            <button onClick={() => setShowAddChild(false)} className="btn-ghost px-4 py-2 rounded text-xs tracking-wider">
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Children grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 stagger">
         {children.map((c) => {
-          const pct = (c.currentAmount / c.goalAmount) * 100;
+          const pct = c.goalAmount > 0 ? (c.currentAmount / c.goalAmount) * 100 : 0;
           return (
             <div
               key={c.id}

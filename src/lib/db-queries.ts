@@ -421,3 +421,44 @@ export async function setChildName(childId: string, name: string) {
     data: { name: name.trim() || undefined },
   });
 }
+
+export async function createChild(input: {
+  name: string;
+  age: number;
+  goalName: string;
+  goalAmount: number;
+  avatarColor?: string;
+}) {
+  const colors = ["#C9A84C", "#6BBF8A", "#D4869A", "#7B9ACC", "#E8A656", "#B084CC"];
+  const avatarColor = input.avatarColor || colors[Math.floor(Math.random() * colors.length)];
+  const id = `child-${Date.now()}`;
+  return db.child.create({
+    data: {
+      id,
+      name: input.name.trim(),
+      age: input.age,
+      avatarColor,
+      currentAmount: 0,
+      goalAmount: input.goalAmount,
+      goalName: input.goalName.trim() || "Savings Goal",
+    },
+  });
+}
+
+export async function createParent(input: {
+  name: string;
+  role: string;
+  avatarColor?: string;
+}) {
+  const colors = ["#D4869A", "#6BBF8A", "#C9A84C", "#7B9ACC"];
+  const avatarColor = input.avatarColor || colors[Math.floor(Math.random() * colors.length)];
+  const id = `parent-${Date.now()}`;
+  return db.parentProfile.create({
+    data: {
+      id,
+      name: input.name.trim(),
+      role: input.role.trim() || "Parent",
+      avatarColor,
+    },
+  });
+}
