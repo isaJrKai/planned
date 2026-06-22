@@ -1240,13 +1240,38 @@ function SettingsTab() {
   const netWorth = totalSavings + totalInvested;
   const parents = useStore((s) => s.parents);
   const children = useStore((s) => s.children);
-  // Profile mutations come from persisted mutations module
+  const [showAddParent, setShowAddParent] = useState(false);
+  const [newParentName, setNewParentName] = useState("");
+  const [newParentRole, setNewParentRole] = useState("");
+  const [addingParent, setAddingParent] = useState(false);
+
+  async function handleAddParent() {
+    if (!newParentName.trim()) return;
+    setAddingParent(true);
+    try {
+      await persistMutation("createParent", {
+        name: newParentName,
+        role: newParentRole || "Parent",
+      });
+      setNewParentName(""); setNewParentRole("");
+      setShowAddParent(false);
+    } catch {}
+    setAddingParent(false);
+  }
 
   return (
     <div className="space-y-6 animate-fade-up max-w-3xl">
       {/* Family profiles — photos + names */}
       <div className="surface-wood rounded-lg p-6">
-        <div className="micro-label-gold mb-1">Family Profiles</div>
+        <div className="flex items-center justify-between mb-1">
+          <div className="micro-label-gold">Family Profiles</div>
+          <button
+            onClick={() => setShowAddParent(!showAddParent)}
+            className="btn-gold px-3 py-1.5 rounded text-[10px] tracking-wider flex items-center gap-1.5"
+          >
+            <Plus className="h-3 w-3" /> Add Parent
+          </button>
+        </div>
         <h2 className="font-editorial text-xl text-foreground tracking-wide mb-2">
           Photos &amp; Names
         </h2>
@@ -1254,6 +1279,31 @@ function SettingsTab() {
           Click an avatar to upload a photo. Photos appear in the sidebar,
           tables, and child dashboards.
         </p>
+
+        {/* Add Parent form */}
+        {showAddParent && (
+          <div className="surface-wood-strong rounded-lg p-4 mb-5 space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[10px] tracking-wider uppercase text-foreground/60 mb-1.5">Parent Name</label>
+                <input type="text" value={newParentName} onChange={(e) => setNewParentName(e.target.value)} className="input-editorial" placeholder="e.g. Sarah" />
+              </div>
+              <div>
+                <label className="block text-[10px] tracking-wider uppercase text-foreground/60 mb-1.5">Role</label>
+                <input type="text" value={newParentRole} onChange={(e) => setNewParentRole(e.target.value)} className="input-editorial" placeholder="e.g. Mother, Father, Guardian" />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={handleAddParent} disabled={addingParent || !newParentName.trim()} className="btn-gold px-4 py-2 rounded text-xs tracking-wider disabled:opacity-50">
+                {addingParent ? "Adding..." : "Add Parent"}
+              </button>
+              <button onClick={() => setShowAddParent(false)} className="btn-ghost px-4 py-2 rounded text-xs tracking-wider">
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="divider-gold mb-5" />
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {parents.map((p) => (
