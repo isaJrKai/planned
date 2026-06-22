@@ -2,8 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Playfair_Display, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
-import { SplashScreen } from "@/components/splash-screen";
-import { ServiceWorkerRegister } from "@/components/sw-register";
 
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"], display: "swap" });
 const playfair = Playfair_Display({ variable: "--font-playfair", subsets: ["latin"], weight: ["400", "500", "600", "700", "800", "900"], style: ["normal", "italic"], display: "swap" });
@@ -65,13 +63,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       </head>
       <body className={`${inter.variable} ${playfair.variable} ${jetbrainsMono.variable} antialiased bg-background text-foreground`}>
         <a href="#main-content" className="skip-link">Skip to content</a>
-        <SplashScreen />
         <div className="ambient-backdrop" aria-hidden />
         <div className="relative z-10">
           {children}
         </div>
         <Toaster />
-        <ServiceWorkerRegister />
         <div className="grain-overlay" aria-hidden />
       </body>
     </html>
