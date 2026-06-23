@@ -545,3 +545,33 @@ model TwoFactorChallenge {
   @@index([token])
   @@index([expiresAt])
 }
+
+
+model ChildProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  childId         String   @unique
+  nickname        String
+  birthDate       DateTime?
+  animalCompanion String?
+  theme           String   @default("nature")
+  grade           String?
+  favoriteColor   String   @default("#C9A84C")
+  unlockLevel     Int      @default(1)
+  dashboardMode   String   @default("explorer")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  @@index([userId])
+  @@index([childId])
+}
+
+model ChildPreferences {
+  id              String   @id @default(cuid())
+  childId         String   @unique
+  lastTab         String   @default("home")
+  lastRoute       String   @default("/child")
+  motionEnabled   Boolean  @default(true)
+  soundEnabled    Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
