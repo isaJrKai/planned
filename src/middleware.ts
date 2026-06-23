@@ -1,9 +1,6 @@
 // ============================================================================
 // MIDDLEWARE — DENY-BY-DEFAULT for /api/*
 // ============================================================================
-// Every /api/* route requires an authenticated session, EXCEPT a small
-// allowlist of public endpoints. Admin routes additionally require SUPER_ADMIN.
-// ============================================================================
 
 import { NextResponse, type NextRequest } from "next/server";
 import { getSessionFromCookieHeader } from "@/lib/auth-edge";
@@ -12,13 +9,15 @@ const PUBLIC_API_ROUTES = new Set([
   "/api/auth/setup",
   "/api/auth/setup-2fa-secret",
   "/api/auth/login",
+  "/api/auth/register",
+  "/api/auth/child-login",
   "/api/auth/verify-2fa",
   "/api/auth/logout",
   "/api/auth/me",
 ]);
 
-const SUPER_ADMIN_API_PREFIXES = ["/api/admin", "/api/system", "/api/feature-flags"];
-const SUPER_ADMIN_BROWSER_PREFIXES = ["/admin", "/system", "/analytics", "/feature-flags", "/security"];
+const FOUNDER_API_PREFIXES = ["/api/admin", "/api/system", "/api/feature-flags"];
+const FOUNDER_BROWSER_PREFIXES = ["/admin", "/system", "/analytics", "/feature-flags", "/security"];
 const AUTH_REQUIRED_BROWSER_PREFIXES = ["/admin", "/system", "/analytics", "/feature-flags", "/security"];
 
 function isApiPath(pathname: string): boolean { return pathname.startsWith("/api/"); }
@@ -31,7 +30,11 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   if (isApiPath(pathname)) {
-    if (isPublicApiRoute(pathname)) return NextResponse.next();
+    if (isPublicApiRoute(pathname)) {
+      const response = NextResponse.next();
+      response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+      return response;
+    }
 
     const cookieHeader = req.headers.get("cookie");
     const session = await getSessionFromCookieHeader(cookieHeader);
@@ -43,12 +46,13 @@ export async function middleware(req: NextRequest) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
     }
 
-    if (matchesPrefix(pathname, SUPER_ADMIN_API_PREFIXES) && session.role !== "SUPER_ADMIN") {
-      console.warn(JSON.stringify({ type: "auth.denied", reason: "insufficient_role", path: pathname, role: session.role, sub: session.sub, ip, ua, ts: new Date().toISOString() }));
-      return NextResponse.json({ error: "Forbidden: founder-only resource" }, { status: 403 });
+    if (matchesPrefix(pathname, FOUNDER_API_PREFIXES) && session.platformRole !== "FOUNDER") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    return NextResponse.next();
+    const response = NextResponse.next();
+    response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+    return response;
   }
 
   if (matchesPrefix(pathname, AUTH_REQUIRED_BROWSER_PREFIXES)) {
@@ -62,18 +66,38 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
-    if (matchesPrefix(pathname, SUPER_ADMIN_BROWSER_PREFIXES) && session.role !== "SUPER_ADMIN") {
+    if (matchesPrefix(pathname, FOUNDER_BROWSER_PREFIXES) && session.platformRole !== "FOUNDER") {
       return new NextResponse(renderForbiddenHtml(), { status: 403, headers: { "Content-Type": "text/html; charset=utf-8" } });
     }
 
-    return NextResponse.next();
+    const response = NextResponse.next();
+    response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+    return response;
   }
 
-  return NextResponse.next();
+  // Route CHILD users to /child
+  const childCookieHeader = req.headers.get("cookie");
+  const childSession = await getSessionFromCookieHeader(childCookieHeader);
+
+  if (childSession && childSession.familyRole === "CHILD" && !pathname.startsWith("/child") && !pathname.startsWith("/api/") && !pathname.startsWith("/_next") && pathname !== "/manifest.webmanifest" && pathname !== "/favicon.ico") {
+    const childUrl = req.nextUrl.clone();
+    childUrl.pathname = "/child";
+    return NextResponse.redirect(childUrl);
+  }
+
+  if (pathname.startsWith("/child") && childSession && childSession.familyRole !== "CHILD") {
+    const homeUrl = req.nextUrl.clone();
+    homeUrl.pathname = "/";
+    return NextResponse.redirect(homeUrl);
+  }
+
+  const response = NextResponse.next();
+  response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+  return response;
 }
 
 function renderForbiddenHtml(): string {
-  return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>403 — Planned</title><style>body{background:#090C0A;color:#E8E4D8;font-family:ui-sans-serif,system-ui,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;margin:0;padding:1.5rem}.card{max-width:28rem;text-align:center}.code{font-family:Georgia,serif;font-size:3rem;letter-spacing:0.15em;color:#C9A84C;margin-bottom:1rem}.title{font-size:1.125rem;margin-bottom:0.5rem}.body{font-size:0.875rem;opacity:0.6;line-height:1.6;margin-bottom:1.5rem}.link{color:#C9A84C;text-decoration:none;font-size:0.875rem;border:1px solid rgba(201,168,76,0.3);padding:0.5rem 1rem;border-radius:0.375rem}</style></head><body><div class="card"><div class="code">403</div><div class="title">Founder-only area</div><p class="body">This section of Planned is reserved for the founder. Your account does not have access.</p><a href="/" class="link">Return to dashboard</a></div></body></html>`;
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>403</title><style>body{background:#090C0A;color:#E8E4D8;font-family:system-ui,sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;margin:0}.c{text-align:center}.h{font-size:3rem;color:#C9A84C}.a{color:#C9A84C;text-decoration:none;border:1px solid rgba(201,168,76,0.3);padding:0.5rem 1rem;border-radius:0.375rem;display:inline-block;margin-top:1rem}</style></head><body><div class="c"><div class="h">403</div><p>Access denied.</p><a href="/" class="a">Return to dashboard</a></div></body></html>`;
 }
 
 export const config = {
