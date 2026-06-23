@@ -39,7 +39,8 @@ export const FOUNDER_EMAIL_DEFAULT =
 export interface SessionPayload {
   sub: string;
   email: string;
-  role: string;
+  platformRole: string;
+  familyRole: string;
   iat?: number;
   exp?: number;
 }
@@ -47,7 +48,8 @@ export interface SessionPayload {
 export interface AuthUser {
   id: string;
   email: string;
-  role: string;
+  platformRole: string;
+  familyRole: string;
   name: string;
   twoFactorEnabled: boolean;
 }
@@ -91,7 +93,7 @@ export async function verifySecurityAnswer(answer: string, hash: string): Promis
 // ---- JWT session -----------------------------------------------------------
 
 export async function signSession(payload: SessionPayload): Promise<string> {
-  return new SignJWT({ email: payload.email, role: payload.role })
+  return new SignJWT({ email: payload.email, platformRole: payload.platformRole, familyRole: payload.familyRole })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(payload.sub)
     .setIssuedAt()
@@ -102,8 +104,8 @@ export async function signSession(payload: SessionPayload): Promise<string> {
 async function verifySession(token: string): Promise<SessionPayload | null> {
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET, { algorithms: ["HS256"] });
-    if (typeof payload.sub !== "string" || typeof payload.email !== "string" || typeof payload.role !== "string") return null;
-    return { sub: payload.sub, email: payload.email, role: payload.role, iat: payload.iat, exp: payload.exp };
+    if (typeof payload.sub !== "string" || typeof payload.email !== "string" || typeof payload.platformRole !== "string") return null;
+    return { sub: payload.sub, email: payload.email, platformRole: payload.platformRole as string, familyRole: (payload.familyRole as string) || "PARENT", iat: payload.iat, exp: payload.exp };
   } catch { return null; }
 }
 
@@ -148,13 +150,13 @@ export async function getAuthUser(): Promise<AuthUser | null> {
   const session = await getSession();
   if (!session) return null;
   try {
-    const user = await db.user.findUnique({
+    const user: any = await db.user.findUnique({
       where: { id: session.sub, deletedAt: null },
-      select: { id: true, email: true, role: true, name: true, lockedUntil: true, twoFactorEnabled: true },
+      select: { id: true, email: true, platformRole: true, familyRole: true, name: true, lockedUntil: true, twoFactorEnabled: true } as any,
     });
     if (!user) return null;
-    if (user.lockedUntil && user.lockedUntil > new Date()) return null;
-    return { id: user.id, email: user.email, role: user.role, name: user.name, twoFactorEnabled: user.twoFactorEnabled };
+    if (user.lockedUntil && new Date(user.lockedUntil) > new Date()) return null;
+    return { id: user.id, email: user.email, platformRole: user.platformRole || "USER", familyRole: user.familyRole || "PARENT", name: user.name, twoFactorEnabled: user.twoFactorEnabled };
   } catch (err) {
     logger.error("Failed to fetch auth user from DB", { err, sub: session.sub });
     return null;
@@ -163,8 +165,8 @@ export async function getAuthUser(): Promise<AuthUser | null> {
 
 // ---- Role checks -----------------------------------------------------------
 
-export function isSuperAdmin(user: AuthUser | null): boolean {
-  return user?.role === SUPER_ADMIN_ROLE;
+export function isFounder(user: AuthUser | null): boolean {
+  return user?.platformRole === "FOUNDER";
 }
 
 // ---- Audit logging ---------------------------------------------------------
@@ -280,7 +282,7 @@ export async function registerUserAsUSER(input: RegisterInput): Promise<{ ok: bo
 
   await auditLog({
     userId: user.id, action: "USER_REGISTERED", entityType: "user", entityId: user.id,
-    after: { email: user.email, role: user.role }, success: true,
+    after: { email: user.email, platformRole: user.platformRole }, success: true,
   });
 
   return { ok: true, userId: user.id };
@@ -370,10 +372,10 @@ export async function attemptLogin(params: {
     }
 
     await db.user.update({ where: { id: user.id }, data: { failedLoginAttempts: 0, lockedUntil: null, lastLoginAt: new Date() } });
-    const token = await signSession({ sub: user.id, email: user.email, role: user.role });
+    const token = await signSession({ sub: user.id, email: user.email, platformRole: user.platformRole, familyRole: user.familyRole });
     await setSessionCookie(token);
     await auditLog({ userId: user.id, action: "LOGIN_SUCCESS", entityType: "user", entityId: user.id, ipAddress: params.ipAddress, userAgent: params.userAgent, success: true });
-    return { ok: true, user: { id: user.id, email: user.email, role: user.role, name: user.name, twoFactorEnabled: user.twoFactorEnabled } };
+    return { ok: true, user: { id: user.id, email: user.email, platformRole: user.platformRole, familyRole: user.familyRole, name: user.name, twoFactorEnabled: user.twoFactorEnabled } };
   } catch (err) {
     logger.error("Login error", { err, email });
     return { ok: false, error: "An unexpected error occurred" };
@@ -416,10 +418,10 @@ export async function completeLoginWith2FA(params: {
     }
 
     await db.user.update({ where: { id: user.id }, data: { failedLoginAttempts: 0, lockedUntil: null, lastLoginAt: new Date() } });
-    const token = await signSession({ sub: user.id, email: user.email, role: user.role });
+    const token = await signSession({ sub: user.id, email: user.email, platformRole: user.platformRole, familyRole: user.familyRole });
     await setSessionCookie(token);
     await auditLog({ userId: user.id, action: usedBackupIndex !== null ? "LOGIN_2FA_BACKUP_SUCCESS" : "LOGIN_2FA_SUCCESS", entityType: "user", entityId: user.id, ipAddress: params.ipAddress, userAgent: params.userAgent, success: true, after: { backupCodesRemaining: usedBackupIndex !== null } });
-    return { ok: true, user: { id: user.id, email: user.email, role: user.role, name: user.name, twoFactorEnabled: user.twoFactorEnabled } };
+    return { ok: true, user: { id: user.id, email: user.email, platformRole: user.platformRole, familyRole: user.familyRole, name: user.name, twoFactorEnabled: user.twoFactorEnabled } };
   } catch (err) {
     logger.error("2FA complete error", { err });
     return { ok: false, error: "An unexpected error occurred" };
@@ -532,7 +534,7 @@ export async function performFounderSetup(params: {
     return f;
   });
 
-  const token = await signSession({ sub: founder.id, email: founder.email, role: founder.role });
+  const token = await signSession({ sub: founder.id, email: founder.email, platformRole: founder.platformRole, familyRole: founder.familyRole });
   await setSessionCookie(token);
 
   await auditLog({
@@ -541,7 +543,7 @@ export async function performFounderSetup(params: {
     ipAddress: params.ipAddress, userAgent: params.userAgent, success: true,
   });
 
-  return { ok: true, user: { id: founder.id, email: founder.email, role: founder.role, name: founder.name, twoFactorEnabled: enrollTotp } };
+  return { ok: true, user: { id: founder.id, email: founder.email, platformRole: founder.platformRole, familyRole: founder.familyRole, name: founder.name, twoFactorEnabled: enrollTotp } };
 }
 
 // ---- 2FA enrollment (for existing users via /admin/security) ---------------

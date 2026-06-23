@@ -81,7 +81,7 @@ export default async function AdminPage() {
           </div>
           <div>
             <div className="text-foreground/40 mb-1">Role</div>
-            <div className="text-foreground/80">{user?.role}</div>
+            <div className="text-foreground/80">{user?.platformRole}</div>
           </div>
         </div>
       </div>

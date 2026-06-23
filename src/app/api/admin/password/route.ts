@@ -9,10 +9,10 @@ export async function POST(req: NextRequest) {
   try {
     const user = await getAuthUser();
     if (!user) return NextResponse.json({ ok: false, error: "Authentication required" }, { status: 401 });
-    if (user.role !== "SUPER_ADMIN") {
+    if (user.platformRole !== "FOUNDER") {
       const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
       const ua = req.headers.get("user-agent") ?? "unknown";
-      await auditLog({ userId: user.id, action: "PASSWORD_CHANGE_FORBIDDEN", entityType: "user", entityId: user.id, ipAddress: ip, userAgent: ua, success: false, after: { role: user.role } });
+      await auditLog({ userId: user.id, action: "PASSWORD_CHANGE_FORBIDDEN", entityType: "user", entityId: user.id, ipAddress: ip, userAgent: ua, success: false, after: { platformRole: user.platformRole } });
       return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
     }
     const body = await req.json();

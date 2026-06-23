@@ -87,11 +87,11 @@ import { useShallow } from "zustand/react/shallow";
 type Tab = "overview" | "children" | "transactions" | "investments" | "tokens" | "goals" | "settings";
 
 interface DashboardClientProps {
-  isAdmin?: boolean;
+  isFounder?: boolean;
   userEmail?: string | null;
 }
 
-export default function DashboardClient({ isAdmin = false, userEmail }: DashboardClientProps = {}) {
+export default function DashboardClient({ isFounder = false, userEmail }: DashboardClientProps = {}) {
   const [tab, setTab] = useState<Tab>("overview");
   // Store only IDs — never the whole child object. Otherwise the saved
   // reference goes stale whenever the store updates the child's balance.

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getAuthUser, isSuperAdmin, auditLog } from "@/lib/auth";
+import { getAuthUser, isFounder, auditLog } from "@/lib/auth";
 import { headers } from "next/headers";
 
 export const dynamic = "force-dynamic";
@@ -12,10 +12,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const path = headerStore.get("x-path") ?? "/admin";
 
   if (!user) { redirect("/login?next=/admin"); }
-  if (!isSuperAdmin(user)) {
-    await auditLog({ userId: user.id, action: "ADMIN_ACCESS_FORBIDDEN", entityType: "admin", entityId: path, ipAddress: ip, userAgent: ua, success: false, after: { role: user.role } });
+  if (!isFounder(user)) {
+    await auditLog({ userId: user.id, action: "PLATFORM_CONSOLE_FORBIDDEN", entityType: "admin", entityId: path, ipAddress: ip, userAgent: ua, success: false, after: { platformRole: user.platformRole } });
     redirect("/");
   }
-  await auditLog({ userId: user.id, action: "ADMIN_ACCESS_OK", entityType: "admin", entityId: path, ipAddress: ip, userAgent: ua, success: true });
+  await auditLog({ userId: user.id, action: "PLATFORM_CONSOLE_ACCESS_OK", entityType: "admin", entityId: path, ipAddress: ip, userAgent: ua, success: true });
   return <>{children}</>;
 }

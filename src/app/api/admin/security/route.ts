@@ -13,10 +13,10 @@ export async function POST(req: NextRequest) {
   try {
     const user = await getAuthUser();
     if (!user) return NextResponse.json({ ok: false, error: "Authentication required" }, { status: 401 });
-    if (user.role !== "SUPER_ADMIN") {
+    if (user.platformRole !== "FOUNDER") {
       const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
       const ua = req.headers.get("user-agent") ?? "unknown";
-      await auditLog({ userId: user.id, action: "SECURITY_CHANGE_FORBIDDEN", entityType: "user", entityId: user.id, ipAddress: ip, userAgent: ua, success: false, after: { role: user.role } });
+      await auditLog({ userId: user.id, action: "SECURITY_CHANGE_FORBIDDEN", entityType: "user", entityId: user.id, ipAddress: ip, userAgent: ua, success: false, after: { platformRole: user.platformRole } });
       return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
     }
 
@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (updates.email) {
-      const token = await signSession({ sub: user.id, email: updates.email, role: user.role });
+      const token = await signSession({ sub: user.id, email: updates.email, platformRole: user.platformRole, familyRole: user.familyRole });
       await setSessionCookie(token);
     }
 
@@ -118,7 +118,7 @@ export async function POST(req: NextRequest) {
 
 export async function GET() {
   const user = await getAuthUser();
-  if (!user || user.role !== "SUPER_ADMIN") {
+  if (!user || user.platformRole !== "FOUNDER") {
     return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
   }
   const dbUser = await db.user.findUnique({

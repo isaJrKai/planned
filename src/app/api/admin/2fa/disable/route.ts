@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   const user = await getAuthUser();
-  if (!user || user.role !== "SUPER_ADMIN") {
+  if (!user || user.platformRole !== "FOUNDER") {
     return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
   }
   try {
