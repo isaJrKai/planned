@@ -277,7 +277,7 @@ export async function registerUserAsUSER(input: RegisterInput): Promise<{ ok: bo
 
   const passwordHash = await hashPassword(input.password);
   const user = await db.user.create({
-    data: { email, name: input.name.trim(), passwordHash, role: USER_ROLE },
+    data: { email, name: input.name.trim(), passwordHash, platformRole: USER_ROLE, familyRole: "PARENT" },
   });
 
   await auditLog({
@@ -488,7 +488,7 @@ export async function performFounderSetup(params: {
   }
 
   try {
-    const existing = await db.user.findFirst({ where: { role: SUPER_ADMIN_ROLE, deletedAt: null } });
+    const existing = await db.user.findFirst({ where: { platformRole: "FOUNDER", deletedAt: null } as any });
     if (existing) return { ok: false, error: "A super admin already exists. Setup is no longer available." };
   } catch (err) {
     logger.error("Setup: failed to check existing super admin", { err });
@@ -517,7 +517,7 @@ export async function performFounderSetup(params: {
   const founder = await db.$transaction(async (tx) => {
     const f = await tx.user.create({
       data: {
-        email, name: params.name.trim(), passwordHash, role: SUPER_ADMIN_ROLE,
+        email, name: params.name.trim(), passwordHash, platformRole: "FOUNDER", familyRole: "FAMILY_MANAGER",
         securityQuestion: params.securityQuestion.trim(), securityAnswerHash,
         emailVerified: new Date(), lastLoginAt: new Date(),
         twoFactorSecret: params.totpSecret ?? null,

@@ -188,9 +188,10 @@ model User {
   email               String   @unique
   passwordHash        String?
   name                String
-  role                String   @default("USER")  // SUPER_ADMIN | USER
+  platformRole        String   @default("USER")  // FOUNDER | USER
+  familyRole          String   @default("PARENT") // FAMILY_MANAGER | PARENT | CHILD
   familyId            String?
-  childId             String?  // Links to Child if role=CHILD
+  childId             String?  // Links to Child if familyRole=CHILD
   emailVerified       DateTime?
   image               String?
   // Founder-only security: security question + hashed answer for recovery
@@ -201,6 +202,8 @@ model User {
   twoFactorEnabled    Boolean  @default(false)
   twoFactorEnrolledAt DateTime?
   twoFactorBackupCodesHash String?
+  // Child PIN login (4-digit code, bcrypt hashed)
+  pinHash             String?
   failedLoginAttempts Int      @default(0)
   lockedUntil         DateTime?
   lastLoginAt         DateTime?
@@ -221,7 +224,7 @@ model User {
   @@index([familyId])
   @@index([email])
   @@index([deletedAt])
-  @@index([role])
+  @@index([platformRole])
 }
 
 // ---- System Settings (singleton) -----------------------------------------
