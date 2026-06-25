@@ -43,11 +43,11 @@ export async function middleware(req: NextRequest) {
 
     if (!session) {
       console.warn(JSON.stringify({ type: "auth.denied", reason: "no_session", path: pathname, ip, ua, ts: new Date().toISOString() }));
-      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+      return applySecurityHeaders(NextResponse.json({ error: "Authentication required" }, { status: 401 }));
     }
 
     if (matchesPrefix(pathname, FOUNDER_API_PREFIXES) && session.platformRole !== "FOUNDER") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return applySecurityHeaders(NextResponse.json({ error: "Forbidden" }, { status: 403 }));
     }
 
     const response = NextResponse.next();
@@ -63,11 +63,11 @@ export async function middleware(req: NextRequest) {
       const loginUrl = req.nextUrl.clone();
       loginUrl.pathname = "/login";
       loginUrl.searchParams.set("next", pathname);
-      return NextResponse.redirect(loginUrl);
+      return applySecurityHeaders(NextResponse.redirect(loginUrl));
     }
 
     if (matchesPrefix(pathname, FOUNDER_BROWSER_PREFIXES) && session.platformRole !== "FOUNDER") {
-      return new NextResponse(renderForbiddenHtml(), { status: 403, headers: { "Content-Type": "text/html; charset=utf-8" } });
+      return applySecurityHeaders(new NextResponse(renderForbiddenHtml(), { status: 403, headers: { "Content-Type": "text/html; charset=utf-8" } }));
     }
 
     const response = NextResponse.next();
@@ -82,17 +82,50 @@ export async function middleware(req: NextRequest) {
   if (childSession && childSession.familyRole === "CHILD" && !pathname.startsWith("/child") && !pathname.startsWith("/api/") && !pathname.startsWith("/_next") && pathname !== "/manifest.webmanifest" && pathname !== "/favicon.ico") {
     const childUrl = req.nextUrl.clone();
     childUrl.pathname = "/child";
-    return NextResponse.redirect(childUrl);
+    return applySecurityHeaders(NextResponse.redirect(childUrl));
   }
 
   if (pathname.startsWith("/child") && childSession && childSession.familyRole !== "CHILD") {
     const homeUrl = req.nextUrl.clone();
     homeUrl.pathname = "/";
-    return NextResponse.redirect(homeUrl);
+    return applySecurityHeaders(NextResponse.redirect(homeUrl));
   }
 
   const response = NextResponse.next();
   response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+  return applySecurityHeaders(response);
+}
+
+// Content Security Policy — prevents XSS by restricting what the browser will
+// execute. See https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
+//
+// - default-src 'self': only load resources from same origin
+// - script-src 'self' 'unsafe-inline': Next.js hydration needs inline scripts
+// - style-src 'self' 'unsafe-inline': Next.js + styled-jsx use inline styles
+// - img-src 'self' data: blob: allow data: URIs (avatars) and blob: (uploads)
+// - font-src 'self' data: next/font serves from self
+// - connect-src 'self': API calls only to same origin (no external fetch)
+// - frame-ancestors 'none': prevent clickjacking (no iframes)
+// - base-uri 'self': prevent <base> tag injection
+// - form-action 'self': prevent form submission to external sites
+const CSP_HEADER = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob:",
+  "font-src 'self' data:",
+  "connect-src 'self'",
+  "frame-ancestors 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+].join("; ");
+
+function applySecurityHeaders(response: NextResponse): NextResponse {
+  response.headers.set("Content-Security-Policy", CSP_HEADER);
+  response.headers.set("X-Frame-Options", "DENY");
+  response.headers.set("X-Content-Type-Options", "nosniff");
+  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  response.headers.set("X-XSS-Protection", "1; mode=block");
   return response;
 }
 
