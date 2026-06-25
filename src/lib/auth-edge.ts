@@ -1,7 +1,15 @@
 import { jwtVerify } from "jose";
 export const SESSION_COOKIE = "planned-session";
-const INSECURE_DEFAULT = "DEV-ONLY-INSECURE-SECRET-DO-NOT-USE-IN-PRODUCTION-change-me-please";
-const JWT_SECRET_STRING = process.env.JWT_SECRET ?? INSECURE_DEFAULT;
+// JWT secret — fail fast if missing or insecure. Matches auth.ts.
+// Edge runtime (middleware) imports this module, so the throw happens at
+// middleware load time — Vercel will mark the deployment as failed if
+// JWT_SECRET is unset, rather than silently using a known string.
+const JWT_SECRET_STRING = process.env.JWT_SECRET;
+if (!JWT_SECRET_STRING || JWT_SECRET_STRING.length < 32) {
+  throw new Error(
+    "JWT_SECRET environment variable is required and must be at least 32 characters."
+  );
+}
 const JWT_SECRET = new TextEncoder().encode(JWT_SECRET_STRING);
 export interface SessionPayload { sub: string; email: string; platformRole: string; familyRole: string; iat?: number; exp?: number; }
 export async function getSessionFromCookieHeader(cookieHeader: string | null | undefined): Promise<SessionPayload | null> {

@@ -21,16 +21,18 @@ const LOCKOUT_MINUTES = 30;
 const TOTP_WINDOW = 1;
 const BACKUP_CODE_COUNT = 8;
 
-const INSECURE_DEFAULT = "DEV-ONLY-INSECURE-SECRET-DO-NOT-USE-IN-PRODUCTION-change-me-please";
-const JWT_SECRET_STRING = process.env.JWT_SECRET ?? INSECURE_DEFAULT;
-
-if (
-  process.env.NODE_ENV === "production" &&
-  (JWT_SECRET_STRING === INSECURE_DEFAULT || JWT_SECRET_STRING.length < 32)
-) {
-  throw new Error("JWT_SECRET missing or insecure in production environment");
+// JWT secret — fail fast if missing or insecure. No hardcoded fallback.
+// Previously this fell back to a constant string, which meant that if
+// JWT_SECRET was accidentally unset on Vercel, middleware (auth-edge.ts)
+// would silently use a known public string — anyone reading the source
+// could forge JWTs. Now both files throw at module load.
+const JWT_SECRET_STRING = process.env.JWT_SECRET;
+if (!JWT_SECRET_STRING || JWT_SECRET_STRING.length < 32) {
+  throw new Error(
+    "JWT_SECRET environment variable is required and must be at least 32 characters. " +
+    "Generate one with: node -e \"console.log(require('crypto').randomBytes(48).toString('base64url'))\""
+  );
 }
-
 const JWT_SECRET = new TextEncoder().encode(JWT_SECRET_STRING);
 
 export const FOUNDER_EMAIL_DEFAULT =
