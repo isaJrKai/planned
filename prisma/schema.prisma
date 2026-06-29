@@ -247,11 +247,15 @@ model Session {
   ipAddress     String?
   userAgent     String?
   createdAt     DateTime @default(now())
+  lastSeenAt    DateTime @default(now())
+  revokedAt     DateTime?
 
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([expires])
+  @@index([revokedAt])
+  @@index([lastSeenAt])
 }
 
 model PasswordResetToken {

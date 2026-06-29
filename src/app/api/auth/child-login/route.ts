@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { signSession, setSessionCookie, auditLog } from "@/lib/auth";
+import { signSession, setSessionCookie, auditLog, getSession } from "@/lib/auth";
 import { logger } from "@/lib/logger";
 import bcrypt from "bcryptjs";
 
@@ -28,10 +28,16 @@ export async function POST(req: NextRequest) {
     if (!user || !user.pinHash) return NextResponse.json({ ok: false, error: "Your secret code isn't set up yet. Ask your parent!" }, { status: 400 });
     const pinOk = await bcrypt.compare(pin, user.pinHash);
     if (!pinOk) return NextResponse.json({ ok: false, error: "That's not the right secret code. Try again!" }, { status: 401 });
-    const token = await signSession({ sub: user.id, email: user.email ?? profile.nickname, platformRole: user.platformRole, familyRole: "CHILD" });
-    await setSessionCookie(token);
+    // Create a server-side session record so child logout/revocation works the
+    // same as parent logout. Reuses the same Session table.
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-    await auditLog({ userId: user.id, action: "CHILD_LOGIN_SUCCESS", entityType: "user", entityId: user.id, ipAddress: ip, success: true });
+    const ua = req.headers.get("user-agent") ?? "unknown";
+    const sessionToken = crypto.randomUUID() + crypto.randomUUID();
+    const expires = new Date(Date.now() + 60 * 60 * 24 * 7 * 1000);  // 7 days, matches SESSION_TTL_SECONDS
+    const session = await db.session.create({ data: { sessionToken, userId: user.id, expires, ipAddress: ip, userAgent: ua } });
+    const token = await signSession({ sub: user.id, email: user.email ?? profile.nickname, platformRole: user.platformRole, familyRole: "CHILD", sessionId: session.id });
+    await setSessionCookie(token);
+    await auditLog({ userId: user.id, action: "CHILD_LOGIN_SUCCESS", entityType: "user", entityId: user.id, ipAddress: ip, success: true, after: { sessionId: session.id } });
     return NextResponse.json({ ok: true, user: { id: user.id, nickname: profile.nickname, animalCompanion: profile.animalCompanion } });
   } catch (err) {
     logger.error("Child login error", { err });
