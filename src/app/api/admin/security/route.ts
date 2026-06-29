@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   getAuthUser, verifyPassword, hashSecurityAnswer, verifyTOTP, verifyBackupCode,
-  auditLog, setSessionCookie, signSession,
+  auditLog, setSessionCookie, signSession, getSession,
 } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { logger } from "@/lib/logger";
@@ -96,7 +96,13 @@ export async function POST(req: NextRequest) {
     });
 
     if (updates.email) {
-      const token = await signSession({ sub: user.id, email: updates.email, platformRole: user.platformRole, familyRole: user.familyRole });
+      // Preserve the existing sessionId — the user's session is still valid,
+      // only the email claim in the JWT needs to be refreshed.
+      const currentSession = await getSession();
+      if (!currentSession?.sessionId) {
+        return NextResponse.json({ ok: false, error: "Session expired — please log in again" }, { status: 401 });
+      }
+      const token = await signSession({ sub: user.id, email: updates.email, platformRole: user.platformRole, familyRole: user.familyRole, sessionId: currentSession.sessionId });
       await setSessionCookie(token);
     }
 

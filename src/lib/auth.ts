@@ -41,6 +41,7 @@ export interface SessionPayload {
   email: string;
   platformRole: string;
   familyRole: string;
+  sessionId: string;  // DB-backed session ID — verified on every authenticated request
   iat?: number;
   exp?: number;
 }
@@ -93,7 +94,8 @@ export async function verifySecurityAnswer(answer: string, hash: string): Promis
 // ---- JWT session -----------------------------------------------------------
 
 export async function signSession(payload: SessionPayload): Promise<string> {
-  return new SignJWT({ email: payload.email, platformRole: payload.platformRole, familyRole: payload.familyRole })
+  if (!payload.sessionId) throw new Error("signSession: sessionId is required");
+  return new SignJWT({ email: payload.email, platformRole: payload.platformRole, familyRole: payload.familyRole, sessionId: payload.sessionId })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(payload.sub)
     .setIssuedAt()
@@ -104,8 +106,8 @@ export async function signSession(payload: SessionPayload): Promise<string> {
 async function verifySession(token: string): Promise<SessionPayload | null> {
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET, { algorithms: ["HS256"] });
-    if (typeof payload.sub !== "string" || typeof payload.email !== "string" || typeof payload.platformRole !== "string") return null;
-    return { sub: payload.sub, email: payload.email, platformRole: payload.platformRole as string, familyRole: (payload.familyRole as string) || "PARENT", iat: payload.iat, exp: payload.exp };
+    if (typeof payload.sub !== "string" || typeof payload.email !== "string" || typeof payload.platformRole !== "string" || typeof payload.sessionId !== "string") return null;
+    return { sub: payload.sub, email: payload.email, platformRole: payload.platformRole as string, familyRole: (payload.familyRole as string) || "PARENT", sessionId: payload.sessionId as string, iat: payload.iat, exp: payload.exp };
   } catch { return null; }
 }
 
@@ -121,8 +123,131 @@ export async function setSessionCookie(token: string): Promise<void> {
 }
 
 export async function clearSessionCookie(): Promise<void> {
+  // CRITICAL: deletion attributes MUST match the set attributes (RFC 6265).
+  // Omitting HttpOnly/SameSite/Secure on delete can cause some browsers to
+  // silently refuse the deletion, leaving the cookie in place and the user
+  // appearing "stuck logged in" after logout.
   const store = await cookies();
-  store.delete(SESSION_COOKIE);
+  store.set(SESSION_COOKIE, "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    path: "/",
+    expires: new Date(0),  // epoch — tells browser to immediately discard
+    maxAge: 0,
+  });
+}
+
+// ---- Server-side session lifecycle ----------------------------------------
+//
+// JWT alone is NOT proof of an active session. The JWT contains a sessionId
+// that must exist in the Session table AND must not be revoked AND must not
+// be expired. This closes the "founder returns after logout" bug: even if a
+// browser cache or another tab holds the JWT, the revoked session row makes
+// getAuthUser() return null.
+//
+
+async function createSessionRecord(userId: string, ipAddress?: string, userAgent?: string): Promise<{ id: string; sessionToken: string } | null> {
+  try {
+    const sessionToken = crypto.randomUUID() + crypto.randomUUID();
+    const expires = new Date(Date.now() + SESSION_TTL_SECONDS * 1000);
+    const session = await db.session.create({
+      data: { sessionToken, userId, expires, ipAddress, userAgent },
+    });
+    return { id: session.id, sessionToken };
+  } catch (err) {
+    logger.error("Failed to create session record", { err, userId });
+    return null;
+  }
+}
+
+export async function revokeSession(sessionId: string): Promise<boolean> {
+  if (!sessionId) return false;
+  try {
+    // Soft-revoke (set revokedAt). Keeps audit trail; allows admin to see history.
+    const result = await db.session.updateMany({
+      where: { id: sessionId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+    return result.count > 0;
+  } catch (err) {
+    logger.error("Failed to revoke session", { err, sessionId });
+    return false;
+  }
+}
+
+export async function revokeAllUserSessions(userId: string, exceptSessionId?: string): Promise<number> {
+  try {
+    const result = await db.session.updateMany({
+      where: {
+        userId,
+        revokedAt: null,
+        ...(exceptSessionId ? { id: { not: exceptSessionId } } : {}),
+      },
+      data: { revokedAt: new Date() },
+    });
+    return result.count;
+  } catch (err) {
+    logger.error("Failed to revoke all user sessions", { err, userId });
+    return 0;
+  }
+}
+
+// In-memory cache of sessionId → last DB refresh timestamp.
+// Prevents hammering the Session table with UPDATE lastSeenAt on every single
+// request. We only refresh at most once per minute per active session.
+const LAST_SEEN_REFRESH_INTERVAL_MS = 60 * 1000;
+const lastSeenCache = new Map<string, number>();
+
+async function isSessionValid(sessionId: string): Promise<boolean> {
+  if (!sessionId) return false;
+  try {
+    const session = await db.session.findUnique({ where: { id: sessionId } });
+    if (!session) return false;
+    if (session.revokedAt) return false;
+    if (session.expires < new Date()) return false;
+
+    // Debounced refresh of lastSeenAt — at most once per minute per session.
+    // This powers future admin UI ("last active 2 min ago") without DB churn.
+    const now = Date.now();
+    const lastRefresh = lastSeenCache.get(sessionId) ?? 0;
+    if (now - lastRefresh > LAST_SEEN_REFRESH_INTERVAL_MS) {
+      lastSeenCache.set(sessionId, now);
+      // Fire-and-forget — don't block the auth check on this write
+      db.session.update({
+        where: { id: sessionId },
+        data: { lastSeenAt: new Date() },
+      }).catch((err) => {
+        logger.error("Failed to refresh lastSeenAt", { err, sessionId });
+        lastSeenCache.delete(sessionId);  // retry on next request
+      });
+    }
+    return true;
+  } catch (err) {
+    logger.error("Failed to validate session", { err, sessionId });
+    return false;  // fail-closed
+  }
+}
+
+export async function listUserSessions(userId: string): Promise<Array<{
+  id: string;
+  createdAt: Date;
+  expires: Date;
+  lastSeenAt: Date;
+  revokedAt: Date | null;
+  ipAddress: string | null;
+  userAgent: string | null;
+}>> {
+  try {
+    return await db.session.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, createdAt: true, expires: true, lastSeenAt: true, revokedAt: true, ipAddress: true, userAgent: true },
+    });
+  } catch (err) {
+    logger.error("Failed to list user sessions", { err, userId });
+    return [];
+  }
 }
 
 export async function getSession(): Promise<SessionPayload | null> {
@@ -149,6 +274,11 @@ export async function getSessionFromCookieHeader(
 export async function getAuthUser(): Promise<AuthUser | null> {
   const session = await getSession();
   if (!session) return null;
+  // CRITICAL: JWT alone is not enough — verify the DB-backed session is still
+  // active (not revoked, not expired). This is what prevents a logged-out user
+  // (or a stolen JWT) from authenticating after session revocation.
+  const sessionValid = await isSessionValid(session.sessionId);
+  if (!sessionValid) return null;
   try {
     const user: any = await db.user.findUnique({
       where: { id: session.sub, deletedAt: null },
@@ -372,9 +502,14 @@ export async function attemptLogin(params: {
     }
 
     await db.user.update({ where: { id: user.id }, data: { failedLoginAttempts: 0, lockedUntil: null, lastLoginAt: new Date() } });
-    const token = await signSession({ sub: user.id, email: user.email, platformRole: user.platformRole, familyRole: user.familyRole });
+    const sessionRecord = await createSessionRecord(user.id, params.ipAddress, params.userAgent);
+    if (!sessionRecord) {
+      logger.error("Login succeeded but session record creation failed", { userId: user.id });
+      return { ok: false, error: "Failed to create session" };
+    }
+    const token = await signSession({ sub: user.id, email: user.email, platformRole: user.platformRole, familyRole: user.familyRole, sessionId: sessionRecord.id });
     await setSessionCookie(token);
-    await auditLog({ userId: user.id, action: "LOGIN_SUCCESS", entityType: "user", entityId: user.id, ipAddress: params.ipAddress, userAgent: params.userAgent, success: true });
+    await auditLog({ userId: user.id, action: "LOGIN_SUCCESS", entityType: "user", entityId: user.id, ipAddress: params.ipAddress, userAgent: params.userAgent, success: true, after: { sessionId: sessionRecord.id } });
     return { ok: true, user: { id: user.id, email: user.email, platformRole: user.platformRole, familyRole: user.familyRole, name: user.name, twoFactorEnabled: user.twoFactorEnabled } };
   } catch (err) {
     logger.error("Login error", { err, email });
@@ -418,9 +553,14 @@ export async function completeLoginWith2FA(params: {
     }
 
     await db.user.update({ where: { id: user.id }, data: { failedLoginAttempts: 0, lockedUntil: null, lastLoginAt: new Date() } });
-    const token = await signSession({ sub: user.id, email: user.email, platformRole: user.platformRole, familyRole: user.familyRole });
+    const sessionRecord = await createSessionRecord(user.id, params.ipAddress, params.userAgent);
+    if (!sessionRecord) {
+      logger.error("2FA login succeeded but session record creation failed", { userId: user.id });
+      return { ok: false, error: "Failed to create session" };
+    }
+    const token = await signSession({ sub: user.id, email: user.email, platformRole: user.platformRole, familyRole: user.familyRole, sessionId: sessionRecord.id });
     await setSessionCookie(token);
-    await auditLog({ userId: user.id, action: usedBackupIndex !== null ? "LOGIN_2FA_BACKUP_SUCCESS" : "LOGIN_2FA_SUCCESS", entityType: "user", entityId: user.id, ipAddress: params.ipAddress, userAgent: params.userAgent, success: true, after: { backupCodesRemaining: usedBackupIndex !== null } });
+    await auditLog({ userId: user.id, action: usedBackupIndex !== null ? "LOGIN_2FA_BACKUP_SUCCESS" : "LOGIN_2FA_SUCCESS", entityType: "user", entityId: user.id, ipAddress: params.ipAddress, userAgent: params.userAgent, success: true, after: { backupCodesRemaining: usedBackupIndex !== null, sessionId: sessionRecord.id } });
     return { ok: true, user: { id: user.id, email: user.email, platformRole: user.platformRole, familyRole: user.familyRole, name: user.name, twoFactorEnabled: user.twoFactorEnabled } };
   } catch (err) {
     logger.error("2FA complete error", { err });
@@ -430,10 +570,22 @@ export async function completeLoginWith2FA(params: {
 
 // ---- Logout flow -----------------------------------------------------------
 
-export async function logout(params?: { userId?: string; ipAddress?: string; userAgent?: string }): Promise<void> {
+export async function logout(params?: { userId?: string; sessionId?: string; ipAddress?: string; userAgent?: string; revokeAll?: boolean }): Promise<void> {
+  // CRITICAL: revoke the server-side session FIRST. This ensures that even if
+  // the cookie deletion fails (browser quirks, network issues), the JWT in the
+  // cookie is now useless because the session record is revoked.
+  if (params?.sessionId) {
+    if (params.revokeAll && params.userId) {
+      // Revoke ALL of the user's sessions (used for "log out everywhere" / password change)
+      await revokeAllUserSessions(params.userId);
+    } else {
+      // Revoke ONLY this device's session — preserves multi-device support
+      await revokeSession(params.sessionId);
+    }
+  }
   await clearSessionCookie();
   if (params?.userId) {
-    await auditLog({ userId: params.userId, action: "LOGOUT", entityType: "user", entityId: params.userId, ipAddress: params.ipAddress, userAgent: params.userAgent, success: true });
+    await auditLog({ userId: params.userId, action: "LOGOUT", entityType: "user", entityId: params.userId, ipAddress: params.ipAddress, userAgent: params.userAgent, success: true, after: { sessionId: params.sessionId, revokeAll: params.revokeAll ?? false } });
   }
 }
 
@@ -534,12 +686,17 @@ export async function performFounderSetup(params: {
     return f;
   });
 
-  const token = await signSession({ sub: founder.id, email: founder.email, platformRole: founder.platformRole, familyRole: founder.familyRole });
+  const sessionRecord = await createSessionRecord(founder.id, params.ipAddress, params.userAgent);
+  if (!sessionRecord) {
+    logger.error("Founder setup succeeded but session record creation failed", { userId: founder.id });
+    return { ok: false, error: "Account created but failed to start session. Please log in." };
+  }
+  const token = await signSession({ sub: founder.id, email: founder.email, platformRole: founder.platformRole, familyRole: founder.familyRole, sessionId: sessionRecord.id });
   await setSessionCookie(token);
 
   await auditLog({
     userId: founder.id, action: "FOUNDER_SETUP_COMPLETED", entityType: "system", entityId: "singleton",
-    after: { email: founder.email, name: founder.name, userId: founder.id, twoFactorEnabled: enrollTotp },
+    after: { email: founder.email, name: founder.name, userId: founder.id, twoFactorEnabled: enrollTotp, sessionId: sessionRecord.id },
     ipAddress: params.ipAddress, userAgent: params.userAgent, success: true,
   });
 

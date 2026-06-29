@@ -25,10 +25,16 @@ import {
   createParent,
   getFullState,
 } from "@/lib/db-queries";
+import { getAuthUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
+  // Auth gate: same logic as /api/state — must verify session is not revoked.
+  const user = await getAuthUser();
+  if (!user) {
+    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+  }
   try {
     const body = await req.json();
     const { action, payload } = body as { action: string; payload: any };
