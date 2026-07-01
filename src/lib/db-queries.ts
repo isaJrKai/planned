@@ -483,3 +483,100 @@ export async function createParent(input: {
     },
   });
 }
+
+
+// ============================================================================
+// DELETE CAPABILITIES — Phase 2
+// ============================================================================
+// All delete functions verify familyId ownership before deleting.
+// Destructive operations (delete child, reset family) cascade to related data.
+// ============================================================================
+
+// Delete a transaction — verifies family ownership
+export async function deleteTransaction(familyId: string, id: string): Promise<void> {
+  const tx = await db.transaction.findFirst({ where: { id, familyId } });
+  if (!tx) throw new Error("Transaction not found or access denied");
+  await db.transaction.delete({ where: { id } });
+}
+
+// Delete a spending entry — verifies family ownership
+export async function deleteSpendingEntry(familyId: string, id: string): Promise<void> {
+  const entry = await db.spendingEntry.findFirst({ where: { id, familyId } });
+  if (!entry) throw new Error("Spending entry not found or access denied");
+  await db.spendingEntry.delete({ where: { id } });
+}
+
+// Close (not delete) an investment — preserves audit trail
+export async function closeInvestment(familyId: string, id: string): Promise<void> {
+  const inv = await db.investment.findFirst({ where: { id, familyId } });
+  if (!inv) throw new Error("Investment not found or access denied");
+  await db.investment.update({ where: { id }, data: { status: "closed" } });
+}
+
+// Delete an investment permanently — verifies ownership, cascades to transactions
+export async function deleteInvestment(familyId: string, id: string): Promise<void> {
+  const inv = await db.investment.findFirst({ where: { id, familyId } });
+  if (!inv) throw new Error("Investment not found or access denied");
+  await db.$transaction(async (tx) => {
+    // Delete related transactions first
+    await tx.transaction.deleteMany({ where: { investmentId: id, familyId } });
+    await tx.investment.delete({ where: { id } });
+  });
+}
+
+// Delete a child — cascades to ALL related data (accounts, transactions, spending, investments, tokens, goals)
+// This is a DESTRUCTIVE operation. The API route must confirm with the user.
+export async function deleteChild(familyId: string, childId: string): Promise<void> {
+  const child = await db.child.findFirst({ where: { id: childId, familyId } });
+  if (!child) throw new Error("Child not found or access denied");
+  
+  await db.$transaction(async (tx) => {
+    // Delete all related data in the correct order (respecting foreign keys)
+    await tx.transaction.deleteMany({ where: { childId, familyId } });
+    await tx.spendingEntry.deleteMany({ where: { childId, familyId } });
+    await tx.investment.deleteMany({ where: { childId, familyId } });
+    await tx.tokenLedgerEntry.deleteMany({ where: { childId, familyId } });
+    await tx.account.deleteMany({ where: { childId, familyId } });
+    await tx.goal.deleteMany({ where: { ownerId: childId, familyId } });
+    // Finally delete the child
+    await tx.child.delete({ where: { id: childId } });
+  });
+}
+
+// Delete a parent profile — cascades to spending entries and goals
+export async function deleteParent(familyId: string, parentId: string): Promise<void> {
+  const parent = await db.parentProfile.findFirst({ where: { id: parentId, familyId } });
+  if (!parent) throw new Error("Parent not found or access denied");
+  
+  await db.$transaction(async (tx) => {
+    await tx.spendingEntry.deleteMany({ where: { parentId, familyId } });
+    await tx.goal.deleteMany({ where: { ownerId: parentId, familyId } });
+    await tx.parentProfile.delete({ where: { id: parentId } });
+  });
+}
+
+// Reset ALL family data — keeps the User account and familyId, deletes everything else
+// This is the nuclear option. API route must require double confirmation.
+export async function resetFamilyData(familyId: string): Promise<{ deleted: { children: number; transactions: number; spending: number; investments: number; tokens: number; goals: number; parents: number; accounts: number } }> {
+  const counts = await db.$transaction(async (tx) => {
+    const transactions = await tx.transaction.deleteMany({ where: { familyId } });
+    const spending = await tx.spendingEntry.deleteMany({ where: { familyId } });
+    const investments = await tx.investment.deleteMany({ where: { familyId } });
+    const tokens = await tx.tokenLedgerEntry.deleteMany({ where: { familyId } });
+    const accounts = await tx.account.deleteMany({ where: { familyId } });
+    const goals = await tx.goal.deleteMany({ where: { familyId } });
+    const children = await tx.child.deleteMany({ where: { familyId } });
+    const parents = await tx.parentProfile.deleteMany({ where: { familyId } });
+    // Reset family settings to defaults
+    await tx.familySettings.deleteMany({ where: { familyId } });
+    return { children: children.count, transactions: transactions.count, spending: spending.count, investments: investments.count, tokens: tokens.count, goals: goals.count, parents: parents.count, accounts: accounts.count };
+  });
+  return { deleted: counts };
+}
+
+// Delete a spending category — verifies family ownership
+export async function deleteSpendingCategory(familyId: string, id: string): Promise<void> {
+  const cat = await db.spendingCategory.findFirst({ where: { id, familyId } });
+  if (!cat) throw new Error("Category not found or access denied");
+  await db.spendingCategory.delete({ where: { id } });
+}

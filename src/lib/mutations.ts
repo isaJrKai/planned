@@ -133,3 +133,38 @@ export function setChildName(childId: string, name: string) {
   useStore.getState().setChildName(childId, name);
   persistMutation("setChildName", { childId, name }).catch(() => {});
 }
+
+
+// ---- Delete capabilities (Phase 2) ----
+
+export function deleteTransaction(id: string) {
+  persistMutation("deleteTransaction", { id }).catch(() => {});
+}
+
+export function deleteSpendingEntry(id: string) {
+  persistMutation("deleteSpendingEntry", { id }).catch(() => {});
+}
+
+export function closeInvestment(id: string) {
+  persistMutation("closeInvestment", { id }).catch(() => {});
+}
+
+export function deleteInvestment(id: string) {
+  persistMutation("deleteInvestment", { id }).catch(() => {});
+}
+
+export function deleteChild(childId: string) {
+  persistMutation("deleteChild", { childId }).catch(() => {});
+}
+
+export function deleteParent(parentId: string) {
+  persistMutation("deleteParent", { parentId }).catch(() => {});
+}
+
+export function deleteSpendingCategory(id: string) {
+  persistMutation("deleteSpendingCategory", { id }).catch(() => {});
+}
+
+export function resetFamilyData() {
+  persistMutation("resetFamilyData", {}).catch(() => {});
+}

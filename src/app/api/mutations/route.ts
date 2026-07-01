@@ -23,6 +23,14 @@ import {
   setChildName,
   createChild,
   createParent,
+  deleteTransaction,
+  deleteSpendingEntry,
+  closeInvestment,
+  deleteInvestment,
+  deleteChild,
+  deleteParent,
+  resetFamilyData,
+  deleteSpendingCategory,
   getFullState,
 } from "@/lib/db-queries";
 import { getAuthUser } from "@/lib/auth";
@@ -88,6 +96,30 @@ export async function POST(req: NextRequest) {
         break;
       case "createParent":
         await createParent({ ...payload, familyId });
+        break;
+      case "deleteTransaction":
+        await deleteTransaction(familyId, payload.id);
+        break;
+      case "deleteSpendingEntry":
+        await deleteSpendingEntry(familyId, payload.id);
+        break;
+      case "closeInvestment":
+        await closeInvestment(familyId, payload.id);
+        break;
+      case "deleteInvestment":
+        await deleteInvestment(familyId, payload.id);
+        break;
+      case "deleteChild":
+        await deleteChild(familyId, payload.childId);
+        break;
+      case "deleteParent":
+        await deleteParent(familyId, payload.parentId);
+        break;
+      case "deleteSpendingCategory":
+        await deleteSpendingCategory(familyId, payload.id);
+        break;
+      case "resetFamilyData":
+        await resetFamilyData(familyId);
         break;
       default:
         return NextResponse.json(
