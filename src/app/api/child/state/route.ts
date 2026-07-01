@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 
 export async function GET() {
   const user = await getAuthUser();
-  if (!user) return NextResponse.json({ ok: false, error: "Not authenticated" }, { status: 401 });
+  if (!user || !user.familyId) return NextResponse.json({ ok: false, error: "Not authenticated" }, { status: 401 });
   if (user.familyRole !== "CHILD") return NextResponse.json({ ok: false, error: "Not a child account" }, { status: 403 });
   const childProfile = await db.childProfile.findFirst({ where: { userId: user.id } });
   if (!childProfile) return NextResponse.json({ ok: false, error: "Child profile not found" }, { status: 404 });

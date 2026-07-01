@@ -50,6 +50,7 @@ export interface AuthUser {
   email: string;
   platformRole: string;
   familyRole: string;
+  familyId: string | null;
   name: string;
   twoFactorEnabled: boolean;
 }
@@ -152,11 +153,11 @@ export async function getAuthUser(): Promise<AuthUser | null> {
   try {
     const user: any = await db.user.findUnique({
       where: { id: session.sub, deletedAt: null },
-      select: { id: true, email: true, platformRole: true, familyRole: true, name: true, lockedUntil: true, twoFactorEnabled: true } as any,
+      select: { id: true, email: true, platformRole: true, familyRole: true, familyId: true, name: true, lockedUntil: true, twoFactorEnabled: true } as any,
     });
     if (!user) return null;
     if (user.lockedUntil && new Date(user.lockedUntil) > new Date()) return null;
-    return { id: user.id, email: user.email, platformRole: user.platformRole || "USER", familyRole: user.familyRole || "PARENT", name: user.name, twoFactorEnabled: user.twoFactorEnabled };
+    return { id: user.id, email: user.email, platformRole: user.platformRole || "USER", familyRole: user.familyRole || "PARENT", familyId: user.familyId, name: user.name, twoFactorEnabled: user.twoFactorEnabled };
   } catch (err) {
     logger.error("Failed to fetch auth user from DB", { err, sub: session.sub });
     return null;
@@ -277,7 +278,7 @@ export async function registerUserAsUSER(input: RegisterInput): Promise<{ ok: bo
 
   const passwordHash = await hashPassword(input.password);
   const user = await db.user.create({
-    data: { email, name: input.name.trim(), passwordHash, platformRole: USER_ROLE, familyRole: "PARENT" },
+    data: { email, name: input.name.trim(), passwordHash, platformRole: USER_ROLE, familyRole: "PARENT", familyId: "fam_" + crypto.randomUUID() },
   });
 
   await auditLog({
@@ -375,7 +376,7 @@ export async function attemptLogin(params: {
     const token = await signSession({ sub: user.id, email: user.email, platformRole: user.platformRole, familyRole: user.familyRole });
     await setSessionCookie(token);
     await auditLog({ userId: user.id, action: "LOGIN_SUCCESS", entityType: "user", entityId: user.id, ipAddress: params.ipAddress, userAgent: params.userAgent, success: true });
-    return { ok: true, user: { id: user.id, email: user.email, platformRole: user.platformRole, familyRole: user.familyRole, name: user.name, twoFactorEnabled: user.twoFactorEnabled } };
+    return { ok: true, user: { id: user.id, email: user.email, platformRole: user.platformRole, familyRole: user.familyRole, familyId: user.familyId, name: user.name, twoFactorEnabled: user.twoFactorEnabled } };
   } catch (err) {
     logger.error("Login error", { err, email });
     return { ok: false, error: "An unexpected error occurred" };
@@ -421,7 +422,7 @@ export async function completeLoginWith2FA(params: {
     const token = await signSession({ sub: user.id, email: user.email, platformRole: user.platformRole, familyRole: user.familyRole });
     await setSessionCookie(token);
     await auditLog({ userId: user.id, action: usedBackupIndex !== null ? "LOGIN_2FA_BACKUP_SUCCESS" : "LOGIN_2FA_SUCCESS", entityType: "user", entityId: user.id, ipAddress: params.ipAddress, userAgent: params.userAgent, success: true, after: { backupCodesRemaining: usedBackupIndex !== null } });
-    return { ok: true, user: { id: user.id, email: user.email, platformRole: user.platformRole, familyRole: user.familyRole, name: user.name, twoFactorEnabled: user.twoFactorEnabled } };
+    return { ok: true, user: { id: user.id, email: user.email, platformRole: user.platformRole, familyRole: user.familyRole, familyId: user.familyId, name: user.name, twoFactorEnabled: user.twoFactorEnabled } };
   } catch (err) {
     logger.error("2FA complete error", { err });
     return { ok: false, error: "An unexpected error occurred" };
@@ -518,6 +519,7 @@ export async function performFounderSetup(params: {
     const f = await tx.user.create({
       data: {
         email, name: params.name.trim(), passwordHash, platformRole: "FOUNDER", familyRole: "FAMILY_MANAGER",
+        familyId: "fam_" + crypto.randomUUID(),
         securityQuestion: params.securityQuestion.trim(), securityAnswerHash,
         emailVerified: new Date(), lastLoginAt: new Date(),
         twoFactorSecret: params.totpSecret ?? null,
@@ -543,7 +545,7 @@ export async function performFounderSetup(params: {
     ipAddress: params.ipAddress, userAgent: params.userAgent, success: true,
   });
 
-  return { ok: true, user: { id: founder.id, email: founder.email, platformRole: founder.platformRole, familyRole: founder.familyRole, name: founder.name, twoFactorEnabled: enrollTotp } };
+  return { ok: true, user: { id: founder.id, email: founder.email, platformRole: founder.platformRole, familyRole: founder.familyRole, familyId: founder.familyId, name: founder.name, twoFactorEnabled: enrollTotp } };
 }
 
 // ---- 2FA enrollment (for existing users via /admin/security) ---------------
