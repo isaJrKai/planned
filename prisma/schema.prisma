@@ -19,6 +19,7 @@ datasource db {
 
 model Child {
   id            String   @id
+  familyId      String
   name          String
   age           Int
   avatarColor   String
@@ -28,6 +29,8 @@ model Child {
   goalName      String
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
+  @@index([familyId])
 
   accounts     Account[]
   transactions Transaction[]
@@ -39,12 +42,15 @@ model Child {
 
 model ParentProfile {
   id           String   @id
+  familyId     String
   name         String
   role         String   // "Mother" | "Father" | "Guardian"
   avatarColor  String
   avatarPhoto  String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  @@index([familyId])
 
   spending     SpendingEntry[]
   goals        Goal[]                  @relation("ParentGoals")
@@ -54,17 +60,21 @@ model ParentProfile {
 
 model Account {
   id        String   @id @default(cuid())
+  familyId  String
   childId   String
   name      String
   balance   Int      @default(0)  // UGX external balance
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([familyId])
+
   child     Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
 }
 
 model Transaction {
   id           String   @id @default(cuid())
+  familyId     String
   childId      String
   type         String   // save | withdraw | invest | redeem | parent_give
   amount       Int      @default(0)  // UGX, always positive
@@ -77,18 +87,23 @@ model Transaction {
 
   child        Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
 
+  @@index([familyId])
   @@index([childId])
   @@index([timestamp])
 }
 
 model SpendingCategory {
-  id      String @id
-  name    String
-  budget  Int    @default(0)  // UGX monthly budget
+  id        String @id
+  familyId  String
+  name      String
+  budget    Int    @default(0)  // UGX monthly budget
+
+  @@index([familyId])
 }
 
 model SpendingEntry {
   id         String   @id @default(cuid())
+  familyId   String
   ownerId    String   // child id OR parent id
   ownerKind  String   // "parent" | "child"
   ownerName  String   // denormalized for convenience
@@ -97,6 +112,8 @@ model SpendingEntry {
   note       String
   timestamp  BigInt                         @default(0)
   createdAt  DateTime @default(now())
+
+  @@index([familyId])
 
   child      Child?   @relation(fields: [childId], references: [id], onDelete: Cascade)
   parent     ParentProfile? @relation(fields: [parentId], references: [id], onDelete: Cascade)
@@ -109,6 +126,7 @@ model SpendingEntry {
 
 model Investment {
   id             String   @id @default(cuid())
+  familyId       String
   childId        String
   name           String
   type           String   // Equity | Bond | Savings Bond | Treasury Bill | Unit Trust
@@ -119,11 +137,14 @@ model Investment {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
+  @@index([familyId])
+
   child          Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
 }
 
 model TokenLedgerEntry {
   id        String   @id @default(cuid())
+  familyId  String
   childId   String
   type      String   // parent_give | redeem
   tokens    Int      @default(0)
@@ -133,11 +154,13 @@ model TokenLedgerEntry {
 
   child     Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
 
+  @@index([familyId])
   @@index([childId])
 }
 
 model Goal {
   id            String   @id @default(cuid())
+  familyId      String
   ownerId       String   // child id OR parent id
   ownerKind     String   // "parent" | "child"
   ownerName     String
