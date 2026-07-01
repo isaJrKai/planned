@@ -44,7 +44,7 @@ export interface AppState {
   monthlyQuote: string;
 }
 
-export async function getFullState(): Promise<AppState> {
+export async function getFullState(familyId: string): Promise<AppState> {
   const [
     children,
     parents,
@@ -57,16 +57,16 @@ export async function getFullState(): Promise<AppState> {
     goals,
     settings,
   ] = await Promise.all([
-    db.child.findMany(),
-    db.parentProfile.findMany(),
-    db.account.findMany(),
-    db.transaction.findMany({ orderBy: { timestamp: "desc" } }),
-    db.spendingEntry.findMany({ orderBy: { timestamp: "desc" } }),
-    db.spendingCategory.findMany(),
-    db.investment.findMany(),
-    db.tokenLedgerEntry.findMany({ orderBy: { timestamp: "desc" } }),
-    db.goal.findMany({ orderBy: { createdAt: "desc" } }),
-    db.familySettings.findUnique({ where: { id: "singleton" } }),
+    db.child.findMany({ where: { familyId } }),
+    db.parentProfile.findMany({ where: { familyId } }),
+    db.account.findMany({ where: { familyId } }),
+    db.transaction.findMany({ where: { familyId }, orderBy: { timestamp: "desc" } }),
+    db.spendingEntry.findMany({ where: { familyId }, orderBy: { timestamp: "desc" } }),
+    db.spendingCategory.findMany({ where: { familyId } }),
+    db.investment.findMany({ where: { familyId } }),
+    db.tokenLedgerEntry.findMany({ where: { familyId }, orderBy: { timestamp: "desc" } }),
+    db.goal.findMany({ where: { familyId }, orderBy: { createdAt: "desc" } }),
+    db.familySettings.findUnique({ where: { familyId } }),
   ]);
 
   return {
@@ -163,6 +163,7 @@ export async function getFullState(): Promise<AppState> {
 // TOCTOU races — concurrent requests cannot double-spend.
 
 export async function addTransaction(input: {
+  familyId: string;
   childId: string;
   type: TxType;
   amount: number;
@@ -176,6 +177,7 @@ export async function addTransaction(input: {
   return db.$transaction(async (tx) => {
     const txRow = await tx.transaction.create({
       data: {
+        familyId: input.familyId,
         childId: input.childId,
         type: input.type,
         amount: input.amount,
@@ -224,6 +226,7 @@ export async function addTransaction(input: {
 }
 
 export async function addSpendingEntry(input: {
+  familyId: string;
   ownerId: string;
   ownerKind: "parent" | "child";
   ownerName: string;
@@ -235,6 +238,7 @@ export async function addSpendingEntry(input: {
   const ts = input.timestamp ?? Date.now();
   return db.spendingEntry.create({
     data: {
+      familyId: input.familyId,
       ownerId: input.ownerId,
       ownerKind: input.ownerKind,
       ownerName: input.ownerName,
@@ -248,19 +252,19 @@ export async function addSpendingEntry(input: {
   });
 }
 
-export async function giveTokens(childId: string, tokens: number, note: string) {
+export async function giveTokens(familyId: string, childId: string, tokens: number, note: string) {
   const ts = Date.now();
   return db.$transaction(async (tx) => {
     await tx.tokenLedgerEntry.create({
-      data: { childId, type: "parent_give", tokens, note, timestamp: BigInt(ts) },
+      data: { familyId, childId, type: "parent_give", tokens, note, timestamp: BigInt(ts) },
     });
     await tx.transaction.create({
-      data: { childId, type: "parent_give", amount: 0, tokenDelta: tokens, note, timestamp: BigInt(ts) },
+      data: { familyId, childId, type: "parent_give", amount: 0, tokenDelta: tokens, note, timestamp: BigInt(ts) },
     });
   });
 }
 
-export async function redeemTokens(childId: string, tokens: number, cashValue: number) {
+export async function redeemTokens(familyId: string, childId: string, tokens: number, cashValue: number) {
   const ts = Date.now();
   return db.$transaction(async (tx) => {
     // Atomically verify token balance hasn't changed since read
@@ -278,10 +282,10 @@ export async function redeemTokens(childId: string, tokens: number, cashValue: n
     }
 
     await tx.tokenLedgerEntry.create({
-      data: { childId, type: "redeem", tokens, note: `${tokens} tokens redeemed`, timestamp: BigInt(ts) },
+      data: { familyId, childId, type: "redeem", tokens, note: `${tokens} tokens redeemed`, timestamp: BigInt(ts) },
     });
     await tx.transaction.create({
-      data: { childId, type: "redeem", amount: cashValue, tokenDelta: tokens, note: `${tokens} tokens redeemed`, timestamp: BigInt(ts) },
+      data: { familyId, childId, type: "redeem", amount: cashValue, tokenDelta: tokens, note: `${tokens} tokens redeemed`, timestamp: BigInt(ts) },
     });
     // Credit child's savings atomically
     await tx.child.update({
@@ -292,10 +296,11 @@ export async function redeemTokens(childId: string, tokens: number, cashValue: n
 }
 
 export async function investNow(
+  familyId: string,
   childId: string,
   amount: number,
   name: string,
-  type: Investment["type"]
+  type: Investment["type"],
 ) {
   const ts = Date.now();
   return db.$transaction(async (tx) => {
@@ -310,16 +315,17 @@ export async function investNow(
     }
 
     const inv = await tx.investment.create({
-      data: { childId, name, type, amountInvested: amount, currentValue: amount, status: "active", openedAt: BigInt(ts) },
+      data: { familyId, childId, name, type, amountInvested: amount, currentValue: amount, status: "active", openedAt: BigInt(ts) },
     });
     await tx.transaction.create({
-      data: { childId, type: "invest", amount, tokenDelta: 0, investmentId: inv.id, note: `Invested in ${name}`, timestamp: BigInt(ts) },
+      data: { familyId, childId, type: "invest", amount, tokenDelta: 0, investmentId: inv.id, note: `Invested in ${name}`, timestamp: BigInt(ts) },
     });
     return inv;
   });
 }
 
 export async function createGoal(input: {
+  familyId: string;
   ownerId: string;
   ownerKind: "parent" | "child";
   ownerName: string;
@@ -345,6 +351,7 @@ export async function createGoal(input: {
   })();
   return db.goal.create({
     data: {
+      familyId: input.familyId,
       ownerId: input.ownerId,
       ownerKind: input.ownerKind,
       ownerName: input.ownerName,
@@ -362,7 +369,7 @@ export async function createGoal(input: {
   });
 }
 
-export async function updateGoal(id: string, patch: Partial<{
+export async function updateGoal(familyId: string, id: string, patch: Partial<{
   title: string;
   type: "save" | "spend_less";
   cadence: "weekly" | "monthly" | "annual";
@@ -374,11 +381,13 @@ export async function updateGoal(id: string, patch: Partial<{
   return db.goal.update({ where: { id }, data: patch });
 }
 
-export async function deleteGoal(id: string) {
+export async function deleteGoal(familyId: string, id: string) {
+  const goal = await db.goal.findFirst({ where: { id, familyId } });
+  if (!goal) throw new Error("Goal not found or access denied");
   return db.goal.delete({ where: { id } });
 }
 
-export async function contributeToGoal(id: string, amount: number) {
+export async function contributeToGoal(familyId: string, id: string, amount: number) {
   // Atomic increment — no race condition
   return db.goal.update({
     where: { id },
@@ -386,36 +395,44 @@ export async function contributeToGoal(id: string, amount: number) {
   });
 }
 
-export async function setFamilySettings(patch: { annualTheme?: string; monthlyQuote?: string }) {
+export async function setFamilySettings(familyId: string, patch: { annualTheme?: string; monthlyQuote?: string }) {
   return db.familySettings.upsert({
-    where: { id: "singleton" },
+    where: { familyId },
     update: patch,
-    create: { id: "singleton", ...patch },
+    create: { familyId, ...patch },
   });
 }
 
-export async function setParentPhoto(parentId: string, photoDataUrl: string) {
+export async function setParentPhoto(familyId: string, parentId: string, photoDataUrl: string) {
+  const p = await db.parentProfile.findFirst({ where: { id: parentId, familyId } });
+  if (!p) throw new Error("Parent not found or access denied");
   return db.parentProfile.update({
     where: { id: parentId },
     data: { avatarPhoto: photoDataUrl },
   });
 }
 
-export async function setParentName(parentId: string, name: string) {
+export async function setParentName(familyId: string, parentId: string, name: string) {
+  const p = await db.parentProfile.findFirst({ where: { id: parentId, familyId } });
+  if (!p) throw new Error("Parent not found or access denied");
   return db.parentProfile.update({
     where: { id: parentId },
     data: { name: name.trim() || undefined },
   });
 }
 
-export async function setChildPhoto(childId: string, photoDataUrl: string) {
+export async function setChildPhoto(familyId: string, childId: string, photoDataUrl: string) {
+  const c = await db.child.findFirst({ where: { id: childId, familyId } });
+  if (!c) throw new Error("Child not found or access denied");
   return db.child.update({
     where: { id: childId },
     data: { avatarPhoto: photoDataUrl },
   });
 }
 
-export async function setChildName(childId: string, name: string) {
+export async function setChildName(familyId: string, childId: string, name: string) {
+  const c = await db.child.findFirst({ where: { id: childId, familyId } });
+  if (!c) throw new Error("Child not found or access denied");
   return db.child.update({
     where: { id: childId },
     data: { name: name.trim() || undefined },
@@ -423,6 +440,7 @@ export async function setChildName(childId: string, name: string) {
 }
 
 export async function createChild(input: {
+  familyId: string;
   name: string;
   age: number;
   goalName: string;
@@ -435,6 +453,7 @@ export async function createChild(input: {
   return db.child.create({
     data: {
       id,
+      familyId: input.familyId,
       name: input.name.trim(),
       age: input.age,
       avatarColor,
@@ -446,6 +465,7 @@ export async function createChild(input: {
 }
 
 export async function createParent(input: {
+  familyId: string;
   name: string;
   role: string;
   avatarColor?: string;
@@ -456,9 +476,107 @@ export async function createParent(input: {
   return db.parentProfile.create({
     data: {
       id,
+      familyId: input.familyId,
       name: input.name.trim(),
       role: input.role.trim() || "Parent",
       avatarColor,
     },
   });
+}
+
+
+// ============================================================================
+// DELETE CAPABILITIES — Phase 2
+// ============================================================================
+// All delete functions verify familyId ownership before deleting.
+// Destructive operations (delete child, reset family) cascade to related data.
+// ============================================================================
+
+// Delete a transaction — verifies family ownership
+export async function deleteTransaction(familyId: string, id: string): Promise<void> {
+  const tx = await db.transaction.findFirst({ where: { id, familyId } });
+  if (!tx) throw new Error("Transaction not found or access denied");
+  await db.transaction.delete({ where: { id } });
+}
+
+// Delete a spending entry — verifies family ownership
+export async function deleteSpendingEntry(familyId: string, id: string): Promise<void> {
+  const entry = await db.spendingEntry.findFirst({ where: { id, familyId } });
+  if (!entry) throw new Error("Spending entry not found or access denied");
+  await db.spendingEntry.delete({ where: { id } });
+}
+
+// Close (not delete) an investment — preserves audit trail
+export async function closeInvestment(familyId: string, id: string): Promise<void> {
+  const inv = await db.investment.findFirst({ where: { id, familyId } });
+  if (!inv) throw new Error("Investment not found or access denied");
+  await db.investment.update({ where: { id }, data: { status: "closed" } });
+}
+
+// Delete an investment permanently — verifies ownership, cascades to transactions
+export async function deleteInvestment(familyId: string, id: string): Promise<void> {
+  const inv = await db.investment.findFirst({ where: { id, familyId } });
+  if (!inv) throw new Error("Investment not found or access denied");
+  await db.$transaction(async (tx) => {
+    // Delete related transactions first
+    await tx.transaction.deleteMany({ where: { investmentId: id, familyId } });
+    await tx.investment.delete({ where: { id } });
+  });
+}
+
+// Delete a child — cascades to ALL related data (accounts, transactions, spending, investments, tokens, goals)
+// This is a DESTRUCTIVE operation. The API route must confirm with the user.
+export async function deleteChild(familyId: string, childId: string): Promise<void> {
+  const child = await db.child.findFirst({ where: { id: childId, familyId } });
+  if (!child) throw new Error("Child not found or access denied");
+  
+  await db.$transaction(async (tx) => {
+    // Delete all related data in the correct order (respecting foreign keys)
+    await tx.transaction.deleteMany({ where: { childId, familyId } });
+    await tx.spendingEntry.deleteMany({ where: { childId, familyId } });
+    await tx.investment.deleteMany({ where: { childId, familyId } });
+    await tx.tokenLedgerEntry.deleteMany({ where: { childId, familyId } });
+    await tx.account.deleteMany({ where: { childId, familyId } });
+    await tx.goal.deleteMany({ where: { ownerId: childId, familyId } });
+    // Finally delete the child
+    await tx.child.delete({ where: { id: childId } });
+  });
+}
+
+// Delete a parent profile — cascades to spending entries and goals
+export async function deleteParent(familyId: string, parentId: string): Promise<void> {
+  const parent = await db.parentProfile.findFirst({ where: { id: parentId, familyId } });
+  if (!parent) throw new Error("Parent not found or access denied");
+  
+  await db.$transaction(async (tx) => {
+    await tx.spendingEntry.deleteMany({ where: { parentId, familyId } });
+    await tx.goal.deleteMany({ where: { ownerId: parentId, familyId } });
+    await tx.parentProfile.delete({ where: { id: parentId } });
+  });
+}
+
+// Reset ALL family data — keeps the User account and familyId, deletes everything else
+// This is the nuclear option. API route must require double confirmation.
+export async function resetFamilyData(familyId: string): Promise<{ deleted: { children: number; transactions: number; spending: number; investments: number; tokens: number; goals: number; parents: number; accounts: number } }> {
+  const counts = await db.$transaction(async (tx) => {
+    const transactions = await tx.transaction.deleteMany({ where: { familyId } });
+    const spending = await tx.spendingEntry.deleteMany({ where: { familyId } });
+    const investments = await tx.investment.deleteMany({ where: { familyId } });
+    const tokens = await tx.tokenLedgerEntry.deleteMany({ where: { familyId } });
+    const accounts = await tx.account.deleteMany({ where: { familyId } });
+    const goals = await tx.goal.deleteMany({ where: { familyId } });
+    const children = await tx.child.deleteMany({ where: { familyId } });
+    const parents = await tx.parentProfile.deleteMany({ where: { familyId } });
+    // Reset family settings to defaults
+    await tx.familySettings.deleteMany({ where: { familyId } });
+    return { children: children.count, transactions: transactions.count, spending: spending.count, investments: investments.count, tokens: tokens.count, goals: goals.count, parents: parents.count, accounts: accounts.count };
+  });
+  return { deleted: counts };
+}
+
+// Delete a spending category — verifies family ownership
+export async function deleteSpendingCategory(familyId: string, id: string): Promise<void> {
+  const cat = await db.spendingCategory.findFirst({ where: { id, familyId } });
+  if (!cat) throw new Error("Category not found or access denied");
+  await db.spendingCategory.delete({ where: { id } });
 }
