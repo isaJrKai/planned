@@ -1,0 +1,577 @@
+// ============================================================================
+// PRISMA SCHEMA — Planned Family Savings & Allowance App
+// ============================================================================
+// Mirrors the Zustand store types in src/lib/types.ts so the hydration layer
+// is a clean 1:1 mapping. All money in UGX (integer). All timestamps in
+// milliseconds since epoch (stored as BigInt to be safe across SQLite).
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---- Family members --------------------------------------------------------
+
+model Child {
+  id            String   @id
+  name          String
+  age           Int
+  avatarColor   String
+  avatarPhoto   String?  // base64 data URL or external URL
+  currentAmount Int      @default(0)  // UGX live savings balance
+  goalAmount    Int      @default(0)
+  goalName      String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  accounts     Account[]
+  transactions Transaction[]
+  spending     SpendingEntry[]
+  investments  Investment[]
+  tokenLedger  TokenLedgerEntry[]
+  goals        Goal[]                  @relation("ChildGoals")
+}
+
+model ParentProfile {
+  id           String   @id
+  name         String
+  role         String   // "Mother" | "Father" | "Guardian"
+  avatarColor  String
+  avatarPhoto  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  spending     SpendingEntry[]
+  goals        Goal[]                  @relation("ParentGoals")
+}
+
+// ---- Financial entities ---------------------------------------------------
+
+model Account {
+  id        String   @id @default(cuid())
+  childId   String
+  name      String
+  balance   Int      @default(0)  // UGX external balance
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  child     Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+}
+
+model Transaction {
+  id           String   @id @default(cuid())
+  childId      String
+  type         String   // save | withdraw | invest | redeem | parent_give
+  amount       Int      @default(0)  // UGX, always positive
+  tokenDelta   Int      @default(0)
+  accountId    String?
+  investmentId String?
+  note         String
+  timestamp    BigInt                          @default(0)
+  createdAt    DateTime @default(now())
+
+  child        Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  @@index([childId])
+  @@index([timestamp])
+}
+
+model SpendingCategory {
+  id      String @id
+  name    String
+  budget  Int    @default(0)  // UGX monthly budget
+}
+
+model SpendingEntry {
+  id         String   @id @default(cuid())
+  ownerId    String   // child id OR parent id
+  ownerKind  String   // "parent" | "child"
+  ownerName  String   // denormalized for convenience
+  category   String
+  amount     Int      @default(0)
+  note       String
+  timestamp  BigInt                         @default(0)
+  createdAt  DateTime @default(now())
+
+  child      Child?   @relation(fields: [childId], references: [id], onDelete: Cascade)
+  parent     ParentProfile? @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  childId    String?
+  parentId   String?
+
+  @@index([ownerId])
+  @@index([timestamp])
+}
+
+model Investment {
+  id             String   @id @default(cuid())
+  childId        String
+  name           String
+  type           String   // Equity | Bond | Savings Bond | Treasury Bill | Unit Trust
+  amountInvested Int      @default(0)
+  currentValue   Int      @default(0)
+  status         String   @default("active")  // active | closed
+  openedAt       BigInt                          @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  child          Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+}
+
+model TokenLedgerEntry {
+  id        String   @id @default(cuid())
+  childId   String
+  type      String   // parent_give | redeem
+  tokens    Int      @default(0)
+  note      String
+  timestamp BigInt                          @default(0)
+  createdAt DateTime @default(now())
+
+  child     Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  @@index([childId])
+}
+
+model Goal {
+  id            String   @id @default(cuid())
+  ownerId       String   // child id OR parent id
+  ownerKind     String   // "parent" | "child"
+  ownerName     String
+  title         String
+  type          String   // save | spend_less
+  cadence       String   // weekly | monthly | annual
+  visibility    String   // private | revealed
+  targetAmount  Int      @default(0)
+  currentAmount Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  periodStart   BigInt                          @default(0)
+  note          String?
+
+  child         Child?   @relation("ChildGoals", fields: [childId], references: [id], onDelete: Cascade)
+  parent        ParentProfile? @relation("ParentGoals", fields: [parentId], references: [id], onDelete: Cascade)
+  childId       String?
+  parentId      String?
+
+  @@index([ownerId])
+}
+
+// ---- Family-level settings (single row) -----------------------------------
+
+model FamilySettings {
+  id              String   @id @default("singleton")
+  familyId        String   @unique @default("singleton")
+  annualTheme     String   @default("")
+  monthlyQuote    String   @default("")
+  currency        String   @default("UGX")
+  notifyOnSave    Boolean  @default(true)
+  notifyOnGoalReached Boolean @default(true)
+  notifyOnTokenAward Boolean @default(true)
+  monthlyReportDay Int    @default(1)
+  lastMonthlySummaryAt DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ============================================================================
+// PRODUCTION INFRASTRUCTURE MODELS (Prompt 1)
+// ============================================================================
+
+// ---- Authentication -------------------------------------------------------
+
+model User {
+  id                  String   @id @default(cuid())
+  email               String   @unique
+  passwordHash        String?
+  name                String
+  platformRole        String   @default("USER")  // FOUNDER | USER
+  familyRole          String   @default("PARENT") // FAMILY_MANAGER | PARENT | CHILD
+  familyId            String?
+  childId             String?  // Links to Child if familyRole=CHILD
+  emailVerified       DateTime?
+  image               String?
+  // Founder-only security: security question + hashed answer for recovery
+  securityQuestion    String?
+  securityAnswerHash  String?
+  // TOTP 2FA
+  twoFactorSecret     String?
+  twoFactorEnabled    Boolean  @default(false)
+  twoFactorEnrolledAt DateTime?
+  twoFactorBackupCodesHash String?
+  // Child PIN login (4-digit code, bcrypt hashed)
+  pinHash             String?
+  failedLoginAttempts Int      @default(0)
+  lockedUntil         DateTime?
+  lastLoginAt         DateTime?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  deletedAt           DateTime?
+
+  sessions            Session[]
+  auditLogs           AuditLog[]
+  notifications       Notification[]
+  devices             Device[]
+  pushSubscriptions   PushSubscription[]
+  passwordResetTokens PasswordResetToken[]
+  lessonProgress      LessonProgress[]
+  quizAttempts        QuizAttempt[]
+  achievements        UserAchievement[]
+
+  @@index([familyId])
+  @@index([email])
+  @@index([deletedAt])
+  @@index([platformRole])
+}
+
+// ---- System Settings (singleton) -----------------------------------------
+// superAdminUserId is AUTHORITATIVE. superAdminEmail is metadata only.
+model SystemSettings {
+  id                String   @id @default("singleton")
+  isInitialized     Boolean  @default(false)
+  superAdminUserId  String?
+  superAdminEmail   String?
+  setupCompletedAt  DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model Session {
+  id            String   @id @default(cuid())
+  sessionToken  String   @unique
+  userId        String
+  expires       DateTime
+  ipAddress     String?
+  userAgent     String?
+  createdAt     DateTime @default(now())
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expires])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expires   DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+}
+
+// ---- Audit Trail ----------------------------------------------------------
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  familyId   String?
+  action     String
+  entityType String
+  entityId   String
+  before     String?  // JSON
+  after      String?  // JSON
+  ipAddress  String?
+  userAgent  String?
+  success    Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  user       User?    @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([familyId, createdAt])
+  @@index([entityType, entityId])
+  @@index([action])
+}
+
+// ---- Notifications --------------------------------------------------------
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  channel   String   @default("IN_APP")  // IN_APP | EMAIL | PUSH
+  status    String   @default("UNREAD")  // UNREAD | READ | DISMISSED
+  title     String
+  body      String
+  metadata  String?  // JSON
+  createdAt DateTime @default(now())
+  readAt    DateTime?
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([createdAt])
+}
+
+// ---- File Uploads ---------------------------------------------------------
+
+model FileUpload {
+  id           String   @id @default(cuid())
+  familyId     String
+  uploaderId   String
+  filename     String
+  mimeType     String
+  size         Int
+  storageKey   String
+  storageUrl   String
+  thumbnailUrl String?
+  createdAt    DateTime @default(now())
+  deletedAt    DateTime?
+
+  @@index([familyId, createdAt])
+  @@index([storageKey])
+}
+
+// ---- Devices + Push -------------------------------------------------------
+
+model Device {
+  id         String   @id @default(cuid())
+  userId     String
+  name       String
+  userAgent  String?
+  lastSeenAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model PushSubscription {
+  id            String   @id @default(cuid())
+  userId        String
+  endpoint      String
+  keys          String   // JSON
+  createdAt     DateTime @default(now())
+  deactivatedAt DateTime?
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ---- Email Log ------------------------------------------------------------
+
+model EmailLog {
+  id         String   @id @default(cuid())
+  to         String
+  subject    String
+  template   String
+  status     String   // sent | failed | bounced
+  providerId String?
+  error      String?
+  createdAt  DateTime @default(now())
+
+  @@index([to, createdAt])
+  @@index([status])
+}
+
+// ============================================================================
+// BUSINESS DOMAIN MODELS (Prompt 2)
+// ============================================================================
+
+// ---- Achievements Domain --------------------------------------------------
+
+model Achievement {
+  id            String   @id @default(cuid())
+  code          String   @unique  // e.g. "FIRST_SAVE", "STREAK_7", "GOAL_COMPLETER"
+  title         String
+  description   String
+  icon          String   // lucide icon name
+  category      String   // savings | spending | goals | tokens | education | streaks
+  tier          String   @default("bronze")  // bronze | silver | gold | platinum
+  points        Int      @default(10)
+  requirement   String   // JSON describing the evaluation criteria
+  createdAt     DateTime @default(now())
+
+  userAchievements UserAchievement[]
+
+  @@index([category])
+  @@index([tier])
+}
+
+model UserAchievement {
+  id            String   @id @default(cuid())
+  userId        String
+  achievementId String
+  earnedAt      DateTime @default(now())
+  metadata      String?  // JSON with context (e.g. which goal, which streak)
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+  @@index([userId])
+  @@index([achievementId])
+}
+
+// ---- Education Domain -----------------------------------------------------
+
+model Lesson {
+  id            String   @id @default(cuid())
+  slug          String   @unique
+  title         String
+  description   String
+  subject       String   // saving | budgeting | investing | risk | compound_growth | delayed_gratification | entrepreneurship
+  difficulty    String   @default("beginner")  // beginner | intermediate | advanced
+  ageMin        Int      @default(7)
+  ageMax        Int      @default(18)
+  estimatedMinutes Int   @default(10)
+  content       String   // Markdown content
+  quiz          String?  // JSON array of {question, options[], correctIndex, explanation}
+  order         Int      @default(0)
+  learningPathId String?
+  learningPath  LearningPath? @relation(fields: [learningPathId], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  progress      LessonProgress[]
+  quizAttempts  QuizAttempt[]
+
+  @@index([subject])
+  @@index([difficulty])
+  @@index([order])
+}
+
+model LearningPath {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  description String
+  subject     String
+  icon        String
+  createdAt   DateTime @default(now())
+
+  lessons     Lesson[]
+}
+
+model LessonProgress {
+  id           String   @id @default(cuid())
+  userId       String
+  lessonId     String
+  status       String   @default("NOT_STARTED")  // NOT_STARTED | IN_PROGRESS | COMPLETED
+  startedAt    DateTime?
+  completedAt  DateTime?
+  timeSpentSec Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson       Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@index([userId, status])
+}
+
+model QuizAttempt {
+  id           String   @id @default(cuid())
+  userId       String
+  lessonId     String
+  answers      String   // JSON array of selected indices
+  score        Int      // 0-100
+  passed       Boolean
+  attemptedAt  DateTime @default(now())
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson       Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@index([userId, lessonId])
+  @@index([attemptedAt])
+}
+
+// ---- Recommendations Domain -----------------------------------------------
+
+model Recommendation {
+  id           String   @id @default(cuid())
+  userId       String
+  type         String   // savings | spending | goals | education | investment | general
+  priority     Int      @default(5)  // 1 (highest) to 10 (lowest)
+  title        String
+  body         String
+  actionLabel  String?
+  actionTarget String?  // URL or action identifier
+  status       String   @default("ACTIVE")  // ACTIVE | DISMISSED | ACTED_UPON
+  createdAt    DateTime @default(now())
+  expiresAt    DateTime?
+
+  @@index([userId, status, priority])
+  @@index([createdAt])
+}
+
+// ---- Saving Streaks -------------------------------------------------------
+
+model SavingStreak {
+  id           String   @id @default(cuid())
+  childId      String
+  currentStreak Int     @default(0)
+  longestStreak Int     @default(0)
+  lastSaveDate DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([childId])
+  @@index([childId])
+}
+
+// ---- Rate Limiting (DB-backed, survives restarts) ------------------------
+model RateLimitEntry {
+  id        String   @id @default(cuid())
+  key       String   // e.g. "login:ip:127.0.0.1"
+  count     Int      @default(1)
+  resetAt   DateTime
+  createdAt DateTime @default(now())
+
+  @@unique([key])
+  @@index([resetAt])
+}
+
+// ---- 2FA Challenges (DB-backed, auto-expiring) ---------------------------
+model TwoFactorChallenge {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  consumed  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([token])
+  @@index([expiresAt])
+}
+
+
+model ChildProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  childId         String   @unique
+  nickname        String
+  birthDate       DateTime?
+  animalCompanion String?
+  theme           String   @default("nature")
+  grade           String?
+  favoriteColor   String   @default("#C9A84C")
+  unlockLevel     Int      @default(1)
+  dashboardMode   String   @default("explorer")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  @@index([userId])
+  @@index([childId])
+}
+
+model ChildPreferences {
+  id              String   @id @default(cuid())
+  childId         String   @unique
+  lastTab         String   @default("home")
+  lastRoute       String   @default("/child")
+  motionEnabled   Boolean  @default(true)
+  soundEnabled    Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}

@@ -1,0 +1,945 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ===========================================================================
+   EDITORIAL JAPANDI-LUXE THEME — Planned Kids Savings
+   ===========================================================================
+   Canvas: deep green-black #090C0A (aged mahogany at dusk)
+   Gold foil: #C9A84C -> #E8D5A0 -> #D4AF37 (animated shimmer)
+   Green-wood tones: #1A332A, #2A4A3A (depth, never rough)
+   Typography: Playfair Display (serif headings/amounts) + Inter (sans body)
+   Tenebrism: cards emerge from near-black with ethereal glow
+   =========================================================================== */
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-inter);
+  --font-editorial: var(--font-playfair);
+  --font-mono: var(--font-mono-stack);
+
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* ===========================================================================
+   THEME SYSTEM — 4 editorial themes via [data-theme] on <html>
+   ===========================================================================
+   dark  : Green-black + gold         (private bank at dusk)
+   light : Warm ivory + gold          (private bank lobby in daylight)
+   pink  : Blush pink + gold          (fashion editorial, Vogue-like)
+   red   : Deep oxblood + gold        (regal, royal chamber)
+   =========================================================================== */
+
+:root,
+[data-theme="dark"] {
+  --radius: 0.5rem;
+
+  --background: #090C0A;
+  --foreground: #E8E4D8;
+  --card: #0E1310;
+  --card-foreground: #E8E4D8;
+  --popover: #0E1310;
+  --popover-foreground: #E8E4D8;
+  --primary: #C9A84C;
+  --primary-foreground: #090C0A;
+  --secondary: #1A332A;
+  --secondary-foreground: #E8E4D8;
+  --muted: #141A16;
+  --muted-foreground: #8A8676;
+  --accent: #2A4A3A;
+  --accent-foreground: #E8E4D8;
+  --destructive: #C45A4A;
+  --border: rgba(201, 168, 76, 0.14);
+  --input: rgba(201, 168, 76, 0.18);
+  --ring: #C9A84C;
+
+  --chart-1: #C9A84C;
+  --chart-2: #6BBF8A;
+  --chart-3: #D4943A;
+  --chart-4: #8A9B82;
+  --chart-5: #E8D5A0;
+
+  --sidebar: #0B0F0D;
+  --sidebar-foreground: #E8E4D8;
+  --sidebar-primary: #C9A84C;
+  --sidebar-primary-foreground: #090C0A;
+  --sidebar-accent: #141A16;
+  --sidebar-accent-foreground: #E8E4D8;
+  --sidebar-border: rgba(201, 168, 76, 0.10);
+  --sidebar-ring: #C9A84C;
+
+  /* Theme-specific helper tokens used by surface-wood, halos, etc. */
+  --surface-wood-bg: linear-gradient(160deg, rgba(26, 51, 42, 0.42) 0%, rgba(14, 19, 16, 0.85) 100%);
+  --surface-wood-strong-bg: linear-gradient(180deg, rgba(26, 51, 42, 0.55) 0%, rgba(11, 15, 13, 0.95) 100%);
+  --surface-flat-bg: rgba(14, 19, 16, 0.6);
+  --surface-wood-glow: rgba(201, 168, 76, 0.04);
+  --surface-wood-strong-glow: rgba(201, 168, 76, 0.07);
+  --hairline: rgba(201, 168, 76, 0.12);
+  --hairline-strong: rgba(201, 168, 76, 0.18);
+  --hairline-soft: rgba(201, 168, 76, 0.06);
+  --micro-label: rgba(232, 228, 216, 0.55);
+  --text-soft: rgba(232, 228, 216, 0.85);
+  --text-softer: rgba(232, 228, 216, 0.60);
+  --text-faint: rgba(232, 228, 216, 0.45);
+  --grain-opacity: 0.015;
+  --topbar-bg: rgba(9, 12, 10, 0.80);
+
+  /* Theme-specific gold foil — bright gold shimmer for dark canvas */
+  --gold-foil-1: #C9A84C;
+  --gold-foil-2: #E8D5A0;
+  --gold-foil-3: #D4AF37;
+  --gold-foil-static-1: #E8D5A0;
+  --gold-foil-static-2: #C9A84C;
+  --gold-foil-static-3: #D4AF37;
+
+  /* Card shadows — dark theme uses deep black + gold glow */
+  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.5);
+  --card-shadow-hover: 0 2px 4px rgba(0, 0, 0, 0.5), 0 16px 40px rgba(201, 168, 76, 0.18);
+
+  --font-mono-stack: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* ---- LIGHT / IVORY + GOLD — "Hermès Private Bank" ------------------------ */
+/* Warm ivory paper, deep ink, antique gold. Should feel like a leather-bound
+   ledger in a private bank lobby — never flat, never clinical. */
+[data-theme="light"] {
+  --background: #F5EFE0;            /* warm aged-paper ivory */
+  --foreground: #1A1610;            /* deep ink, almost black */
+  --card: #FFFCF3;                  /* warm white card */
+  --card-foreground: #1A1610;
+  --popover: #FFFCF3;
+  --popover-foreground: #1A1610;
+  --primary: #9A7B1F;               /* rich antique gold (darker for contrast) */
+  --primary-foreground: #FFFCF3;
+  --secondary: #EDE3C8;             /* warm cream secondary */
+  --secondary-foreground: #1A1610;
+  --muted: #F0E8D2;
+  --muted-foreground: #6B6353;      /* warm gray-brown */
+  --accent: #C9A84C;                /* lighter gold accent */
+  --accent-foreground: #1A1610;
+  --destructive: #A0381F;
+  --border: rgba(154, 123, 31, 0.22);
+  --input: rgba(154, 123, 31, 0.18);
+  --ring: #9A7B1F;
+
+  --chart-1: #9A7B1F;               /* antique gold */
+  --chart-2: #6B7A3F;               /* olive */
+  --chart-3: #B8651F;               /* burnt amber */
+  --chart-4: #8A6E3F;               /* bronze */
+  --chart-5: #D4AF37;               /* light gold */
+
+  --sidebar: #EDE3C8;
+  --sidebar-foreground: #1A1610;
+  --sidebar-primary: #9A7B1F;
+  --sidebar-primary-foreground: #FFFCF3;
+  --sidebar-accent: #F0E8D2;
+  --sidebar-accent-foreground: #1A1610;
+  --sidebar-border: rgba(154, 123, 31, 0.18);
+  --sidebar-ring: #9A7B1F;
+
+  /* Surfaces — soft warm shadow + cream gradient, like fine paper */
+  --surface-wood-bg: linear-gradient(160deg, #FFFCF3 0%, #F5EFE0 100%);
+  --surface-wood-strong-bg: linear-gradient(180deg, #FFFCF3 0%, #EDE3C8 100%);
+  --surface-flat-bg: rgba(255, 252, 243, 0.85);
+  --surface-wood-glow: rgba(154, 123, 31, 0.06);
+  --surface-wood-strong-glow: rgba(201, 168, 76, 0.10);
+  --hairline: rgba(154, 123, 31, 0.22);
+  --hairline-strong: rgba(154, 123, 31, 0.35);
+  --hairline-soft: rgba(154, 123, 31, 0.10);
+  --micro-label: rgba(26, 22, 16, 0.55);
+  --text-soft: rgba(26, 22, 16, 0.85);
+  --text-softer: rgba(26, 22, 16, 0.60);
+  --text-faint: rgba(26, 22, 16, 0.42);
+  --grain-opacity: 0.04;
+  --topbar-bg: rgba(245, 239, 224, 0.88);
+
+  /* Theme-specific gold foil — darker stops so text shows on ivory */
+  --gold-foil-1: #9A7B1F;
+  --gold-foil-2: #C9A84C;
+  --gold-foil-3: #B8941F;
+  --gold-foil-static-1: #B8941F;
+  --gold-foil-static-2: #9A7B1F;
+  --gold-foil-static-3: #D4AF37;
+
+  /* Soft shadow for cards (only on light themes) */
+  --card-shadow: 0 1px 2px rgba(154, 123, 31, 0.04), 0 8px 24px rgba(154, 123, 31, 0.06);
+  --card-shadow-hover: 0 2px 4px rgba(154, 123, 31, 0.06), 0 16px 40px rgba(154, 123, 31, 0.12);
+
+  --font-mono-stack: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* ---- PINK + GOLD — "Chanel Boutique / Vogue Editorial" ------------------- */
+/* Blush ivory with deep wine text and ROSE GOLD accents. Should feel like a
+   fashion magazine — high contrast typography, rose-gold shimmer, dusty rose
+   surfaces. Never bubblegum, always sophisticated. */
+[data-theme="pink"] {
+  --background: #FCEBE4;            /* warmer blush, more saturated */
+  --foreground: #3D1521;            /* deep wine text */
+  --card: #FFF8F4;                  /* warm white card */
+  --card-foreground: #3D1521;
+  --popover: #FFF8F4;
+  --popover-foreground: #3D1521;
+  --primary: #B76E79;               /* rose gold */
+  --primary-foreground: #FFF8F4;
+  --secondary: #F5DDD8;             /* dusty rose */
+  --secondary-foreground: #3D1521;
+  --muted: #FAE5DE;
+  --muted-foreground: #7A4858;      /* mauve */
+  --accent: #8B3A4A;                /* deep wine accent */
+  --accent-foreground: #FFF8F4;
+  --destructive: #A0381F;
+  --border: rgba(183, 110, 121, 0.26);
+  --input: rgba(183, 110, 121, 0.20);
+  --ring: #B76E79;
+
+  --chart-1: #B76E79;               /* rose gold */
+  --chart-2: #8B3A4A;               /* deep wine */
+  --chart-3: #C9A84C;               /* warm gold for contrast */
+  --chart-4: #D4869A;               /* light rose */
+  --chart-5: #E8B4A0;               /* peach rose */
+
+  --sidebar: #F5DDD8;
+  --sidebar-foreground: #3D1521;
+  --sidebar-primary: #B76E79;
+  --sidebar-primary-foreground: #FFF8F4;
+  --sidebar-accent: #FAE5DE;
+  --sidebar-accent-foreground: #3D1521;
+  --sidebar-border: rgba(183, 110, 121, 0.20);
+  --sidebar-ring: #B76E79;
+
+  /* Surfaces — blush gradient with rose-gold glow */
+  --surface-wood-bg: linear-gradient(160deg, #FFF8F4 0%, #FCEBE4 100%);
+  --surface-wood-strong-bg: linear-gradient(180deg, #FFF8F4 0%, #F5DDD8 100%);
+  --surface-flat-bg: rgba(255, 248, 244, 0.85);
+  --surface-wood-glow: rgba(183, 110, 121, 0.08);
+  --surface-wood-strong-glow: rgba(183, 110, 121, 0.14);
+  --hairline: rgba(183, 110, 121, 0.26);
+  --hairline-strong: rgba(183, 110, 121, 0.40);
+  --hairline-soft: rgba(183, 110, 121, 0.12);
+  --micro-label: rgba(61, 21, 33, 0.55);
+  --text-soft: rgba(61, 21, 33, 0.85);
+  --text-softer: rgba(61, 21, 33, 0.60);
+  --text-faint: rgba(61, 21, 33, 0.42);
+  --grain-opacity: 0.035;
+  --topbar-bg: rgba(252, 235, 228, 0.88);
+
+  /* Rose gold foil — wine → rose-gold → wine */
+  --gold-foil-1: #8B3A4A;
+  --gold-foil-2: #B76E79;
+  --gold-foil-3: #C9A84C;
+  --gold-foil-static-1: #B76E79;
+  --gold-foil-static-2: #8B3A4A;
+  --gold-foil-static-3: #E8B4A0;
+
+  --card-shadow: 0 1px 2px rgba(183, 110, 121, 0.05), 0 8px 24px rgba(139, 58, 74, 0.08);
+  --card-shadow-hover: 0 2px 4px rgba(183, 110, 121, 0.08), 0 16px 40px rgba(139, 58, 74, 0.16);
+
+  --font-mono-stack: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* ---- RED + GOLD — "Venetian Royal Chamber" ------------------------------- */
+/* Deep oxblood velvet with cream text and ANTIQUE gold. Should feel like a
+   Venetian palazzo library — opulent, regal, candlelit. Never bright red,
+   always oxblood/burgundy depth. */
+[data-theme="red"] {
+  --background: #170404;            /* deeper oxblood, near-black with red undertone */
+  --foreground: #F0DDB5;            /* warm cream/parchment */
+  --card: #210606;                  /* slightly lifted oxblood */
+  --card-foreground: #F0DDB5;
+  --popover: #210606;
+  --popover-foreground: #F0DDB5;
+  --primary: #D4AF37;               /* antique gold */
+  --primary-foreground: #170404;
+  --secondary: #340A0A;             /* lifted oxblood */
+  --secondary-foreground: #F0DDB5;
+  --muted: #2A0707;
+  --muted-foreground: #B89A78;      /* warm beige */
+  --accent: #B8860B;                /* dark goldenrod for variation */
+  --accent-foreground: #170404;
+  --destructive: #E8584A;
+  --border: rgba(212, 175, 55, 0.22);
+  --input: rgba(212, 175, 55, 0.22);
+  --ring: #D4AF37;
+
+  --chart-1: #D4AF37;               /* antique gold */
+  --chart-2: #B8860B;               /* dark goldenrod */
+  --chart-3: #C45A4A;               /* warm terracotta */
+  --chart-4: #8B2635;               /* deep red */
+  --chart-5: #F0DDB5;               /* cream */
+
+  --sidebar: #110303;
+  --sidebar-foreground: #F0DDB5;
+  --sidebar-primary: #D4AF37;
+  --sidebar-primary-foreground: #170404;
+  --sidebar-accent: #2A0707;
+  --sidebar-accent-foreground: #F0DDB5;
+  --sidebar-border: rgba(212, 175, 55, 0.14);
+  --sidebar-ring: #D4AF37;
+
+  /* Surfaces — velvet oxblood with antique gold glow */
+  --surface-wood-bg: linear-gradient(160deg, rgba(52, 10, 10, 0.65) 0%, rgba(33, 6, 6, 0.95) 100%);
+  --surface-wood-strong-bg: linear-gradient(180deg, rgba(52, 10, 10, 0.80) 0%, rgba(23, 4, 4, 0.98) 100%);
+  --surface-flat-bg: rgba(33, 6, 6, 0.75);
+  --surface-wood-glow: rgba(212, 175, 55, 0.08);
+  --surface-wood-strong-glow: rgba(212, 175, 55, 0.14);
+  --hairline: rgba(212, 175, 55, 0.20);
+  --hairline-strong: rgba(212, 175, 55, 0.32);
+  --hairline-soft: rgba(212, 175, 55, 0.10);
+  --micro-label: rgba(240, 221, 181, 0.55);
+  --text-soft: rgba(240, 221, 181, 0.85);
+  --text-softer: rgba(240, 221, 181, 0.60);
+  --text-faint: rgba(240, 221, 181, 0.42);
+  --grain-opacity: 0.025;
+  --topbar-bg: rgba(23, 4, 4, 0.85);
+
+  /* Antique gold foil — deep gold → bright gold → deep gold */
+  --gold-foil-1: #D4AF37;
+  --gold-foil-2: #FFD700;
+  --gold-foil-3: #B8860B;
+  --gold-foil-static-1: #FFD700;
+  --gold-foil-static-2: #D4AF37;
+  --gold-foil-static-3: #B8860B;
+
+  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.30), 0 8px 24px rgba(0, 0, 0, 0.40);
+  --card-shadow-hover: 0 2px 4px rgba(0, 0, 0, 0.40), 0 16px 40px rgba(212, 175, 55, 0.18);
+
+  --font-mono-stack: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.dark {
+  /* Mirror of [data-theme="dark"] for shadcn compatibility */
+  --background: #090C0A;
+  --foreground: #E8E4D8;
+  --card: #0E1310;
+  --card-foreground: #E8E4D8;
+  --popover: #0E1310;
+  --popover-foreground: #E8E4D8;
+  --primary: #C9A84C;
+  --primary-foreground: #090C0A;
+  --secondary: #1A332A;
+  --secondary-foreground: #E8E4D8;
+  --muted: #141A16;
+  --muted-foreground: #8A8676;
+  --accent: #2A4A3A;
+  --accent-foreground: #E8E4D8;
+  --destructive: #C45A4A;
+  --border: rgba(201, 168, 76, 0.14);
+  --input: rgba(201, 168, 76, 0.18);
+  --ring: #C9A84C;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html, body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Tabular nums everywhere numbers appear so columns align like a ledger */
+  .tabular-nums,
+  table,
+  input[type="number"] {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+  }
+
+  /* Custom scrollbar — slim, gold-tinted */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--hairline-strong);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--primary);
+  }
+}
+
+/* ===========================================================================
+   EDITORIAL TYPOGRAPHY — Playfair Display serif for headings + amounts
+   =========================================================================== */
+
+.font-editorial {
+  font-family: var(--font-playfair), "Playfair Display", Georgia, "Times New Roman", serif;
+  font-feature-settings: "liga" 1, "dlig" 1, "kern" 1;
+}
+
+.tracking-editorial {
+  letter-spacing: 0.12em;
+}
+.tracking-wider-editorial {
+  letter-spacing: 0.20em;
+}
+.tracking-widest-editorial {
+  letter-spacing: 0.28em;
+}
+
+/* Micro-labels — uppercase, tiny, high tracking. Editorial section headers. */
+.micro-label {
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--micro-label);
+  font-weight: 500;
+}
+
+.micro-label-gold {
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--primary);
+  font-weight: 500;
+}
+
+/* ===========================================================================
+   GOLD FOIL — animated shimmer text for key financial figures
+   Each theme defines its own --gold-foil-* tokens so the foil always
+   contrasts correctly with the background (e.g. dark stops on ivory,
+   rose-gold stops on pink, antique gold on oxblood).
+   =========================================================================== */
+
+.text-gold-foil {
+  background: linear-gradient(
+    100deg,
+    var(--gold-foil-1) 0%,
+    var(--gold-foil-2) 25%,
+    var(--gold-foil-3) 50%,
+    var(--gold-foil-2) 75%,
+    var(--gold-foil-1) 100%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: gold-shimmer 6s linear infinite;
+}
+
+.text-gold-foil-static {
+  background: linear-gradient(
+    180deg,
+    var(--gold-foil-static-1) 0%,
+    var(--gold-foil-static-2) 50%,
+    var(--gold-foil-static-3) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+@keyframes gold-shimmer {
+  0%   { background-position: 0% center; }
+  100% { background-position: 200% center; }
+}
+
+/* ===========================================================================
+   TENEBRIST SURFACES — cards with theme-aware depth + shadow + hover lift
+   =========================================================================== */
+
+.surface-wood {
+  background:
+    radial-gradient(120% 100% at 0% 0%, var(--surface-wood-glow) 0%, transparent 50%),
+    var(--surface-wood-bg);
+  border: 1px solid var(--hairline);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: var(--card-shadow);
+  transition: box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+              transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+              border-color 0.35s ease;
+}
+
+.surface-wood-strong {
+  background:
+    radial-gradient(140% 120% at 50% 0%, var(--surface-wood-strong-glow) 0%, transparent 55%),
+    var(--surface-wood-strong-bg);
+  border: 1px solid var(--hairline-strong);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: var(--card-shadow);
+  transition: box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+              transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+              border-color 0.35s ease;
+}
+
+.surface-flat {
+  background: var(--surface-flat-bg);
+  border: 1px solid var(--hairline-soft);
+  transition: border-color 0.3s ease;
+}
+
+/* Hover lift effect — only on interactive cards (add .card-hover) */
+.card-hover {
+  cursor: pointer;
+}
+.card-hover:hover {
+  box-shadow: var(--card-shadow-hover);
+  transform: translateY(-2px);
+  border-color: var(--hairline-strong);
+}
+
+/* Subtle hover for non-interactive cards inside tables/lists */
+.row-hover:hover {
+  background: color-mix(in srgb, var(--primary) 3%, transparent);
+}
+
+/* Ethereal halo glow behind child avatars */
+.halo-glow {
+  position: relative;
+}
+.halo-glow::before {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  background: var(--halo-color, #C9A84C);
+  opacity: 0.18;
+  filter: blur(12px);
+  z-index: 0;
+}
+
+/* Hairline gold gradient dividers — theme-aware via primary color */
+.divider-gold {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--primary) 35%, transparent) 15%,
+    color-mix(in srgb, var(--primary) 15%, transparent) 85%,
+    transparent 100%
+  );
+}
+
+.divider-gold-vertical {
+  width: 1px;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    color-mix(in srgb, var(--primary) 35%, transparent) 15%,
+    color-mix(in srgb, var(--primary) 15%, transparent) 85%,
+    transparent 100%
+  );
+}
+
+/* Ultra-fine noise grain for organic warmth */
+.grain-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: var(--grain-opacity);
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+
+/* Ambient backdrop — very slow drifting radial glow, sets the mood.
+   Sits behind everything (z-0), uses primary color at low opacity. */
+.ambient-backdrop {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+.ambient-backdrop::before,
+.ambient-backdrop::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.5;
+}
+.ambient-backdrop::before {
+  width: 60vw;
+  height: 60vw;
+  top: -20vw;
+  right: -10vw;
+  background: radial-gradient(circle, var(--surface-wood-strong-glow) 0%, transparent 70%);
+  animation: ambient-drift-1 32s ease-in-out infinite;
+}
+.ambient-backdrop::after {
+  width: 50vw;
+  height: 50vw;
+  bottom: -15vw;
+  left: -10vw;
+  background: radial-gradient(circle, var(--surface-wood-glow) 0%, transparent 70%);
+  animation: ambient-drift-2 40s ease-in-out infinite;
+}
+
+@keyframes ambient-drift-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(-30px, 40px) scale(1.1); }
+}
+@keyframes ambient-drift-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(40px, -30px) scale(1.15); }
+}
+
+/* Progress bars — thin, editorial, with subtle shimmer */
+.progress-thin {
+  height: 3px;
+  background: var(--hairline-soft);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+.progress-thin > div {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary) 0%, var(--chart-5) 100%);
+  transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+  position: relative;
+  overflow: hidden;
+}
+/* Subtle shimmer sweep on progress fill */
+.progress-thin > div::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.25) 50%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  animation: progress-shimmer 3s ease-in-out infinite;
+}
+@keyframes progress-shimmer {
+  0%   { transform: translateX(-100%); }
+  60%  { transform: translateX(100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Status pills — muted, never loud */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 10px;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  font-weight: 500;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+.pill-gold {
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  color: var(--primary);
+  border: 1px solid color-mix(in srgb, var(--primary) 35%, transparent);
+}
+.pill-green {
+  background: color-mix(in srgb, var(--chart-2) 12%, transparent);
+  color: var(--chart-2);
+  border: 1px solid color-mix(in srgb, var(--chart-2) 35%, transparent);
+}
+.pill-amber {
+  background: color-mix(in srgb, var(--chart-3) 12%, transparent);
+  color: var(--chart-3);
+  border: 1px solid color-mix(in srgb, var(--chart-3) 35%, transparent);
+}
+.pill-muted {
+  background: color-mix(in srgb, var(--foreground) 6%, transparent);
+  color: var(--micro-label);
+  border: 1px solid color-mix(in srgb, var(--foreground) 10%, transparent);
+}
+
+/* Gold primary button — refined with active press feedback */
+.btn-gold {
+  background: linear-gradient(180deg, var(--chart-5) 0%, var(--primary) 100%);
+  color: var(--primary-foreground);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  border: 1px solid var(--primary);
+  transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.btn-gold:hover:not(:disabled) {
+  background: linear-gradient(180deg, var(--chart-5) 0%, var(--chart-3) 100%);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--primary) 30%, transparent),
+              0 0 0 1px var(--primary);
+  transform: translateY(-1px);
+}
+.btn-gold:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px color-mix(in srgb, var(--primary) 20%, transparent);
+}
+.btn-gold:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--primary);
+  border: 1px solid color-mix(in srgb, var(--primary) 35%, transparent);
+  transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.btn-outline:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
+  border-color: color-mix(in srgb, var(--primary) 55%, transparent);
+  transform: translateY(-1px);
+}
+.btn-outline:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-softer);
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+}
+.btn-ghost:hover {
+  color: var(--chart-5);
+  background: color-mix(in srgb, var(--primary) 6%, transparent);
+}
+
+/* Input fields — theme-aware with gold focus ring */
+.input-editorial {
+  background: var(--surface-flat-bg);
+  border: 1px solid var(--hairline-strong);
+  color: var(--foreground);
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+.input-editorial:focus {
+  outline: none;
+  border-color: color-mix(in srgb, var(--primary) 55%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 10%, transparent);
+}
+.input-editorial::placeholder {
+  color: var(--text-faint);
+}
+
+/* Sidebar nav item */
+.nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  color: var(--micro-label);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.nav-item:hover {
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--primary) 4%, transparent);
+}
+.nav-item.active {
+  color: var(--chart-5);
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
+}
+.nav-item.active::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  background: linear-gradient(180deg, var(--primary) 0%, var(--chart-5) 100%);
+  border-radius: 1px;
+}
+
+/* Table styling — editorial ledger look */
+.ledger-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  font-size: 13px;
+}
+.ledger-table th {
+  text-align: left;
+  padding: 14px 16px;
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--text-faint);
+  border-bottom: 1px solid var(--hairline-strong);
+  background: transparent;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.ledger-table td {
+  padding: 14px 16px;
+  color: var(--text-soft);
+  border-bottom: 1px solid var(--hairline-soft);
+  vertical-align: middle;
+  transition: background 0.2s ease;
+}
+.ledger-table tbody tr {
+  transition: background 0.2s ease;
+}
+.ledger-table tbody tr:hover td {
+  background: color-mix(in srgb, var(--primary) 4%, transparent);
+}
+.ledger-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Animations */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up {
+  animation: fade-up 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Staggered entrance — add .stagger to parent, children animate in sequence */
+.stagger > * {
+  animation: fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.stagger > *:nth-child(1) { animation-delay: 0.02s; }
+.stagger > *:nth-child(2) { animation-delay: 0.06s; }
+.stagger > *:nth-child(3) { animation-delay: 0.10s; }
+.stagger > *:nth-child(4) { animation-delay: 0.14s; }
+.stagger > *:nth-child(5) { animation-delay: 0.18s; }
+.stagger > *:nth-child(6) { animation-delay: 0.22s; }
+.stagger > *:nth-child(7) { animation-delay: 0.26s; }
+.stagger > *:nth-child(8) { animation-delay: 0.30s; }
+
+
+@keyframes breathe {
+  0%, 100% { opacity: 0.5; }
+  50%      { opacity: 0.9; }
+}
+.animate-breathe {
+  animation: breathe 4s ease-in-out infinite;
+}
+
+/* Responsive utilities */
+@media (max-width: 768px) {
+  .hide-mobile { display: none !important; }
+}
+@media (min-width: 769px) {
+  .hide-desktop { display: none !important; }
+}
+
+/* ===========================================================================
+   FAMILY THEME BANNER — annual theme + monthly quote footer for child view
+   =========================================================================== */
+.family-banner {
+  position: relative;
+  overflow: hidden;
+}
+.family-banner::before {
+  /* Subtle gold corner flourish — top left */
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 80px;
+  height: 80px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--primary) 30%, transparent) 0%, transparent 60%);
+  pointer-events: none;
+  opacity: 0.6;
+}
+.family-banner::after {
+  /* Subtle gold corner flourish — bottom right */
+  content: "";
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 80px;
+  height: 80px;
+  background:
+    linear-gradient(315deg, color-mix(in srgb, var(--primary) 30%, transparent) 0%, transparent 60%);
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+/* Ornamental rule with center diamond */
+.ornamental-rule {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ornamental-rule::before,
+.ornamental-rule::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--primary) 35%, transparent) 50%,
+    transparent 100%
+  );
+}
+.ornamental-rule::before {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--primary) 35%, transparent) 100%
+  );
+}
+.ornamental-rule::after {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--primary) 35%, transparent) 0%,
+    transparent 100%
+  );
+}
+.ornamental-diamond {
+  width: 6px;
+  height: 6px;
+  background: var(--primary);
+  transform: rotate(45deg);
+  flex-shrink: 0;
+  opacity: 0.7;
+}
