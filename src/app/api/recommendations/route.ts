@@ -1,10 +1,13 @@
-// GET /api/recommendations — get smart suggestions for parent or child
+// GET /api/recommendations
 import { NextRequest, NextResponse } from "next/server";
 import { RecommendationService } from "@/server/services/recommendation.service";
+import { getAuthUser } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
+  const user = await getAuthUser();
+  if (!user) return NextResponse.json({ error: "Authentication required" }, { status: 401 });
   try {
     const { searchParams } = new URL(req.url);
     const childId = searchParams.get("childId");
