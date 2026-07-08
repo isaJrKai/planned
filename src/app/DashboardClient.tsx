@@ -322,8 +322,9 @@ export default function DashboardClient({ isFounder = false, userEmail }: Dashbo
   );
 }
 
-// ---- OVERVIEW TAB ----------------------------------------------------------
-// QuickBooks-style: KPI cards row + Children table + Activity feed side panel.
+// ---- OVERVIEW TAB (BENTO GRID) ---------------------------------------------
+// Modern bento-grid layout — differently-sized cells showing all key metrics
+// at a glance. Responsive: 3 columns on desktop, 1 column on mobile.
 
 function OverviewTab({
   childList,
@@ -343,18 +344,9 @@ function OverviewTab({
   const thisMonth = useStore(familyThisMonthSaved);
   const totalGoals = useStore(familyTotalGoals);
   const tokens = useStore(parentTokenBalance);
-  // Raw spending state — derive breakdown via useMemo to avoid infinite re-renders
-  // (familySpendingBreakdown selector returns a new array each call).
   const allSpending = useStore((s) => s.spending);
   const familySpending = useMemo(
-    () =>
-      allSpending
-        .filter((e) => {
-          const d = new Date(e.timestamp);
-          const now = new Date();
-          return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
-        })
-        .reduce((sum, e) => sum + e.amount, 0),
+    () => allSpending.filter((e) => { const d = new Date(e.timestamp); const now = new Date(); return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth(); }).reduce((sum, e) => sum + e.amount, 0),
     [allSpending]
   );
   const spendingBreakdown = useMemo(() => {
@@ -364,262 +356,173 @@ function OverviewTab({
       const d = new Date(e.timestamp);
       if (d.getFullYear() !== now.getFullYear() || d.getMonth() !== now.getMonth()) continue;
       const existing = map.get(e.ownerId);
-      if (existing) {
-        existing.total += e.amount;
-      } else {
-        map.set(e.ownerId, { ownerKind: e.ownerKind, ownerName: e.ownerName, total: e.amount });
-      }
+      if (existing) existing.total += e.amount;
+      else map.set(e.ownerId, { ownerKind: e.ownerKind, ownerName: e.ownerName, total: e.amount });
     }
-    return Array.from(map.entries())
-      .map(([ownerId, v]) => ({ ownerId, ...v }))
-      .sort((a, b) => b.total - a.total);
+    return Array.from(map.entries()).map(([ownerId, v]) => ({ ownerId, ...v })).sort((a, b) => b.total - a.total);
   }, [allSpending]);
-  // Raw state, derive recent slice via useMemo.
   const allTransactions = useStore((s) => s.transactions);
-  const transactions = useMemo(
-    () => allTransactions.slice(0, 8),
-    [allTransactions]
-  );
+  const transactions = useMemo(() => allTransactions.slice(0, 6), [allTransactions]);
   const children = childList;
-
-  const kpis = [
-    {
-      label: "Family Savings",
-      value: formatUGX(totalSavings),
-      sub: `of ${formatUGX(totalGoals)} goal`,
-      pct: totalGoals > 0 ? (totalSavings / totalGoals) * 100 : 0,
-      icon: PiggyBank,
-      hero: true,
-    },
-    {
-      label: "Investments",
-      value: formatUGX(totalInvested),
-      sub: "active portfolio",
-      icon: TrendingUp,
-    },
-    {
-      label: "This Month Saved",
-      value: formatUGX(thisMonth),
-      sub: "credits this period",
-      icon: Calendar,
-    },
-    {
-      label: "Tokens in Circulation",
-      value: `${tokens} ◈`,
-      sub: `cost UGX ${formatUGXPlain(tokens * TOKEN_BUY_RATE)}`,
-      icon: Sparkles,
-    },
-  ];
+  const savingsPct = totalGoals > 0 ? (totalSavings / totalGoals) * 100 : 0;
 
   return (
-    <div className="space-y-8 animate-fade-up">
-      {/* KPI grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 stagger">
-        {kpis.map((k) => (
-          <div
-            key={k.label}
-            className={`rounded-lg p-6 ${k.hero ? "surface-wood-strong" : "surface-wood card-hover"}`}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="micro-label">{k.label}</div>
-              <k.icon className="h-3.5 w-3.5" style={{ color: "var(--primary)" }} />
-            </div>
-            <div
-              className={`font-editorial tabular-nums leading-none ${
-                k.hero ? "text-3xl text-gold-foil" : "text-2xl text-foreground"
-              }`}
-            >
-              {k.value}
-            </div>
-            <div className="text-[10px] text-foreground/45 mt-2">{k.sub}</div>
-            {k.pct !== undefined && (
-              <div className="progress-thin mt-3">
-                <div style={{ width: `${Math.min(100, k.pct)}%` }} />
-              </div>
-            )}
+    <div className="animate-fade-up">
+      {/* BENTO GRID — CSS Grid with differently-sized cells */}
+      <div className="bento-grid">
+        {/* HERO: Total Savings — large cell, 2x2 */}
+        <div className="bento-cell bento-hero surface-wood-strong rounded-lg p-6 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <div className="micro-label-gold">Family Savings</div>
+            <PiggyBank className="h-4 w-4" style={{ color: "var(--primary)" }} />
           </div>
-        ))}
-      </div>
-
-      {/* Visualizations section — editorial SVG charts.
-          Parents understand graphs better than ledger tables. */}
-      <div className="space-y-3 mb-2">
-        <div className="flex items-center justify-between px-1">
           <div>
-            <div className="micro-label-gold mb-1">Visualizations</div>
-            <h2 className="font-editorial text-lg text-foreground tracking-wide">
-              Family Insights
-            </h2>
+            <div className="font-editorial text-4xl text-gold-foil tabular-nums leading-none mb-2">
+              {formatUGX(totalSavings)}
+            </div>
+            <div className="text-xs text-foreground/45 mb-3">of {formatUGX(totalGoals)} goal</div>
+            <div className="progress-thin">
+              <div style={{ width: `${Math.min(100, savingsPct)}%` }} />
+            </div>
+            <div className="text-[10px] text-foreground/40 mt-1.5">{savingsPct.toFixed(0)}% of goal</div>
           </div>
-          <span className="micro-label">last 6 months</span>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8 stagger">
-        <SavingsTrendChart />
-        <DistributionDonut childList={children} />
-        <CashFlowBars />
-        <GoalRadials childList={children} />
-      </div>
+        {/* This Month Saved — small cell */}
+        <div className="bento-cell bento-sm surface-wood card-hover rounded-lg p-5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="micro-label">This Month</div>
+            <Calendar className="h-3 w-3" style={{ color: "var(--primary)" }} />
+          </div>
+          <div className="font-editorial text-2xl text-foreground tabular-nums leading-none">
+            {formatUGX(thisMonth)}
+          </div>
+          <div className="text-[10px] text-foreground/45 mt-2">saved this period</div>
+        </div>
 
-      {/* Smart recommendations for the parent */}
-      <div className="mb-6">
-        <RecommendationsPanel familyId="singleton" variant="parent" />
-      </div>
+        {/* Token Balance — small cell */}
+        <div className="bento-cell bento-sm surface-wood card-hover rounded-lg p-5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="micro-label">Tokens</div>
+            <Sparkles className="h-3 w-3" style={{ color: "var(--chart-5)" }} />
+          </div>
+          <div className="font-editorial text-2xl text-foreground tabular-nums leading-none">
+            {tokens} <span style={{ color: "var(--chart-5)" }}>◈</span>
+          </div>
+          <div className="text-[10px] text-foreground/45 mt-2">in circulation</div>
+        </div>
 
-      {/* Main grid: children table + activity feed */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Children table — 2/3 width on desktop */}
-        <div className="lg:col-span-2 surface-wood rounded-lg overflow-hidden">
+        {/* Investments — small cell */}
+        <div className="bento-cell bento-sm surface-wood card-hover rounded-lg p-5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="micro-label">Investments</div>
+            <TrendingUp className="h-3 w-3" style={{ color: "var(--chart-2)" }} />
+          </div>
+          <div className="font-editorial text-2xl text-foreground tabular-nums leading-none">
+            {formatUGX(totalInvested)}
+          </div>
+          <div className="text-[10px] text-foreground/45 mt-2">active portfolio</div>
+        </div>
+
+        {/* Children Count — small cell */}
+        <div className="bento-cell bento-sm surface-wood card-hover rounded-lg p-5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="micro-label">Children</div>
+            <Users className="h-3 w-3" style={{ color: "var(--chart-4)" }} />
+          </div>
+          <div className="font-editorial text-2xl text-foreground tabular-nums leading-none">
+            {children.length}
+          </div>
+          <div className="text-[10px] text-foreground/45 mt-2">family members</div>
+        </div>
+
+        {/* Savings Trend Chart — wide cell */}
+        <div className="bento-cell bento-wide surface-wood rounded-lg p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <div className="micro-label-gold mb-1">Savings Trend</div>
+              <h3 className="font-editorial text-sm text-foreground tracking-wide">Last 6 Months</h3>
+            </div>
+          </div>
+          <SavingsTrendChart />
+        </div>
+
+        {/* Children Portfolios — wide cell */}
+        <div className="bento-cell bento-wide surface-wood rounded-lg overflow-hidden">
           <div className="px-6 py-5 flex items-center justify-between border-b border-[rgba(201,168,76,0.10)]">
             <div>
               <div className="micro-label-gold mb-1">Family Accounts</div>
-              <h2 className="font-editorial text-lg text-foreground tracking-wide">
-                Children Portfolios
-              </h2>
+              <h3 className="font-editorial text-sm text-foreground tracking-wide">Children Portfolios</h3>
             </div>
-            <span className="micro-label">{children.length} active</span>
+            <div className="flex gap-2">
+              <button onClick={() => { const p = parents[0]; if (p) onLogSpend({ id: p.id, kind: "parent", name: p.name }); }} className="btn-outline px-2.5 py-1 rounded text-[10px] tracking-wider flex items-center gap-1.5">
+                <Wallet className="h-2.5 w-2.5" /> Spend
+              </button>
+              <button onClick={() => onGiveTokens(children[0])} className="btn-outline px-2.5 py-1 rounded text-[10px] tracking-wider flex items-center gap-1.5">
+                <Plus className="h-2.5 w-2.5" /> Tokens
+              </button>
+            </div>
           </div>
-
           <table className="ledger-table">
             <thead>
-              <tr>
-                <th>Child</th>
-                <th className="text-right">Saved</th>
-                <th className="text-right">Goal</th>
-                <th>Progress</th>
-                <th></th>
-              </tr>
+              <tr><th>Child</th><th className="text-right">Saved</th><th>Progress</th><th></th></tr>
             </thead>
             <tbody>
-              {children.map((c) => {
-                const pct = (c.currentAmount / c.goalAmount) * 100;
+              {children.length === 0 ? (
+                <tr><td colSpan={4} className="text-center py-8 text-foreground/40 text-xs">No children yet — add one to get started</td></tr>
+              ) : children.map((c) => {
+                const pct = c.goalAmount > 0 ? (c.currentAmount / c.goalAmount) * 100 : 0;
                 return (
-                  <tr
-                    key={c.id}
-                    onClick={() => onSelectChild(c)}
-                    className="cursor-pointer"
-                  >
+                  <tr key={c.id} onClick={() => onSelectChild(c)} className="cursor-pointer">
                     <td>
                       <div className="flex items-center gap-3">
-                        <Avatar
-                          name={c.name}
-                          color={c.avatarColor}
-                          photo={c.avatarPhoto}
-                          size={32}
-                        />
+                        <Avatar name={c.name} color={c.avatarColor} photo={c.avatarPhoto} size={32} />
                         <div>
-                          <div className="font-editorial text-sm tracking-wide text-foreground">
-                            {c.name}
-                          </div>
+                          <div className="font-editorial text-sm tracking-wide text-foreground">{c.name}</div>
                           <div className="micro-label mt-0.5">Age {c.age} · {c.goalName}</div>
                         </div>
                       </div>
                     </td>
-                    <td className="text-right tabular-nums text-foreground font-editorial">
-                      {formatUGXPlain(c.currentAmount)}
-                    </td>
-                    <td className="text-right tabular-nums text-foreground/60">
-                      {formatUGXPlain(c.goalAmount)}
-                    </td>
+                    <td className="text-right tabular-nums text-foreground font-editorial">{formatUGXPlain(c.currentAmount)}</td>
                     <td>
                       <div className="flex items-center gap-3">
-                        <div className="progress-thin flex-1 min-w-[80px]">
-                          <div style={{ width: `${Math.min(100, pct)}%` }} />
-                        </div>
-                        <span className="text-xs tabular-nums text-foreground/60 w-10 text-right">
-                          {pct.toFixed(0)}%
-                        </span>
+                        <div className="progress-thin flex-1 min-w-[80px]"><div style={{ width: `${Math.min(100, pct)}%` }} /></div>
+                        <span className="text-xs tabular-nums text-foreground/60 w-10 text-right">{pct.toFixed(0)}%</span>
                       </div>
                     </td>
-                    <td className="text-right">
-                      <ChevronRight className="h-3.5 w-3.5 text-foreground/30 ml-auto" />
-                    </td>
+                    <td className="text-right"><ChevronRight className="h-3.5 w-3.5 text-foreground/30 ml-auto" /></td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
-
-          <div className="px-6 py-4 border-t border-[rgba(201,168,76,0.06)] flex flex-wrap gap-2 justify-between items-center">
-            <span className="micro-label">Click a row to open the child dashboard</span>
-            <div className="flex gap-2">
-              <button
-                onClick={() => {
-                  const p = parents[0];
-                  if (p) {
-                    onLogSpend({ id: p.id, kind: "parent", name: p.name });
-                  }
-                }}
-                className="btn-outline px-3 py-1.5 rounded text-xs tracking-wider flex items-center gap-2"
-                title="Log spending for any family member"
-              >
-                <Wallet className="h-3 w-3" /> Log Spend
-              </button>
-              <button
-                onClick={() => onGiveTokens(children[0])}
-                className="btn-outline px-3 py-1.5 rounded text-xs tracking-wider flex items-center gap-2"
-              >
-                <Plus className="h-3 w-3" /> Award Tokens
-              </button>
-            </div>
-          </div>
         </div>
 
-        {/* Activity feed — 1/3 width */}
-        <div className="surface-wood rounded-lg overflow-hidden">
-          <div className="px-6 py-5 border-b border-[rgba(201,168,76,0.10)]">
-            <div className="micro-label-gold mb-1">Latest Activity</div>
-            <h2 className="font-editorial text-lg text-foreground tracking-wide">
-              Recent Transactions
-            </h2>
+        {/* Recent Activity — tall cell */}
+        <div className="bento-cell bento-tall surface-wood rounded-lg overflow-hidden">
+          <div className="px-5 py-4 border-b border-[rgba(201,168,76,0.10)]">
+            <div className="micro-label-gold mb-1">Activity</div>
+            <h3 className="font-editorial text-sm text-foreground tracking-wide">Recent Transactions</h3>
           </div>
-          <div className="max-h-[480px] overflow-y-auto">
-            {transactions.map((t, i) => {
+          <div className="max-h-[400px] overflow-y-auto">
+            {transactions.length === 0 ? (
+              <div className="text-center py-8 text-foreground/40 text-xs">No transactions yet</div>
+            ) : transactions.map((t, i) => {
               const child = children.find((c) => c.id === t.childId);
-              const credit =
-                t.type === "save" || t.type === "redeem" || t.type === "parent_give";
+              const credit = t.type === "save" || t.type === "redeem" || t.type === "parent_give";
               return (
-                <div
-                  key={t.id}
-                  className={`px-6 py-4 ${i > 0 ? "border-t border-[rgba(201,168,76,0.04)]" : ""}`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div
-                      className="h-7 w-7 rounded-full flex items-center justify-center shrink-0 mt-0.5"
-                      style={{
-                        background: credit
-                          ? "color-mix(in srgb, var(--chart-2) 12%, transparent)"
-                          : "color-mix(in srgb, var(--chart-3) 12%, transparent)",
-                      }}
-                    >
-                      {credit ? (
-                        <ArrowDownRight className="h-3 w-3" style={{ color: "var(--chart-2)" }} />
-                      ) : (
-                        <ArrowUpRight className="h-3 w-3" style={{ color: "var(--chart-3)" }} />
-                      )}
+                <div key={t.id} className={`px-5 py-3 ${i > 0 ? "border-t border-[rgba(201,168,76,0.04)]" : ""}`}>
+                  <div className="flex items-start gap-2.5">
+                    <div className="h-6 w-6 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{ background: credit ? "color-mix(in srgb, var(--chart-2) 12%, transparent)" : "color-mix(in srgb, var(--chart-3) 12%, transparent)" }}>
+                      {credit ? <ArrowDownRight className="h-2.5 w-2.5" style={{ color: "var(--chart-2)" }} /> : <ArrowUpRight className="h-2.5 w-2.5" style={{ color: "var(--chart-3)" }} />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm text-foreground truncate">{t.note}</div>
-                      <div className="micro-label mt-0.5 truncate">
-                        {child?.name.split(" ")[0]} · {txTypeLabel[t.type]} · {timeAgo(t.timestamp)}
-                      </div>
+                      <div className="text-xs text-foreground truncate">{t.note}</div>
+                      <div className="micro-label mt-0.5 truncate">{child?.name.split(" ")[0]} · {txTypeLabel[t.type]} · {timeAgo(t.timestamp)}</div>
                     </div>
                     <div className="text-right shrink-0">
-                      {t.amount > 0 && (
-                        <div
-                          className="font-editorial tabular-nums text-sm"
-                          style={{ color: credit ? "#6BBF8A" : "#D4943A" }}
-                        >
-                          {credit ? "+" : "−"}
-                          {formatUGXPlain(t.amount)}
-                        </div>
-                      )}
-                      {t.tokenDelta > 0 && (
-                        <div className="font-editorial tabular-nums text-sm" style={{ color: "var(--chart-5)" }}>
-                          +{t.tokenDelta} ◈
-                        </div>
-                      )}
+                      {t.amount > 0 && <div className="font-editorial tabular-nums text-xs" style={{ color: credit ? "#6BBF8A" : "#D4943A" }}>{credit ? "+" : "−"}{formatUGXPlain(t.amount)}</div>}
+                      {t.tokenDelta > 0 && <div className="font-editorial tabular-nums text-xs" style={{ color: "var(--chart-5)" }}>+{t.tokenDelta} ◈</div>}
                     </div>
                   </div>
                 </div>
@@ -627,92 +530,107 @@ function OverviewTab({
             })}
           </div>
         </div>
-      </div>
 
-      {/* Family Spending This Month — per-person breakdown */}
-      <div className="surface-wood rounded-lg p-6 mt-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <div className="micro-label-gold mb-1">Family Spending · This Month</div>
-            <h3 className="font-editorial text-lg text-foreground tracking-wide">
-              Who Spent What
-            </h3>
-          </div>
-          <div className="text-right">
-            <div className="font-editorial text-2xl text-gold-foil-static tabular-nums">
-              {formatUGX(familySpending)}
+        {/* Family Spending Breakdown — full width cell */}
+        <div className="bento-cell bento-full surface-wood rounded-lg p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <div className="micro-label-gold mb-1">Family Spending · This Month</div>
+              <h3 className="font-editorial text-sm text-foreground tracking-wide">Who Spent What</h3>
             </div>
-            <div className="micro-label mt-1">total this month</div>
+            <div className="text-right">
+              <div className="font-editorial text-xl text-gold-foil-static tabular-nums">{formatUGX(familySpending)}</div>
+              <div className="micro-label mt-0.5">total</div>
+            </div>
           </div>
+          <div className="divider-gold mb-4" />
+          {spendingBreakdown.length === 0 ? (
+            <div className="text-center py-4 text-foreground/40 text-xs">No spending logged this month yet.</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {spendingBreakdown.map((row) => {
+                const parent = parents.find((p) => p.id === row.ownerId);
+                const child = children.find((c) => c.id === row.ownerId);
+                const name = row.ownerName;
+                const color = parent?.avatarColor ?? child?.avatarColor ?? "#C9A84C";
+                const photo = parent?.avatarPhoto ?? child?.avatarPhoto;
+                const pct = familySpending > 0 ? (row.total / familySpending) * 100 : 0;
+                return (
+                  <div key={row.ownerId} className="flex items-center gap-3">
+                    <Avatar name={name} color={color} photo={photo} size={28} />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-baseline mb-1">
+                        <div className="text-xs text-foreground">{name} <span className="ml-1 pill pill-muted" style={{ fontSize: 8, padding: "1px 4px" }}>{row.ownerKind}</span></div>
+                        <div className="text-[10px] tabular-nums text-foreground/70">{formatUGXPlain(row.total)}</div>
+                      </div>
+                      <div className="progress-thin"><div style={{ width: `${pct}%` }} /></div>
+                    </div>
+                    <div className="font-editorial text-xs tabular-nums w-10 text-right" style={{ color: "var(--chart-3)" }}>{pct.toFixed(0)}%</div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
-        <div className="divider-gold mb-5" />
 
-        {spendingBreakdown.length === 0 ? (
-          <div className="text-center py-6 text-foreground/40 text-sm">
-            No spending logged this month yet.
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {spendingBreakdown.map((row) => {
-              // Look up avatar info from parents or children.
-              const parent = parents.find((p) => p.id === row.ownerId);
-              const child = children.find((c) => c.id === row.ownerId);
-              const name = row.ownerName;
-              const color = parent?.avatarColor ?? child?.avatarColor ?? "#C9A84C";
-              const photo = parent?.avatarPhoto ?? child?.avatarPhoto;
-              const pct = familySpending > 0 ? (row.total / familySpending) * 100 : 0;
-              return (
-                <div key={row.ownerId} className="flex items-center gap-4">
-                  <Avatar name={name} color={color} photo={photo} size={32} />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-baseline mb-1.5">
-                      <div className="text-sm text-foreground tracking-wide">
-                        {name}
-                        <span
-                          className="ml-2 pill pill-muted"
-                          style={{ fontSize: 9, padding: "1px 6px" }}
-                        >
-                          {row.ownerKind}
-                        </span>
-                      </div>
-                      <div className="text-xs tabular-nums text-foreground/70">
-                        {formatUGXPlain(row.total)}
-                      </div>
-                    </div>
-                    <div className="progress-thin">
-                      <div style={{ width: `${pct}%` }} />
-                    </div>
-                  </div>
-                  <div
-                    className="font-editorial text-sm tabular-nums w-12 text-right"
-                    style={{ color: "var(--chart-3)" }}
-                  >
-                    {pct.toFixed(0)}%
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-
-        <div className="divider-gold my-4" />
-        <div className="flex justify-between items-center">
-          <span className="micro-label">
-            Log spending for any family member — parents included.
-          </span>
-          <button
-            onClick={() => {
-              const p = parents[0];
-              if (p) {
-                onLogSpend({ id: p.id, kind: "parent", name: p.name });
-              }
-            }}
-            className="btn-gold px-3 py-1.5 rounded text-xs tracking-wider flex items-center gap-2"
-          >
-            <Wallet className="h-3 w-3" /> Log Spend
-          </button>
+        {/* Recommendations — full width */}
+        <div className="bento-cell bento-full">
+          <RecommendationsPanel familyId="singleton" variant="parent" />
         </div>
       </div>
+
+      {/* Bento grid CSS */}
+      <style jsx>{`
+        .bento-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 1rem;
+        }
+        @media (min-width: 768px) {
+          .bento-grid {
+            grid-template-columns: repeat(3, 1fr);
+            grid-auto-rows: minmax(120px, auto);
+          }
+        }
+        .bento-cell { min-height: 120px; }
+        .bento-hero {
+          grid-column: span 1;
+          grid-row: span 1;
+        }
+        .bento-sm {
+          grid-column: span 1;
+          grid-row: span 1;
+        }
+        .bento-wide {
+          grid-column: span 1;
+        }
+        .bento-tall {
+          grid-column: span 1;
+        }
+        .bento-full {
+          grid-column: span 1;
+        }
+        @media (min-width: 768px) {
+          .bento-hero {
+            grid-column: span 2;
+            grid-row: span 2;
+          }
+          .bento-sm {
+            grid-column: span 1;
+            grid-row: span 1;
+          }
+          .bento-wide {
+            grid-column: span 2;
+          }
+          .bento-tall {
+            grid-column: span 1;
+            grid-row: span 2;
+          }
+          .bento-full {
+            grid-column: span 3;
+          }
+        }
+      `}</style>
     </div>
   );
 }

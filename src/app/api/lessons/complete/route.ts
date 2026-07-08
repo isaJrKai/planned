@@ -1,6 +1,7 @@
-// POST /api/lessons/complete — submit quiz answers + mark lesson complete
+// POST /api/lessons/complete
 import { NextRequest, NextResponse } from "next/server";
 import { EducationService } from "@/server/services/education.service";
+import { getAuthUser } from "@/lib/auth";
 import { z } from "zod";
 
 export const dynamic = "force-dynamic";
@@ -13,6 +14,8 @@ const completeSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  const user = await getAuthUser();
+  if (!user) return NextResponse.json({ error: "Authentication required" }, { status: 401 });
   try {
     const body = await req.json();
     const input = completeSchema.parse(body);

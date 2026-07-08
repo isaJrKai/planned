@@ -21,16 +21,10 @@ const LOCKOUT_MINUTES = 30;
 const TOTP_WINDOW = 1;
 const BACKUP_CODE_COUNT = 8;
 
-const INSECURE_DEFAULT = "DEV-ONLY-INSECURE-SECRET-DO-NOT-USE-IN-PRODUCTION-change-me-please";
-const JWT_SECRET_STRING = process.env.JWT_SECRET ?? INSECURE_DEFAULT;
-
-if (
-  process.env.NODE_ENV === "production" &&
-  (JWT_SECRET_STRING === INSECURE_DEFAULT || JWT_SECRET_STRING.length < 32)
-) {
-  throw new Error("JWT_SECRET missing or insecure in production environment");
+const JWT_SECRET_STRING = process.env.JWT_SECRET;
+if (!JWT_SECRET_STRING || JWT_SECRET_STRING.length < 32) {
+  throw new Error("JWT_SECRET environment variable is required and must be at least 32 characters.");
 }
-
 const JWT_SECRET = new TextEncoder().encode(JWT_SECRET_STRING);
 
 export const FOUNDER_EMAIL_DEFAULT =
@@ -41,6 +35,7 @@ export interface SessionPayload {
   email: string;
   platformRole: string;
   familyRole: string;
+  sessionId: string;
   iat?: number;
   exp?: number;
 }
@@ -50,6 +45,7 @@ export interface AuthUser {
   email: string;
   platformRole: string;
   familyRole: string;
+  familyId: string | null;
   name: string;
   twoFactorEnabled: boolean;
 }
@@ -93,7 +89,8 @@ export async function verifySecurityAnswer(answer: string, hash: string): Promis
 // ---- JWT session -----------------------------------------------------------
 
 export async function signSession(payload: SessionPayload): Promise<string> {
-  return new SignJWT({ email: payload.email, platformRole: payload.platformRole, familyRole: payload.familyRole })
+  if (!payload.sessionId) throw new Error("signSession: sessionId is required");
+  return new SignJWT({ email: payload.email, platformRole: payload.platformRole, familyRole: payload.familyRole, sessionId: payload.sessionId })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(payload.sub)
     .setIssuedAt()
@@ -104,8 +101,8 @@ export async function signSession(payload: SessionPayload): Promise<string> {
 async function verifySession(token: string): Promise<SessionPayload | null> {
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET, { algorithms: ["HS256"] });
-    if (typeof payload.sub !== "string" || typeof payload.email !== "string" || typeof payload.platformRole !== "string") return null;
-    return { sub: payload.sub, email: payload.email, platformRole: payload.platformRole as string, familyRole: (payload.familyRole as string) || "PARENT", iat: payload.iat, exp: payload.exp };
+    if (typeof payload.sub !== "string" || typeof payload.email !== "string" || typeof payload.platformRole !== "string" || typeof payload.sessionId !== "string") return null;
+    return { sub: payload.sub, email: payload.email, platformRole: payload.platformRole as string, familyRole: (payload.familyRole as string) || "PARENT", sessionId: payload.sessionId as string, iat: payload.iat, exp: payload.exp };
   } catch { return null; }
 }
 
@@ -122,7 +119,14 @@ export async function setSessionCookie(token: string): Promise<void> {
 
 export async function clearSessionCookie(): Promise<void> {
   const store = await cookies();
-  store.delete(SESSION_COOKIE);
+  store.set(SESSION_COOKIE, "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    path: "/",
+    expires: new Date(0),
+    maxAge: 0,
+  });
 }
 
 export async function getSession(): Promise<SessionPayload | null> {
@@ -144,19 +148,75 @@ export async function getSessionFromCookieHeader(
   return verifySession(token);
 }
 
+// ---- Server-side session lifecycle ----------------------------------------
+async function createSessionRecord(userId: string, ipAddress?: string, userAgent?: string): Promise<{ id: string; sessionToken: string } | null> {
+  try {
+    const sessionToken = crypto.randomUUID() + crypto.randomUUID();
+    const expires = new Date(Date.now() + SESSION_TTL_SECONDS * 1000);
+    const session = await db.session.create({ data: { sessionToken, userId, expires, ipAddress, userAgent } });
+    return { id: session.id, sessionToken };
+  } catch (err) {
+    logger.error("Failed to create session record", { err, userId });
+    return null;
+  }
+}
+
+export async function revokeSession(sessionId: string): Promise<boolean> {
+  if (!sessionId) return false;
+  try {
+    const result = await db.session.updateMany({ where: { id: sessionId, revokedAt: null }, data: { revokedAt: new Date() } });
+    return result.count > 0;
+  } catch (err) { logger.error("Failed to revoke session", { err, sessionId }); return false; }
+}
+
+export async function revokeAllUserSessions(userId: string, exceptSessionId?: string): Promise<number> {
+  try {
+    const result = await db.session.updateMany({ where: { userId, revokedAt: null, ...(exceptSessionId ? { id: { not: exceptSessionId } } : {}) }, data: { revokedAt: new Date() } });
+    return result.count;
+  } catch (err) { logger.error("Failed to revoke all user sessions", { err, userId }); return 0; }
+}
+
+const LAST_SEEN_REFRESH_INTERVAL_MS = 60 * 1000;
+const lastSeenCache = new Map<string, number>();
+
+async function isSessionValid(sessionId: string): Promise<boolean> {
+  if (!sessionId) return false;
+  try {
+    const session = await db.session.findUnique({ where: { id: sessionId } });
+    if (!session) return false;
+    if (session.revokedAt) return false;
+    if (session.expires < new Date()) return false;
+    const now = Date.now();
+    const lastRefresh = lastSeenCache.get(sessionId) ?? 0;
+    if (now - lastRefresh > LAST_SEEN_REFRESH_INTERVAL_MS) {
+      lastSeenCache.set(sessionId, now);
+      db.session.update({ where: { id: sessionId }, data: { lastSeenAt: new Date() } }).catch(() => { lastSeenCache.delete(sessionId); });
+    }
+    return true;
+  } catch (err) { logger.error("Failed to validate session", { err, sessionId }); return false; }
+}
+
+export async function listUserSessions(userId: string) {
+  try {
+    return await db.session.findMany({ where: { userId }, orderBy: { createdAt: "desc" }, select: { id: true, createdAt: true, expires: true, lastSeenAt: true, revokedAt: true, ipAddress: true, userAgent: true } });
+  } catch (err) { logger.error("Failed to list user sessions", { err, userId }); return []; }
+}
+
 // ---- Authenticated user fetcher -------------------------------------------
 
 export async function getAuthUser(): Promise<AuthUser | null> {
   const session = await getSession();
   if (!session) return null;
+  const sessionValid = await isSessionValid(session.sessionId);
+  if (!sessionValid) return null;
   try {
     const user: any = await db.user.findUnique({
       where: { id: session.sub, deletedAt: null },
-      select: { id: true, email: true, platformRole: true, familyRole: true, name: true, lockedUntil: true, twoFactorEnabled: true } as any,
+      select: { id: true, email: true, platformRole: true, familyRole: true, familyId: true, name: true, lockedUntil: true, twoFactorEnabled: true } as any,
     });
     if (!user) return null;
     if (user.lockedUntil && new Date(user.lockedUntil) > new Date()) return null;
-    return { id: user.id, email: user.email, platformRole: user.platformRole || "USER", familyRole: user.familyRole || "PARENT", name: user.name, twoFactorEnabled: user.twoFactorEnabled };
+    return { id: user.id, email: user.email, platformRole: user.platformRole || "USER", familyRole: user.familyRole || "PARENT", familyId: user.familyId, name: user.name, twoFactorEnabled: user.twoFactorEnabled };
   } catch (err) {
     logger.error("Failed to fetch auth user from DB", { err, sub: session.sub });
     return null;
@@ -277,7 +337,7 @@ export async function registerUserAsUSER(input: RegisterInput): Promise<{ ok: bo
 
   const passwordHash = await hashPassword(input.password);
   const user = await db.user.create({
-    data: { email, name: input.name.trim(), passwordHash, platformRole: USER_ROLE, familyRole: "PARENT" },
+    data: { email, name: input.name.trim(), passwordHash, platformRole: USER_ROLE, familyRole: "PARENT", familyId: "fam_" + crypto.randomUUID() },
   });
 
   await auditLog({
@@ -372,10 +432,12 @@ export async function attemptLogin(params: {
     }
 
     await db.user.update({ where: { id: user.id }, data: { failedLoginAttempts: 0, lockedUntil: null, lastLoginAt: new Date() } });
-    const token = await signSession({ sub: user.id, email: user.email, platformRole: user.platformRole, familyRole: user.familyRole });
+    const sessionRecord = await createSessionRecord(user.id, params.ipAddress, params.userAgent);
+    if (!sessionRecord) return { ok: false, error: "Failed to create session" };
+    const token = await signSession({ sub: user.id, email: user.email, platformRole: user.platformRole, familyRole: user.familyRole, sessionId: sessionRecord.id });
     await setSessionCookie(token);
-    await auditLog({ userId: user.id, action: "LOGIN_SUCCESS", entityType: "user", entityId: user.id, ipAddress: params.ipAddress, userAgent: params.userAgent, success: true });
-    return { ok: true, user: { id: user.id, email: user.email, platformRole: user.platformRole, familyRole: user.familyRole, name: user.name, twoFactorEnabled: user.twoFactorEnabled } };
+    await auditLog({ userId: user.id, action: "LOGIN_SUCCESS", entityType: "user", entityId: user.id, ipAddress: params.ipAddress, userAgent: params.userAgent, success: true, after: { sessionId: sessionRecord.id } });
+    return { ok: true, user: { id: user.id, email: user.email, platformRole: user.platformRole, familyRole: user.familyRole, familyId: user.familyId, name: user.name, twoFactorEnabled: user.twoFactorEnabled } };
   } catch (err) {
     logger.error("Login error", { err, email });
     return { ok: false, error: "An unexpected error occurred" };
@@ -418,10 +480,12 @@ export async function completeLoginWith2FA(params: {
     }
 
     await db.user.update({ where: { id: user.id }, data: { failedLoginAttempts: 0, lockedUntil: null, lastLoginAt: new Date() } });
-    const token = await signSession({ sub: user.id, email: user.email, platformRole: user.platformRole, familyRole: user.familyRole });
+    const sessionRecord = await createSessionRecord(user.id, params.ipAddress, params.userAgent);
+    if (!sessionRecord) return { ok: false, error: "Failed to create session" };
+    const token = await signSession({ sub: user.id, email: user.email, platformRole: user.platformRole, familyRole: user.familyRole, sessionId: sessionRecord.id });
     await setSessionCookie(token);
-    await auditLog({ userId: user.id, action: usedBackupIndex !== null ? "LOGIN_2FA_BACKUP_SUCCESS" : "LOGIN_2FA_SUCCESS", entityType: "user", entityId: user.id, ipAddress: params.ipAddress, userAgent: params.userAgent, success: true, after: { backupCodesRemaining: usedBackupIndex !== null } });
-    return { ok: true, user: { id: user.id, email: user.email, platformRole: user.platformRole, familyRole: user.familyRole, name: user.name, twoFactorEnabled: user.twoFactorEnabled } };
+    await auditLog({ userId: user.id, action: usedBackupIndex !== null ? "LOGIN_2FA_BACKUP_SUCCESS" : "LOGIN_2FA_SUCCESS", entityType: "user", entityId: user.id, ipAddress: params.ipAddress, userAgent: params.userAgent, success: true, after: { backupCodesRemaining: usedBackupIndex !== null, sessionId: sessionRecord.id } });
+    return { ok: true, user: { id: user.id, email: user.email, platformRole: user.platformRole, familyRole: user.familyRole, familyId: user.familyId, name: user.name, twoFactorEnabled: user.twoFactorEnabled } };
   } catch (err) {
     logger.error("2FA complete error", { err });
     return { ok: false, error: "An unexpected error occurred" };
@@ -430,10 +494,14 @@ export async function completeLoginWith2FA(params: {
 
 // ---- Logout flow -----------------------------------------------------------
 
-export async function logout(params?: { userId?: string; ipAddress?: string; userAgent?: string }): Promise<void> {
+export async function logout(params?: { userId?: string; sessionId?: string; ipAddress?: string; userAgent?: string; revokeAll?: boolean }): Promise<void> {
+  if (params?.sessionId) {
+    if (params.revokeAll && params.userId) await revokeAllUserSessions(params.userId);
+    else await revokeSession(params.sessionId);
+  }
   await clearSessionCookie();
   if (params?.userId) {
-    await auditLog({ userId: params.userId, action: "LOGOUT", entityType: "user", entityId: params.userId, ipAddress: params.ipAddress, userAgent: params.userAgent, success: true });
+    await auditLog({ userId: params.userId, action: "LOGOUT", entityType: "user", entityId: params.userId, ipAddress: params.ipAddress, userAgent: params.userAgent, success: true, after: { sessionId: params.sessionId } });
   }
 }
 
@@ -518,6 +586,7 @@ export async function performFounderSetup(params: {
     const f = await tx.user.create({
       data: {
         email, name: params.name.trim(), passwordHash, platformRole: "FOUNDER", familyRole: "FAMILY_MANAGER",
+        familyId: "fam_" + crypto.randomUUID(),
         securityQuestion: params.securityQuestion.trim(), securityAnswerHash,
         emailVerified: new Date(), lastLoginAt: new Date(),
         twoFactorSecret: params.totpSecret ?? null,
@@ -534,16 +603,18 @@ export async function performFounderSetup(params: {
     return f;
   });
 
-  const token = await signSession({ sub: founder.id, email: founder.email, platformRole: founder.platformRole, familyRole: founder.familyRole });
+  const sessionRecord = await createSessionRecord(founder.id, params.ipAddress, params.userAgent);
+  if (!sessionRecord) return { ok: false, error: "Account created but failed to start session." };
+  const token = await signSession({ sub: founder.id, email: founder.email, platformRole: founder.platformRole, familyRole: founder.familyRole, sessionId: sessionRecord.id });
   await setSessionCookie(token);
 
   await auditLog({
     userId: founder.id, action: "FOUNDER_SETUP_COMPLETED", entityType: "system", entityId: "singleton",
-    after: { email: founder.email, name: founder.name, userId: founder.id, twoFactorEnabled: enrollTotp },
+    after: { email: founder.email, name: founder.name, userId: founder.id, twoFactorEnabled: enrollTotp, sessionId: sessionRecord.id },
     ipAddress: params.ipAddress, userAgent: params.userAgent, success: true,
   });
 
-  return { ok: true, user: { id: founder.id, email: founder.email, platformRole: founder.platformRole, familyRole: founder.familyRole, name: founder.name, twoFactorEnabled: enrollTotp } };
+  return { ok: true, user: { id: founder.id, email: founder.email, platformRole: founder.platformRole, familyRole: founder.familyRole, familyId: founder.familyId, name: founder.name, twoFactorEnabled: enrollTotp } };
 }
 
 // ---- 2FA enrollment (for existing users via /admin/security) ---------------
