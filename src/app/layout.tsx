@@ -50,9 +50,9 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" suppressHydrationWarning data-theme="dark">
+    <html lang="en" suppressHydrationWarning data-theme="blue">
       <head>
-        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('planned-theme');if(t&&['dark','light','pink','red'].includes(t)){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();` }} />
+        <script dangerouslySetInnerHTML={{ __html: `(function(){try{var t=localStorage.getItem('planned-theme');if(t&&['dark','light','pink','red','blue'].includes(t)){document.documentElement.setAttribute('data-theme',t||'blue');}}catch(e){}})();` }} />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
