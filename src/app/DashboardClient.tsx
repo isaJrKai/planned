@@ -102,15 +102,7 @@ export default function DashboardClient({ isFounder = false, userEmail }: Dashbo
   const [spendOwner, setSpendOwner] = useState<SpendingOwner | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<{ type: string; id: string; name: string } | null>(null);
 
-  function handleDelete(target: { type: string; id: string; name: string }) { setDeleteTarget(target); }
-  function confirmDelete() {
-    if (!deleteTarget) return;
-    if (deleteTarget.type === "child") persistDeleteChild(deleteTarget.id);
-    else if (deleteTarget.type === "parent") persistDeleteParent(deleteTarget.id);
-    setDeleteTarget(null);
-  }
 
   // Hydrate from /api/state on first mount — loads real DB data.
   useHydratedState();
@@ -328,29 +320,6 @@ export default function DashboardClient({ isFounder = false, userEmail }: Dashbo
       )}
 
       {/* Floating Log Spend button — always visible on parent dashboard */}
-      {/* Delete confirmation dialog */}
-      {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.7)" }}>
-          <div className="surface-wood-strong rounded-lg p-6 max-w-md w-full" style={{ border: "1px solid var(--chart-3)" }}>
-            <div className="flex items-start gap-3 mb-4">
-              <AlertTriangle className="h-5 w-5 flex-shrink-0 mt-0.5" style={{ color: "var(--chart-3)" }} />
-              <div className="flex-1">
-                <h2 className="font-editorial text-lg text-foreground mb-1">Delete {deleteTarget.name}?</h2>
-                <p className="text-xs text-foreground/60">
-                  {deleteTarget.type === "child" 
-                    ? `This will permanently delete ${deleteTarget.name} and ALL their data: savings, transactions, goals, spending, investments, and tokens. This CANNOT be undone.`
-                    : `This will delete ${deleteTarget.name} and their spending entries and goals. This CANNOT be undone.`}
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <button onClick={() => setDeleteTarget(null)} className="btn-ghost flex-1 px-4 py-2 rounded text-xs tracking-wider">Cancel</button>
-              <button onClick={confirmDelete} className="flex-1 px-4 py-2 rounded text-xs tracking-wider" style={{ background: "var(--chart-3)", color: "white" }}>Delete</button>
-            </div>
-          </div>
-        </div>
-      )}
-
       <LogSpendFab childList={children} parents={parents} />
     </div>
   );
@@ -524,7 +493,7 @@ function OverviewTab({
                         <span className="text-xs tabular-nums text-foreground/60 w-10 text-right">{pct.toFixed(0)}%</span>
                       </div>
                     </td>
-                    <td className="text-right"><div className="flex items-center justify-end gap-1"><button onClick={(e) => { e.stopPropagation(); handleDelete({ type: "child", id: c.id, name: c.name }); }} className="p-1 rounded hover:bg-[color-mix(in_srgb,var(--chart-3)_15%,transparent)]" title="Delete child"><Trash2 className="h-3 w-3" style={{ color: "var(--chart-3)" }} /></button><ChevronRight className="h-3.5 w-3.5 text-foreground/30" /></div></td>
+                    <td className="text-right"><div className="flex items-center justify-end gap-1"><button onClick={(e) => { e.stopPropagation(); if (confirm(`Delete ${c.name} and ALL their data? This cannot be undone.`)) { import("@/lib/mutations").then(m => m.deleteChild(c.id)); } }} className="p-1 rounded hover:bg-[color-mix(in_srgb,var(--chart-3)_15%,transparent)]" title="Delete child"><Trash2 className="h-3 w-3" style={{ color: "var(--chart-3)" }} /></button><ChevronRight className="h-3.5 w-3.5 text-foreground/30" /></div></td>
                   </tr>
                 );
               })}
@@ -1268,7 +1237,6 @@ function SettingsTab() {
               roleLabel={p.role}
               onUpload={(url) => persistSetParentPhoto(p.id, url)}
               onRemove={() => persistSetParentPhoto(p.id, "")}
-            onDelete={() => handleDelete({ type: "parent", id: p.id, name: p.name })}
               onNameChange={(n) => persistSetParentName(p.id, n)}
             />
           ))}
