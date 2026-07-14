@@ -133,3 +133,12 @@ export function setChildName(childId: string, name: string) {
   useStore.getState().setChildName(childId, name);
   persistMutation("setChildName", { childId, name }).catch(() => {});
 }
+
+
+export function createChild(child: { name: string; age: number; goalName: string; goalAmount: number; avatarColor?: string }) {
+  persistMutation("createChild", child).catch(() => {});
+}
+
+export function createParent(parent: { name: string; role: string; avatarColor?: string }) {
+  persistMutation("createParent", parent).catch(() => {});
+}
