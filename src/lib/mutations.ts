@@ -142,3 +142,14 @@ export function createChild(child: { name: string; age: number; goalName: string
 export function createParent(parent: { name: string; role: string; avatarColor?: string }) {
   persistMutation("createParent", parent).catch(() => {});
 }
+
+
+// ---- Delete capabilities ----
+export function deleteTransaction(id: string) { persistMutation("deleteTransaction", { id }).catch(() => {}); }
+export function deleteSpendingEntry(id: string) { persistMutation("deleteSpendingEntry", { id }).catch(() => {}); }
+export function closeInvestment(id: string) { persistMutation("closeInvestment", { id }).catch(() => {}); }
+export function deleteInvestment(id: string) { persistMutation("deleteInvestment", { id }).catch(() => {}); }
+export function deleteChild(childId: string) { persistMutation("deleteChild", { childId }).catch(() => {}); }
+export function deleteParent(parentId: string) { persistMutation("deleteParent", { parentId }).catch(() => {}); }
+export function deleteSpendingCategory(id: string) { persistMutation("deleteSpendingCategory", { id }).catch(() => {}); }
+export function resetFamilyData() { persistMutation("resetFamilyData", {}).catch(() => {}); }
