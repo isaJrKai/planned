@@ -471,3 +471,79 @@ export async function createParent(input: {
     },
   });
 }
+
+
+// ============================================================================
+// DELETE CAPABILITIES
+// ============================================================================
+
+export async function deleteTransaction(familyId: string, id: string): Promise<void> {
+  const tx = await db.transaction.findFirst({ where: { id, familyId } });
+  if (!tx) throw new Error("Transaction not found or access denied");
+  await db.transaction.delete({ where: { id } });
+}
+
+export async function deleteSpendingEntry(familyId: string, id: string): Promise<void> {
+  const entry = await db.spendingEntry.findFirst({ where: { id, familyId } });
+  if (!entry) throw new Error("Spending entry not found or access denied");
+  await db.spendingEntry.delete({ where: { id } });
+}
+
+export async function closeInvestment(familyId: string, id: string): Promise<void> {
+  const inv = await db.investment.findFirst({ where: { id, familyId } });
+  if (!inv) throw new Error("Investment not found or access denied");
+  await db.investment.update({ where: { id }, data: { status: "closed" } });
+}
+
+export async function deleteInvestment(familyId: string, id: string): Promise<void> {
+  const inv = await db.investment.findFirst({ where: { id, familyId } });
+  if (!inv) throw new Error("Investment not found or access denied");
+  await db.$transaction(async (tx) => {
+    await tx.transaction.deleteMany({ where: { investmentId: id, familyId } });
+    await tx.investment.delete({ where: { id } });
+  });
+}
+
+export async function deleteChild(familyId: string, childId: string): Promise<void> {
+  const child = await db.child.findFirst({ where: { id: childId, familyId } });
+  if (!child) throw new Error("Child not found or access denied");
+  await db.$transaction(async (tx) => {
+    await tx.transaction.deleteMany({ where: { childId, familyId } });
+    await tx.spendingEntry.deleteMany({ where: { childId, familyId } });
+    await tx.investment.deleteMany({ where: { childId, familyId } });
+    await tx.tokenLedgerEntry.deleteMany({ where: { childId, familyId } });
+    await tx.account.deleteMany({ where: { childId, familyId } });
+    await tx.goal.deleteMany({ where: { ownerId: childId, familyId } });
+    await tx.child.delete({ where: { id: childId } });
+  });
+}
+
+export async function deleteParent(familyId: string, parentId: string): Promise<void> {
+  const parent = await db.parentProfile.findFirst({ where: { id: parentId, familyId } });
+  if (!parent) throw new Error("Parent not found or access denied");
+  await db.$transaction(async (tx) => {
+    await tx.spendingEntry.deleteMany({ where: { parentId, familyId } });
+    await tx.goal.deleteMany({ where: { ownerId: parentId, familyId } });
+    await tx.parentProfile.delete({ where: { id: parentId } });
+  });
+}
+
+export async function deleteSpendingCategory(familyId: string, id: string): Promise<void> {
+  const cat = await db.spendingCategory.findFirst({ where: { id, familyId } });
+  if (!cat) throw new Error("Category not found or access denied");
+  await db.spendingCategory.delete({ where: { id } });
+}
+
+export async function resetFamilyData(familyId: string): Promise<void> {
+  await db.$transaction(async (tx) => {
+    await tx.transaction.deleteMany({ where: { familyId } });
+    await tx.spendingEntry.deleteMany({ where: { familyId } });
+    await tx.investment.deleteMany({ where: { familyId } });
+    await tx.tokenLedgerEntry.deleteMany({ where: { familyId } });
+    await tx.account.deleteMany({ where: { familyId } });
+    await tx.goal.deleteMany({ where: { familyId } });
+    await tx.child.deleteMany({ where: { familyId } });
+    await tx.parentProfile.deleteMany({ where: { familyId } });
+    await tx.familySettings.deleteMany({ where: { familyId } });
+  });
+}

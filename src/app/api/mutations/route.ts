@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { addTransaction, addSpendingEntry, giveTokens, redeemTokens, investNow, createGoal, updateGoal, deleteGoal, contributeToGoal, setFamilySettings, setParentPhoto, setParentName, setChildPhoto, setChildName, createChild, createParent, getFullState } from "@/lib/db-queries";
+import { addTransaction, addSpendingEntry, giveTokens, redeemTokens, investNow, createGoal, updateGoal, deleteGoal, contributeToGoal, setFamilySettings, setParentPhoto, setParentName, setChildPhoto, setChildName, createChild, createParent, deleteTransaction, deleteSpendingEntry, closeInvestment, deleteInvestment, deleteChild, deleteParent, deleteSpendingCategory, resetFamilyData, getFullState } from "@/lib/db-queries";
 import { getAuthUser } from "@/lib/auth";
 export const dynamic = "force-dynamic";
 export async function POST(req: NextRequest) {
@@ -26,6 +26,14 @@ export async function POST(req: NextRequest) {
       case "setChildName": await setChildName(familyId, payload.childId, payload.name); break;
       case "createChild": await createChild({ ...payload, familyId }); break;
       case "createParent": await createParent({ ...payload, familyId }); break;
+      case "deleteTransaction": await deleteTransaction(familyId, payload.id); break;
+      case "deleteSpendingEntry": await deleteSpendingEntry(familyId, payload.id); break;
+      case "closeInvestment": await closeInvestment(familyId, payload.id); break;
+      case "deleteInvestment": await deleteInvestment(familyId, payload.id); break;
+      case "deleteChild": await deleteChild(familyId, payload.childId); break;
+      case "deleteParent": await deleteParent(familyId, payload.parentId); break;
+      case "deleteSpendingCategory": await deleteSpendingCategory(familyId, payload.id); break;
+      case "resetFamilyData": await resetFamilyData(familyId); break;
       default: return NextResponse.json({ error: `Unknown action: ${action}` }, { status: 400 });
     }
     const state = await getFullState(familyId);
