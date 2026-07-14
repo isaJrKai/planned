@@ -434,21 +434,63 @@ export async function createChild(input: {
   goalName: string;
   goalAmount: number;
   avatarColor?: string;
+  nickname?: string;
+  mascot?: string;
+  pin?: string;
 }) {
   const colors = ["#C9A84C", "#6BBF8A", "#D4869A", "#7B9ACC", "#E8A656", "#B084CC"];
   const avatarColor = input.avatarColor || colors[Math.floor(Math.random() * colors.length)];
   const id = `child-${Date.now()}`;
-  return db.child.create({
-    data: {
-      id,
-      familyId: input.familyId,
-      name: input.name.trim(),
-      age: input.age,
-      avatarColor,
-      currentAmount: 0,
-      goalAmount: input.goalAmount,
-      goalName: input.goalName.trim() || "Savings Goal",
-    },
+  const nickname = input.nickname?.trim() || input.name.trim();
+  const mascot = input.mascot || "dolphin";
+  
+  // Hash the PIN if provided
+  let pinHash: string | null = null;
+  if (input.pin && input.pin.length === 4) {
+    const bcrypt = require("bcryptjs");
+    pinHash = await bcrypt.hash(input.pin, 12);
+  }
+  
+  // Create Child + User + ChildProfile in a transaction
+  return db.$transaction(async (tx) => {
+    // 1. Create the Child (financial entity)
+    const child = await tx.child.create({
+      data: {
+        id,
+        familyId: input.familyId,
+        name: input.name.trim(),
+        age: input.age,
+        avatarColor,
+        currentAmount: 0,
+        goalAmount: input.goalAmount,
+        goalName: input.goalName.trim() || "Savings Goal",
+      },
+    });
+    
+    // 2. Create a User account for the child (so they can log in)
+    const childUser = await tx.user.create({
+      data: {
+        email: `child-${id}@planned.local`,  // Internal email, not used for login
+        name: input.name.trim(),
+        platformRole: "USER",
+        familyRole: "CHILD",
+        familyId: input.familyId,
+        childId: id,
+        pinHash,
+      },
+    });
+    
+    // 3. Create the ChildProfile (links User to Child, stores mascot + nickname)
+    await tx.childProfile.create({
+      data: {
+        userId: childUser.id,
+        childId: id,
+        nickname,
+        animalCompanion: mascot,
+      },
+    });
+    
+    return child;
   });
 }
 

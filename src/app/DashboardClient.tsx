@@ -655,10 +655,15 @@ function ChildrenTab({
   const [newAge, setNewAge] = useState("");
   const [newGoalName, setNewGoalName] = useState("");
   const [newGoalAmount, setNewGoalAmount] = useState("");
+  const [newNickname, setNewNickname] = useState("");
+  const [newMascot, setNewMascot] = useState("");
+  const [newPin, setNewPin] = useState("");
   const [adding, setAdding] = useState(false);
 
   async function handleAddChild() {
     if (!newName.trim() || !newAge) return;
+    if (!newMascot) { alert("Please pick a mascot for your child!"); return; }
+    if (!newPin || newPin.length !== 4) { alert("Please set a 4-digit secret code!"); return; }
     setAdding(true);
     try {
       await persistMutation("createChild", {
@@ -666,8 +671,12 @@ function ChildrenTab({
         age: parseInt(newAge),
         goalName: newGoalName || "Savings Goal",
         goalAmount: parseInt(newGoalAmount) || 100000,
+        nickname: newNickname || newName,
+        mascot: newMascot,
+        pin: newPin,
       });
       setNewName(""); setNewAge(""); setNewGoalName(""); setNewGoalAmount("");
+      setNewNickname(""); setNewMascot(""); setNewPin("");
       setShowAddChild(false);
     } catch {
       // error handled by persistMutation
@@ -693,6 +702,7 @@ function ChildrenTab({
       {/* Add Child form */}
       {showAddChild && (
         <div className="surface-wood-strong rounded-lg p-6 space-y-4">
+          {/* Basic info */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-[10px] tracking-wider uppercase text-foreground/60 mb-1.5">Child Name</label>
@@ -711,8 +721,37 @@ function ChildrenTab({
               <input type="number" value={newGoalAmount} onChange={(e) => setNewGoalAmount(e.target.value)} className="input-editorial" placeholder="e.g. 200000" />
             </div>
           </div>
-          <div className="flex gap-2">
-            <button onClick={handleAddChild} disabled={adding || !newName.trim() || !newAge} className="btn-gold px-4 py-2 rounded text-xs tracking-wider disabled:opacity-50">
+          
+          {/* Child login setup */}
+          <div className="divider-gold my-2" />
+          <div className="micro-label-gold mb-3">Child Login Setup</div>
+          <p className="text-[10px] text-foreground/50 mb-4">Your child will use their mascot + nickname + secret code to log in to their own dashboard.</p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-[10px] tracking-wider uppercase text-foreground/60 mb-1.5">Nickname (for login)</label>
+              <input type="text" value={newNickname} onChange={(e) => setNewNickname(e.target.value)} className="input-editorial" placeholder="e.g. Emma (defaults to name)" />
+            </div>
+            <div>
+              <label className="block text-[10px] tracking-wider uppercase text-foreground/60 mb-1.5">Secret Code (4 digits)</label>
+              <input type="password" value={newPin} onChange={(e) => setNewPin(e.target.value.replace(/\D/g, "").slice(0, 4))} className="input-editorial text-center text-lg tracking-[0.5em] font-mono" placeholder="••••" maxLength={4} inputMode="numeric" />
+            </div>
+          </div>
+          
+          {/* Mascot picker */}
+          <div>
+            <label className="block text-[10px] tracking-wider uppercase text-foreground/60 mb-2">Pick a Mascot</label>
+            <div className="grid grid-cols-6 sm:grid-cols-9 gap-2">
+              {[{e:"🐢",n:"turtle"},{e:"🐰",n:"rabbit"},{e:"🐥",n:"chick"},{e:"🐼",n:"panda"},{e:"🐧",n:"penguin"},{e:"🐨",n:"koala"},{e:"🦊",n:"fox"},{e:"🐬",n:"dolphin"},{e:"🦉",n:"owl"},{e:"🐿️",n:"squirrel"},{e:"🦝",n:"raccoon"},{e:"🦅",n:"eagle"},{e:"🐺",n:"wolf"},{e:"🦁",n:"lion"},{e:"🐙",n:"octopus"},{e:"🐉",n:"dragon"},{e:"🐆",n:"leopard"}].map((m) => (
+                <button key={m.n} type="button" onClick={() => setNewMascot(m.n)} className={`flex flex-col items-center gap-0.5 p-2 rounded-lg transition-all ${newMascot === m.n ? "border-2 border-[var(--primary)] bg-[color-mix(in_srgb,var(--primary)_8%,transparent)]" : "border-2 border-transparent hover:bg-[color-mix(in_srgb,var(--foreground)_5%,transparent)]"}`}>
+                  <span style={{ fontSize: "1.5rem" }}>{m.e}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          
+          <div className="flex gap-2 pt-2">
+            <button onClick={handleAddChild} disabled={adding || !newName.trim() || !newAge || !newMascot || newPin.length !== 4} className="btn-gold px-4 py-2 rounded text-xs tracking-wider disabled:opacity-50">
               {adding ? "Adding..." : "Add Child"}
             </button>
             <button onClick={() => setShowAddChild(false)} className="btn-ghost px-4 py-2 rounded text-xs tracking-wider">
