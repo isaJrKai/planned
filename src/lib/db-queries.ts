@@ -447,7 +447,7 @@ export async function createChild(input: {
   // Hash the PIN if provided
   let pinHash: string | null = null;
   if (input.pin && input.pin.length === 4) {
-    const bcrypt = require("bcryptjs");
+    const bcrypt = require("bcryptjs"); // eslint-disable-line @typescript-eslint/no-require-imports
     pinHash = await bcrypt.hash(input.pin, 12);
   }
   
