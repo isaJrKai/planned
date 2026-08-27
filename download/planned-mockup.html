@@ -1,0 +1,1663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Planned — Family Savings Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+/* ============================================================
+   PLANNED — White (Microsoft Word style) Investor Mockup
+   ============================================================ */
+:root{
+  --bg: #FFFFFF;
+  --card: #FFFFFF;
+  --foreground: #1F2937;
+  --primary: #2563EB;
+  --primary-soft: #EFF4FE;
+  --accent: #F59E0B;
+  --accent-soft: #FEF3E2;
+  --muted: #6B7280;
+  --muted-2: #9CA3AF;
+  --border: rgba(31,41,55,0.12);
+  --border-strong: rgba(31,41,55,0.20);
+  --surface: #F9FAFB;
+  --surface-2: #F3F4F6;
+
+  --chart-1: #4472C4;
+  --chart-2: #ED7D31;
+  --chart-3: #A5A5A5;
+  --chart-4: #FFC000;
+  --chart-5: #5B9BD5;
+
+  --green: #16A34A;
+  --green-soft: #DCFCE7;
+  --red: #DC2626;
+  --red-soft: #FEE2E2;
+
+  --shadow-sm: 0 1px 2px rgba(31,41,55,0.04), 0 1px 3px rgba(31,41,55,0.06);
+  --shadow-md: 0 4px 6px -1px rgba(31,41,55,0.06), 0 2px 4px -2px rgba(31,41,55,0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(31,41,55,0.08), 0 4px 6px -4px rgba(31,41,55,0.06);
+  --shadow-xl: 0 20px 25px -5px rgba(31,41,55,0.10), 0 8px 10px -6px rgba(31,41,55,0.06);
+
+  --font-serif: 'Playfair Display', Georgia, serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+
+  --radius: 14px;
+  --radius-sm: 10px;
+  --radius-lg: 20px;
+  --sidebar-w: 256px;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{
+  font-family:var(--font-sans);
+  background:var(--bg);
+  color:var(--foreground);
+  font-size:14px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+.serif{font-family:var(--font-serif);}
+.mono{font-family:var(--font-mono);}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;}
+a{color:inherit;text-decoration:none;}
+::selection{background:var(--primary-soft);color:var(--primary);}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:10px;height:10px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(31,41,55,0.15);border-radius:10px;border:2px solid var(--bg);}
+::-webkit-scrollbar-thumb:hover{background:rgba(31,41,55,0.28);}
+
+/* ============================================================
+   APP SHELL
+   ============================================================ */
+.app{display:flex;min-height:100vh;}
+
+/* ---- SIDEBAR ---- */
+.sidebar{
+  width:var(--sidebar-w);
+  flex-shrink:0;
+  background:var(--surface);
+  border-right:1px solid var(--border);
+  display:flex;
+  flex-direction:column;
+  position:sticky;
+  top:0;
+  height:100vh;
+  z-index:40;
+  transition:transform .3s ease, width .3s ease;
+}
+.brand{
+  padding:22px 22px 18px;
+  display:flex;
+  align-items:center;
+  gap:11px;
+  border-bottom:1px solid var(--border);
+}
+.brand-logo{
+  width:38px;height:38px;border-radius:11px;
+  background:linear-gradient(135deg,var(--primary),#1E40AF);
+  display:grid;place-items:center;color:#fff;font-weight:800;font-size:18px;
+  box-shadow:0 4px 10px rgba(37,99,235,0.30);
+  font-family:var(--font-serif);
+}
+.brand-name{font-family:var(--font-serif);font-weight:700;font-size:20px;letter-spacing:-0.3px;color:var(--foreground);}
+.brand-sub{font-size:11px;color:var(--muted);font-weight:500;letter-spacing:0.3px;text-transform:uppercase;}
+
+.nav{padding:14px 12px;flex:1;overflow-y:auto;}
+.nav-label{font-size:10.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted-2);padding:14px 12px 8px;}
+.nav-item{
+  width:100%;display:flex;align-items:center;gap:11px;
+  padding:10px 12px;border-radius:10px;
+  font-size:13.5px;font-weight:500;color:var(--foreground);
+  transition:all .18s ease;margin-bottom:2px;text-align:left;
+}
+.nav-item svg{width:18px;height:18px;flex-shrink:0;opacity:.7;transition:opacity .18s;}
+.nav-item:hover{background:rgba(37,99,235,0.06);}
+.nav-item:hover svg{opacity:1;}
+.nav-item.active{background:var(--primary);color:#fff;box-shadow:0 4px 12px rgba(37,99,235,0.28);}
+.nav-item.active svg{opacity:1;}
+.nav-item .badge-count{
+  margin-left:auto;background:var(--accent);color:#fff;font-size:10px;font-weight:700;
+  padding:1px 7px;border-radius:20px;
+}
+.nav-item.active .badge-count{background:rgba(255,255,255,0.25);}
+
+.sidebar-foot{padding:14px;border-top:1px solid var(--border);}
+.sidebar-plan{
+  background:#fff;border:1px solid var(--border);border-radius:12px;padding:13px 14px;
+  display:flex;align-items:center;gap:11px;
+}
+.sidebar-plan .ic{width:34px;height:34px;border-radius:9px;background:var(--accent-soft);display:grid;place-items:center;color:var(--accent);}
+.sidebar-plan .t{font-size:12.5px;font-weight:700;}
+.sidebar-plan .s{font-size:11px;color:var(--muted);}
+
+/* ---- MAIN ---- */
+.main{flex:1;min-width:0;display:flex;flex-direction:column;}
+.topbar{
+  height:64px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:14px;padding:0 26px;
+  position:sticky;top:0;background:rgba(255,255,255,0.85);backdrop-filter:blur(10px);z-index:30;
+}
+.menu-btn{display:none;width:38px;height:38px;border-radius:9px;align-items:center;justify-content:center;}
+.menu-btn:hover{background:var(--surface);}
+.page-title{font-family:var(--font-serif);font-size:21px;font-weight:600;letter-spacing:-0.4px;}
+.page-sub{font-size:12.5px;color:var(--muted);margin-left:2px;}
+.topbar-spacer{flex:1;}
+.search{
+  display:flex;align-items:center;gap:9px;background:var(--surface);
+  border:1px solid var(--border);border-radius:10px;padding:8px 13px;width:260px;transition:all .18s;
+}
+.search:focus-within{border-color:var(--primary);background:#fff;box-shadow:0 0 0 3px rgba(37,99,235,0.10);}
+.search svg{width:15px;height:15px;color:var(--muted);}
+.search input{border:none;background:none;outline:none;font-size:13px;width:100%;color:var(--foreground);}
+.search input::placeholder{color:var(--muted);}
+.icon-btn{
+  width:38px;height:38px;border-radius:10px;display:grid;place-items:center;color:var(--muted);
+  transition:all .18s;position:relative;
+}
+.icon-btn:hover{background:var(--surface);color:var(--foreground);}
+.icon-btn .dot{position:absolute;top:8px;right:9px;width:7px;height:7px;background:var(--accent);border-radius:50%;border:2px solid #fff;}
+.view-toggle{
+  display:flex;background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:3px;gap:2px;
+}
+.view-toggle button{
+  padding:7px 15px;border-radius:8px;font-size:12.5px;font-weight:600;color:var(--muted);
+  transition:all .18s;display:flex;align-items:center;gap:6px;
+}
+.view-toggle button.active{background:#fff;color:var(--primary);box-shadow:var(--shadow-sm);}
+.avatar{
+  width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#6366F1,#8B5CF6);
+  display:grid;place-items:center;color:#fff;font-weight:700;font-size:14px;cursor:pointer;
+  border:2px solid #fff;box-shadow:var(--shadow-sm);
+}
+.avatar.sm{width:30px;height:30px;font-size:12px;}
+
+.content{padding:26px;flex:1;max-width:1500px;width:100%;}
+
+/* ---- VIEW / PAGE SWITCH ---- */
+.view{display:none;animation:fade .35s ease;}
+.view.active{display:block;}
+@keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+
+/* ---- PARENT TABS ---- */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:24px;overflow-x:auto;}
+.tab{
+  padding:11px 18px;font-size:13.5px;font-weight:600;color:var(--muted);
+  border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .18s;white-space:nowrap;
+}
+.tab:hover{color:var(--foreground);}
+.tab.active{color:var(--primary);border-bottom-color:var(--primary);}
+
+/* ============================================================
+   BENTO GRID
+   ============================================================ */
+.bento{
+  display:grid;
+  grid-template-columns:repeat(12,1fr);
+  grid-auto-rows:minmax(120px,auto);
+  gap:18px;
+}
+.cell{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:22px;box-shadow:var(--shadow-sm);transition:all .25s ease;position:relative;overflow:hidden;
+}
+.cell:hover{box-shadow:var(--shadow-md);transform:translateY(-1px);}
+.cell-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.cell-title{font-size:11.5px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:var(--muted);}
+.cell-ico{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;}
+
+/* spans */
+.s-hero{grid-column:span 5;grid-row:span 2;}
+.s-sm{grid-column:span 2;grid-row:span 1;}
+.s-sm2{grid-column:span 3;}
+.s-wide{grid-column:span 7;}
+.s-wide2{grid-column:span 8;}
+.s-tall{grid-column:span 5;grid-row:span 2;}
+.s-chart{grid-column:span 7;}
+.s-port{grid-column:span 5;}
+.s-full{grid-column:span 12;}
+
+/* HERO */
+.hero-cell{
+  background:linear-gradient(135deg,#F7FAFF 0%,#FFFFFF 55%,#FFF8EE 100%);
+  border:1px solid var(--border);
+  display:flex;flex-direction:column;justify-content:space-between;
+}
+.hero-cell::before{
+  content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;
+  background:radial-gradient(circle,rgba(37,99,235,0.10),transparent 70%);border-radius:50%;
+}
+.hero-cell::after{
+  content:'';position:absolute;bottom:-80px;left:-40px;width:220px;height:220px;
+  background:radial-gradient(circle,rgba(245,158,11,0.10),transparent 70%);border-radius:50%;
+}
+.hero-top{display:flex;align-items:center;gap:10px;position:relative;z-index:1;}
+.hero-pill{
+  display:inline-flex;align-items:center;gap:6px;background:rgba(37,99,235,0.08);color:var(--primary);
+  font-size:11px;font-weight:700;padding:5px 11px;border-radius:20px;letter-spacing:0.3px;
+}
+.hero-pill .dot{width:6px;height:6px;border-radius:50%;background:var(--primary);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+.hero-label{font-size:12.5px;color:var(--muted);font-weight:500;position:relative;z-index:1;margin-top:18px;}
+.hero-amount{
+  font-family:var(--font-serif);font-size:46px;font-weight:700;letter-spacing:-1.5px;
+  line-height:1.05;color:var(--foreground);position:relative;z-index:1;margin-top:4px;
+}
+.hero-amount .cur{font-size:22px;font-weight:600;color:var(--muted);margin-right:6px;vertical-align:6px;}
+.hero-goal{font-size:12.5px;color:var(--muted);position:relative;z-index:1;margin-top:8px;}
+.hero-goal b{color:var(--foreground);font-weight:600;}
+.progress{height:9px;background:var(--surface-2);border-radius:10px;overflow:hidden;position:relative;z-index:1;margin-top:14px;}
+.progress > span{display:block;height:100%;border-radius:10px;background:linear-gradient(90deg,var(--primary),#3B82F6);transition:width 1s cubic-bezier(.2,.8,.2,1);position:relative;}
+.progress > span::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.35),transparent);animation:shimmer 2.5s infinite;}
+@keyframes shimmer{0%{transform:translateX(-100%);}100%{transform:translateX(100%);}}
+.hero-foot{display:flex;align-items:flex-end;justify-content:space-between;position:relative;z-index:1;margin-top:16px;}
+.hero-pct{font-family:var(--font-serif);font-size:30px;font-weight:700;color:var(--primary);letter-spacing:-0.5px;}
+.hero-pct small{font-size:13px;color:var(--muted);font-weight:500;margin-left:4px;font-family:var(--font-sans);}
+.hero-cta{display:flex;gap:8px;}
+
+/* SMALL STAT CELLS */
+.stat .ic{background:var(--primary-soft);color:var(--primary);}
+.stat .ic.acc{background:var(--accent-soft);color:var(--accent);}
+.stat .ic.grn{background:var(--green-soft);color:var(--green);}
+.stat .ic.vio{background:#EDE9FE;color:#7C3AED;}
+.stat-val{font-family:var(--font-serif);font-size:26px;font-weight:700;letter-spacing:-0.5px;margin-top:2px;}
+.stat-val .cur{font-size:15px;color:var(--muted);font-weight:600;margin-right:3px;}
+.stat-sub{font-size:12px;color:var(--muted);margin-top:3px;display:flex;align-items:center;gap:5px;}
+.trend-up{color:var(--green);font-weight:700;font-size:11.5px;}
+.trend-dn{color:var(--red);font-weight:700;font-size:11.5px;}
+
+/* CHART */
+.chart-wrap{position:relative;width:100%;}
+.chart-legend{display:flex;gap:18px;flex-wrap:wrap;margin-top:12px;}
+.legend-item{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);}
+.legend-dot{width:9px;height:9px;border-radius:3px;}
+
+/* PORTFOLIO TABLE */
+.port-table{width:100%;border-collapse:collapse;}
+.port-table th{
+  text-align:left;font-size:10.5px;font-weight:700;letter-spacing:0.7px;text-transform:uppercase;
+  color:var(--muted-2);padding:0 0 12px;border-bottom:1px solid var(--border);
+}
+.port-table td{padding:13px 0;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;}
+.port-table tr:last-child td{border-bottom:none;}
+.child-cell{display:flex;align-items:center;gap:11px;}
+.child-av{
+  width:36px;height:36px;border-radius:11px;display:grid;place-items:center;font-weight:700;font-size:13px;color:#fff;
+}
+.child-name{font-weight:600;font-size:13.5px;}
+.child-age{font-size:11.5px;color:var(--muted);}
+.mono-num{font-family:var(--font-mono);font-size:13px;font-weight:500;}
+.mini-bar{height:7px;background:var(--surface-2);border-radius:8px;overflow:hidden;width:130px;}
+.mini-bar > span{display:block;height:100%;border-radius:8px;}
+.pct-pill{font-family:var(--font-mono);font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:20px;}
+
+/* ACTIVITY FEED */
+.activity-list{display:flex;flex-direction:column;gap:2px;}
+.activity-item{display:flex;align-items:center;gap:13px;padding:11px 0;border-bottom:1px solid var(--border);}
+.activity-item:last-child{border-bottom:none;}
+.act-ic{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;flex-shrink:0;font-size:15px;}
+.act-ic.save{background:var(--green-soft);color:var(--green);}
+.act-ic.wd{background:var(--accent-soft);color:var(--accent);}
+.act-ic.inv{background:var(--primary-soft);color:var(--primary);}
+.act-ic.rdm{background:#FCE7F3;color:#BE185D;}
+.act-body{flex:1;min-width:0;}
+.act-title{font-size:13px;font-weight:600;}
+.act-meta{font-size:11.5px;color:var(--muted);}
+.act-amt{font-family:var(--font-mono);font-size:13px;font-weight:600;text-align:right;}
+.act-amt.pos{color:var(--green);}
+.act-amt.neg{color:var(--accent);}
+
+/* SPENDING BARS */
+.spend-row{display:flex;align-items:center;gap:16px;padding:14px 0;border-bottom:1px solid var(--border);}
+.spend-row:last-child{border-bottom:none;}
+.spend-av{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;color:#fff;font-weight:700;font-size:14px;flex-shrink:0;}
+.spend-body{flex:1;}
+.spend-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px;}
+.spend-name{font-weight:600;font-size:13.5px;}
+.spend-amt{font-family:var(--font-mono);font-size:13px;font-weight:600;}
+.spend-amt small{color:var(--muted);font-weight:500;}
+.spend-bar{height:8px;background:var(--surface-2);border-radius:8px;overflow:hidden;}
+.spend-bar > span{display:block;height:100%;border-radius:8px;transition:width 1s cubic-bezier(.2,.8,.2,1);}
+
+/* INSIGHTS */
+.insight{
+  display:flex;gap:14px;padding:15px;border-radius:12px;background:var(--surface);
+  border:1px solid var(--border);transition:all .2s;
+}
+.insight:hover{border-color:var(--primary);background:#fff;}
+.insight-ic{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;flex-shrink:0;font-size:17px;}
+.insight-ic.tip{background:var(--primary-soft);color:var(--primary);}
+.insight-ic.warn{background:var(--accent-soft);color:var(--accent);}
+.insight-ic.good{background:var(--green-soft);color:var(--green);}
+.insight-body h4{font-size:13.5px;font-weight:700;margin-bottom:3px;}
+.insight-body p{font-size:12.5px;color:var(--muted);line-height:1.55;}
+.insight-tag{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--primary);margin-top:7px;}
+
+/* ============================================================
+   CHILDREN GRID
+   ============================================================ */
+.child-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+.child-card{
+  background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);
+  padding:0;overflow:hidden;transition:all .25s;box-shadow:var(--shadow-sm);
+}
+.child-card:hover{box-shadow:var(--shadow-lg);transform:translateY(-3px);border-color:var(--border-strong);}
+.child-card-top{
+  padding:24px;display:flex;flex-direction:column;align-items:center;text-align:center;position:relative;
+}
+.child-card-top.emma{background:linear-gradient(135deg,#EFF4FE,#FFFFFF);}
+.child-card-top.liam{background:linear-gradient(135deg,#FEF3E2,#FFFFFF);}
+.child-card-top.zara{background:linear-gradient(135deg,#F0FDF4,#FFFFFF);}
+.child-big-av{
+  width:74px;height:74px;border-radius:22px;display:grid;place-items:center;color:#fff;
+  font-weight:800;font-size:28px;font-family:var(--font-serif);box-shadow:var(--shadow-md);margin-bottom:14px;
+}
+.child-card-name{font-family:var(--font-serif);font-size:22px;font-weight:700;letter-spacing:-0.4px;}
+.child-card-meta{font-size:12.5px;color:var(--muted);margin-top:2px;}
+.child-card-stats{display:flex;gap:24px;margin-top:18px;justify-content:center;}
+.child-stat{text-align:center;}
+.child-stat .v{font-family:var(--font-serif);font-size:18px;font-weight:700;}
+.child-stat .l{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-top:2px;}
+.child-card-body{padding:20px 24px;border-top:1px solid var(--border);}
+.child-goal-name{font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:6px;display:flex;justify-content:space-between;}
+.child-goal-name b{color:var(--foreground);}
+.child-card-body .progress{margin:6px 0 14px;}
+.child-card-foot{padding:0 24px 24px;display:flex;gap:10px;}
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  padding:9px 16px;border-radius:10px;font-size:13px;font-weight:600;transition:all .18s;white-space:nowrap;
+}
+.btn-primary{background:var(--primary);color:#fff;box-shadow:0 2px 6px rgba(37,99,235,0.25);}
+.btn-primary:hover{background:#1D4ED8;box-shadow:0 4px 12px rgba(37,99,235,0.35);transform:translateY(-1px);}
+.btn-ghost{background:var(--surface);color:var(--foreground);border:1px solid var(--border);}
+.btn-ghost:hover{background:var(--surface-2);}
+.btn-accent{background:var(--accent);color:#fff;box-shadow:0 2px 6px rgba(245,158,11,0.25);}
+.btn-accent:hover{background:#D97706;transform:translateY(-1px);}
+.btn-danger{background:var(--red);color:#fff;}
+.btn-danger:hover{background:#B91C1C;}
+.btn-sm{padding:6px 12px;font-size:12px;border-radius:8px;}
+
+/* ============================================================
+   TRANSACTIONS TABLE
+   ============================================================ */
+.ledger{background:#fff;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-sm);}
+.ledger-head{
+  display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--border);
+}
+.ledger-filters{display:flex;gap:8px;}
+.filter-chip{font-size:12px;font-weight:600;padding:6px 13px;border-radius:8px;background:var(--surface);color:var(--muted);border:1px solid var(--border);transition:all .18s;}
+.filter-chip.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+.filter-chip:hover:not(.active){background:var(--surface-2);}
+.ledger-table{width:100%;border-collapse:collapse;}
+.ledger-table th{
+  text-align:left;font-size:10.5px;font-weight:700;letter-spacing:0.7px;text-transform:uppercase;
+  color:var(--muted-2);padding:13px 22px;background:var(--surface);border-bottom:1px solid var(--border);
+}
+.ledger-table td{padding:15px 22px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;}
+.ledger-table tr:last-child td{border-bottom:none;}
+.ledger-table tbody tr{transition:background .15s;}
+.ledger-table tbody tr:hover{background:var(--surface);}
+.type-pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;text-transform:uppercase;letter-spacing:0.4px;}
+.type-pill.save{background:var(--green-soft);color:var(--green);}
+.type-pill.withdraw{background:var(--accent-soft);color:var(--accent);}
+.type-pill.invest{background:var(--primary-soft);color:var(--primary);}
+.type-pill.redeem{background:#FCE7F3;color:#BE185D;}
+.amt-pos{color:var(--green);font-weight:600;}
+.amt-neg{color:var(--accent);font-weight:600;}
+.token-delta{font-family:var(--font-mono);font-size:12px;font-weight:600;}
+.token-delta.pos{color:var(--green);}
+.token-delta.neg{color:var(--red);}
+.token-delta.zero{color:var(--muted-2);}
+
+/* ============================================================
+   GOALS
+   ============================================================ */
+.goals-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px;}
+.goal-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow-sm);transition:all .25s;}
+.goal-card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px);}
+.goal-top{display:flex;align-items:flex-start;gap:14px;margin-bottom:16px;}
+.goal-ic{width:48px;height:48px;border-radius:13px;display:grid;place-items:center;font-size:22px;flex-shrink:0;}
+.goal-ic.save{background:var(--primary-soft);}
+.goal-ic.spend{background:var(--accent-soft);}
+.goal-ic.inv{background:#EDE9FE;}
+.goal-name{font-family:var(--font-serif);font-size:18px;font-weight:700;letter-spacing:-0.3px;}
+.goal-owner{font-size:12px;color:var(--muted);margin-top:2px;display:flex;align-items:center;gap:6px;}
+.goal-type{margin-left:auto;font-size:10.5px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;padding:4px 10px;border-radius:20px;}
+.goal-type.save{background:var(--primary-soft);color:var(--primary);}
+.goal-type.spend{background:var(--accent-soft);color:var(--accent);}
+.goal-amounts{display:flex;align-items:baseline;gap:8px;margin-bottom:8px;}
+.goal-amounts .now{font-family:var(--font-serif);font-size:24px;font-weight:700;letter-spacing:-0.5px;}
+.goal-amounts .tot{font-size:13px;color:var(--muted);font-family:var(--font-mono);}
+.goal-meta{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin-top:10px;}
+.goal-meta b{color:var(--foreground);font-weight:600;}
+
+/* ============================================================
+   SETTINGS
+   ============================================================ */
+.settings-section{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:26px;box-shadow:var(--shadow-sm);margin-bottom:20px;}
+.settings-section h3{font-family:var(--font-serif);font-size:19px;font-weight:700;margin-bottom:4px;letter-spacing:-0.3px;}
+.settings-section .desc{font-size:13px;color:var(--muted);margin-bottom:22px;}
+.profile-row{display:flex;align-items:center;gap:20px;padding:18px;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:12px;}
+.profile-photo{width:72px;height:72px;border-radius:18px;display:grid;place-items:center;color:#fff;font-weight:800;font-size:24px;font-family:var(--font-serif);position:relative;flex-shrink:0;}
+.profile-photo .upload{position:absolute;bottom:-4px;right:-4px;width:26px;height:26px;border-radius:50%;background:var(--primary);color:#fff;display:grid;place-items:center;border:3px solid #fff;cursor:pointer;}
+.profile-fields{display:flex;gap:14px;flex:1;flex-wrap:wrap;}
+.field{display:flex;flex-direction:column;gap:5px;flex:1;min-width:160px;}
+.field label{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;}
+.field input,.field textarea,.field select{
+  border:1px solid var(--border);border-radius:9px;padding:9px 12px;font-size:13.5px;font-family:inherit;
+  background:#fff;transition:all .18s;color:var(--foreground);width:100%;
+}
+.field input:focus,.field textarea:focus,.field select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,0.10);}
+.theme-swatches{display:flex;gap:14px;flex-wrap:wrap;}
+.swatch{cursor:pointer;text-align:center;transition:transform .18s;}
+.swatch:hover{transform:translateY(-2px);}
+.swatch .color{width:64px;height:64px;border-radius:14px;border:2px solid var(--border);transition:all .18s;position:relative;}
+.swatch.active .color{border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,0.15);}
+.swatch.active .color::after{content:'✓';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;font-weight:800;font-size:20px;text-shadow:0 1px 3px rgba(0,0,0,0.3);}
+.swatch .name{font-size:11.5px;font-weight:600;margin-top:8px;color:var(--muted);}
+.swatch.active .name{color:var(--primary);}
+.danger-zone{border-color:rgba(220,38,38,0.25);background:#FFFBFB;}
+.danger-zone h3{color:var(--red);}
+.danger-zone .desc{color:#991B1B;}
+
+/* ============================================================
+   CHILD DASHBOARD VIEW
+   ============================================================ */
+.child-shell{max-width:1180px;margin:0 auto;}
+.child-hero{
+  background:linear-gradient(135deg,#EFF6FF 0%,#FFFFFF 40%,#FEF3E2 100%);
+  border:1px solid var(--border);border-radius:var(--radius-lg);
+  padding:32px;display:flex;align-items:center;gap:28px;position:relative;overflow:hidden;box-shadow:var(--shadow-sm);margin-bottom:22px;
+}
+.child-hero::before{content:'';position:absolute;top:-50px;right:-30px;width:180px;height:180px;background:radial-gradient(circle,rgba(37,99,235,0.10),transparent 70%);border-radius:50%;}
+.mascot{
+  width:108px;height:108px;border-radius:28px;background:linear-gradient(135deg,#DBEAFE,#BFDBFE);
+  display:grid;place-items:center;font-size:56px;flex-shrink:0;box-shadow:var(--shadow-md);
+  animation:float 4s ease-in-out infinite;position:relative;z-index:1;
+}
+@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+.child-hero-body{flex:1;position:relative;z-index:1;}
+.child-greet{font-size:14px;color:var(--muted);font-weight:500;}
+.child-greet b{color:var(--primary);font-weight:700;}
+.child-hero-name{font-family:var(--font-serif);font-size:30px;font-weight:700;letter-spacing:-0.5px;margin-top:3px;}
+.child-hero-amount{font-family:var(--font-serif);font-size:42px;font-weight:700;letter-spacing:-1.2px;margin-top:10px;color:var(--primary);}
+.child-hero-amount .cur{font-size:20px;color:var(--muted);margin-right:5px;vertical-align:5px;font-weight:600;}
+.star-wallet{
+  display:flex;flex-direction:column;align-items:center;gap:6px;background:#fff;border:1px solid var(--border);
+  border-radius:16px;padding:18px 26px;box-shadow:var(--shadow-md);position:relative;z-index:1;
+}
+.star-wallet .ic{font-size:30px;filter:drop-shadow(0 2px 4px rgba(245,158,11,0.4));}
+.star-wallet .v{font-family:var(--font-serif);font-size:24px;font-weight:700;color:var(--accent);}
+.star-wallet .l{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;font-weight:600;}
+
+.tree-section{
+  background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);padding:26px;margin-bottom:22px;box-shadow:var(--shadow-sm);
+}
+.tree-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+.tree-head h3{font-family:var(--font-serif);font-size:19px;font-weight:700;}
+.tree-stages{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;margin:20px 0;}
+.tree-stage{flex:1;text-align:center;position:relative;}
+.tree-stage .emoji{font-size:42px;display:block;filter:grayscale(1);opacity:0.35;transition:all .35s;}
+.tree-stage.active .emoji{filter:none;opacity:1;transform:scale(1.12);}
+.tree-stage .lbl{font-size:11px;font-weight:600;color:var(--muted);margin-top:8px;}
+.tree-stage.active .lbl{color:var(--green);}
+.tree-line{position:absolute;top:21px;left:50%;width:100%;height:3px;background:var(--surface-2);z-index:0;}
+.tree-stage:last-child .tree-line{display:none;}
+.tree-stage .tree-line.done{background:var(--green);}
+.tree-progress{display:flex;align-items:center;gap:14px;margin-top:18px;}
+.tree-progress .progress{flex:1;}
+
+.child-tabs{display:flex;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:5px;margin-bottom:22px;overflow-x:auto;}
+.child-tab{
+  flex:1;padding:11px 16px;border-radius:9px;font-size:13px;font-weight:600;color:var(--muted);
+  transition:all .18s;text-align:center;white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:7px;
+}
+.child-tab:hover{color:var(--foreground);}
+.child-tab.active{background:#fff;color:var(--primary);box-shadow:var(--shadow-sm);}
+.child-tab .ic{font-size:15px;}
+
+.cpane{display:none;animation:fade .3s ease;}
+.cpane.active{display:block;}
+
+.child-goals-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;}
+.cgoal-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:22px;box-shadow:var(--shadow-sm);transition:all .25s;}
+.cgoal-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md);}
+.cgoal-top{display:flex;align-items:center;gap:14px;margin-bottom:16px;}
+.cgoal-emoji{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;font-size:26px;background:var(--primary-soft);}
+.cgoal-name{font-family:var(--font-serif);font-size:18px;font-weight:700;}
+.cgoal-sub{font-size:12px;color:var(--muted);margin-top:2px;}
+.cgoal-amts{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
+.cgoal-now{font-family:var(--font-serif);font-size:22px;font-weight:700;}
+.cgoal-tot{font-family:var(--font-mono);font-size:12.5px;color:var(--muted);}
+
+/* LESSONS */
+.lessons-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+.lesson-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-sm);transition:all .25s;}
+.lesson-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg);}
+.lesson-banner{height:84px;display:grid;place-items:center;font-size:38px;position:relative;}
+.lesson-banner.l1{background:linear-gradient(135deg,#DBEAFE,#EFF6FF);}
+.lesson-banner.l2{background:linear-gradient(135deg,#FEF3C7,#FEF9E7);}
+.lesson-banner.l3{background:linear-gradient(135deg,#D1FAE5,#ECFDF5);}
+.lesson-banner .lvl{position:absolute;top:10px;right:10px;background:rgba(255,255,255,0.9);font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;color:var(--foreground);letter-spacing:.4px;}
+.lesson-body{padding:18px;}
+.lesson-cat{font-size:10.5px;font-weight:700;letter-spacing:0.6px;text-transform:uppercase;color:var(--primary);}
+.lesson-title{font-family:var(--font-serif);font-size:17px;font-weight:700;margin-top:5px;letter-spacing:-0.2px;}
+.lesson-desc{font-size:12.5px;color:var(--muted);margin-top:7px;line-height:1.55;}
+.lesson-foot{display:flex;align-items:center;justify-content:space-between;margin-top:15px;padding-top:14px;border-top:1px solid var(--border);}
+.lesson-time{font-size:11.5px;color:var(--muted);display:flex;align-items:center;gap:5px;}
+.lesson-reward{font-size:11.5px;font-weight:700;color:var(--accent);display:flex;align-items:center;gap:4px;}
+
+/* BADGES */
+.badges-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;}
+.badge{text-align:center;padding:20px;background:#fff;border:1px solid var(--border);border-radius:var(--radius);transition:all .25s;box-shadow:var(--shadow-sm);}
+.badge:hover{transform:translateY(-3px);box-shadow:var(--shadow-md);}
+.badge.locked{opacity:0.6;}
+.badge.locked:hover{transform:none;}
+.badge-ic{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;margin:0 auto 12px;font-size:30px;position:relative;}
+.badge.earned .badge-ic{background:linear-gradient(135deg,var(--accent-soft),#FDE68A);box-shadow:0 4px 12px rgba(245,158,11,0.25);}
+.badge.locked .badge-ic{background:var(--surface-2);filter:grayscale(1);}
+.badge.locked .badge-ic::after{content:'🔒';position:absolute;font-size:20px;}
+.badge.locked .badge-ic .emoji{display:none;}
+.badge-name{font-family:var(--font-serif);font-size:14px;font-weight:700;}
+.badge-desc{font-size:11px;color:var(--muted);margin-top:3px;}
+
+/* COVE PANE */
+.cove-grid{display:grid;grid-template-columns:2fr 1fr;gap:18px;}
+.cove-scene{background:linear-gradient(180deg,#DBEAFE 0%,#EFF6FF 100%);border:1px solid var(--border);border-radius:var(--radius);padding:30px;min-height:280px;position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;}
+.cove-scene .water{position:absolute;bottom:0;left:0;right:0;height:90px;background:linear-gradient(180deg,rgba(59,130,246,0.15),rgba(37,99,235,0.30));}
+.cove-scene .dolphin{font-size:72px;position:relative;z-index:1;animation:float 4s ease-in-out infinite;}
+.cove-scene .msg{position:relative;z-index:1;background:#fff;padding:12px 18px;border-radius:14px;font-size:13.5px;box-shadow:var(--shadow-md);margin-bottom:10px;max-width:80%;text-align:center;}
+
+/* STARS PANE */
+.stars-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+.star-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:20px;text-align:center;box-shadow:var(--shadow-sm);transition:all .2s;}
+.star-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md);}
+.star-card .ic{font-size:32px;margin-bottom:10px;}
+.star-card .v{font-family:var(--font-serif);font-size:24px;font-weight:700;color:var(--accent);}
+.star-card .l{font-size:12px;color:var(--muted);margin-top:3px;}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width:1100px){
+  .s-hero{grid-column:span 12;grid-row:span 1;}
+  .s-sm,.s-sm2{grid-column:span 6;}
+  .s-wide,.s-wide2,.s-chart,.s-port,.s-tall{grid-column:span 12;}
+  .child-grid{grid-template-columns:repeat(2,1fr);}
+  .lessons-grid,.badges-grid{grid-template-columns:repeat(2,1fr);}
+  .cove-grid{grid-template-columns:1fr;}
+}
+@media (max-width:820px){
+  .sidebar{position:fixed;left:0;top:0;transform:translateX(-100%);box-shadow:var(--shadow-xl);}
+  .sidebar.open{transform:translateX(0);}
+  .menu-btn{display:flex;}
+  .search{display:none;}
+  .goals-grid,.child-goals-grid,.child-grid,.lessons-grid,.badges-grid,.stars-grid{grid-template-columns:1fr;}
+  .child-hero{flex-direction:column;text-align:center;}
+  .content{padding:18px;}
+  .topbar{padding:0 16px;}
+  .page-title{font-size:18px;}
+  .ledger-table{display:block;overflow-x:auto;}
+  .ledger-table th,.ledger-table td{white-space:nowrap;}
+}
+@media (max-width:560px){
+  .s-sm,.s-sm2{grid-column:span 12;}
+  .hero-amount{font-size:34px;}
+  .view-toggle button span{display:none;}
+  .topbar .page-sub{display:none;}
+}
+
+.overlay{position:fixed;inset:0;background:rgba(31,41,55,0.4);z-index:35;opacity:0;visibility:hidden;transition:all .25s;}
+.overlay.show{opacity:1;visibility:visible;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ===================== SIDEBAR ===================== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-logo">P</div>
+      <div>
+        <div class="brand-name">Planned</div>
+        <div class="brand-sub">Family Savings</div>
+      </div>
+    </div>
+    <nav class="nav">
+      <div class="nav-label">Parent</div>
+      <button class="nav-item active" data-view="parent" data-tab="overview">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Overview
+      </button>
+      <button class="nav-item" data-view="parent" data-tab="children">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Children
+        <span class="badge-count">3</span>
+      </button>
+      <button class="nav-item" data-view="parent" data-tab="transactions">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+        Transactions
+      </button>
+      <button class="nav-item" data-view="parent" data-tab="goals">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+        Goals
+      </button>
+      <button class="nav-item" data-view="parent" data-tab="settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Settings
+      </button>
+
+      <div class="nav-label" style="margin-top:8px;">Family</div>
+      <button class="nav-item" data-view="child" data-tab="cove">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z"/><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/></svg>
+        Child View
+        <span class="badge-count" style="background:#BE185D;">New</span>
+      </button>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="sidebar-plan">
+        <div class="ic">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        </div>
+        <div>
+          <div class="t">Family Plan</div>
+          <div class="s">Active · 3 children</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+  <!-- ===================== MAIN ===================== -->
+  <div class="main">
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <button class="menu-btn" onclick="toggleSidebar()">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <div>
+        <div class="page-title" id="pageTitle">Overview</div>
+        <div class="page-sub" id="pageSub">Sterling Family · January 2026</div>
+      </div>
+      <div class="topbar-spacer"></div>
+      <div class="view-toggle">
+        <button class="active" id="parentToggle" onclick="switchView('parent')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span>Parent</span>
+        </button>
+        <button id="childToggle" onclick="switchView('child')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+          <span>Child</span>
+        </button>
+      </div>
+      <div class="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input placeholder="Search savings, goals, children…" />
+      </div>
+      <button class="icon-btn" title="Notifications">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span class="dot"></span>
+      </button>
+      <button class="icon-btn" title="Theme">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      </button>
+      <div class="avatar" title="Alexander Sterling">AS</div>
+    </header>
+
+    <!-- CONTENT -->
+    <div class="content">
+
+      <!-- ============================================================
+           PARENT VIEW
+           ============================================================ -->
+      <div class="view active" id="view-parent">
+        <div class="tabs" id="parentTabs">
+          <button class="tab active" data-tab="overview">Overview</button>
+          <button class="tab" data-tab="children">Children</button>
+          <button class="tab" data-tab="transactions">Transactions</button>
+          <button class="tab" data-tab="goals">Goals</button>
+          <button class="tab" data-tab="settings">Settings</button>
+        </div>
+
+        <!-- ============ OVERVIEW ============ -->
+        <div class="pane active" data-pane="overview">
+          <div class="bento">
+
+            <!-- HERO -->
+            <div class="cell s-hero hero-cell">
+              <div class="hero-top">
+                <span class="hero-pill"><span class="dot"></span>On Track</span>
+              </div>
+              <div>
+                <div class="hero-label">Total Family Savings</div>
+                <div class="hero-amount"><span class="cur">UGX</span>3,245,000</div>
+                <div class="hero-goal">of <b>UGX 5,000,000</b> annual goal · 7 months remaining</div>
+                <div class="progress"><span style="width:65%"></span></div>
+                <div class="hero-foot">
+                  <div class="hero-pct">65%<small>complete</small></div>
+                  <div class="hero-cta">
+                    <button class="btn btn-ghost btn-sm">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                      Details
+                    </button>
+                    <button class="btn btn-primary btn-sm">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                      Add Saving
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- SMALL STATS -->
+            <div class="cell s-sm2 stat">
+              <div class="cell-head">
+                <div class="cell-title">This Month Saved</div>
+                <div class="cell-ic"><div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div></div>
+              </div>
+              <div class="stat-val"><span class="cur">UGX</span>450,000</div>
+              <div class="stat-sub"><span class="trend-up">▲ 12.4%</span> vs last month</div>
+            </div>
+
+            <div class="cell s-sm2 stat">
+              <div class="cell-head">
+                <div class="cell-title">Tokens in Circulation</div>
+                <div class="cell-ic"><div class="ic acc">◈</div></div>
+              </div>
+              <div class="stat-val">127 <span style="font-size:18px;color:var(--accent);">◈</span></div>
+              <div class="stat-sub"><span class="trend-up">▲ 18</span> awarded this month</div>
+            </div>
+
+            <div class="cell s-sm2 stat">
+              <div class="cell-head">
+                <div class="cell-title">Investments</div>
+                <div class="cell-ic"><div class="ic vio"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div></div>
+              </div>
+              <div class="stat-val"><span class="cur">UGX</span>1,800,000</div>
+              <div class="stat-sub"><span class="trend-up">▲ 8.2%</span> YTD returns</div>
+            </div>
+
+            <div class="cell s-sm2 stat">
+              <div class="cell-head">
+                <div class="cell-title">Active Children</div>
+                <div class="cell-ic"><div class="ic grn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg></div></div>
+              </div>
+              <div class="stat-val">3 <span style="font-size:14px;color:var(--muted);font-family:var(--font-sans);font-weight:500;">active</span></div>
+              <div class="stat-sub">All on track to goals</div>
+            </div>
+
+            <!-- SAVINGS TREND CHART -->
+            <div class="cell s-chart">
+              <div class="cell-head">
+                <div>
+                  <div class="cell-title">Savings Trend</div>
+                  <div style="font-family:var(--font-serif);font-size:20px;font-weight:700;margin-top:4px;">Last 6 Months</div>
+                </div>
+                <div style="display:flex;gap:6px;">
+                  <button class="filter-chip active">6M</button>
+                  <button class="filter-chip">1Y</button>
+                  <button class="filter-chip">All</button>
+                </div>
+              </div>
+              <div class="chart-wrap">
+                <svg viewBox="0 0 560 220" width="100%" height="220" style="overflow:visible;">
+                  <defs>
+                    <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="#4472C4" stop-opacity="0.28"/>
+                      <stop offset="100%" stop-color="#4472C4" stop-opacity="0"/>
+                    </linearGradient>
+                    <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stop-color="#4472C4"/>
+                      <stop offset="100%" stop-color="#5B9BD5"/>
+                    </linearGradient>
+                  </defs>
+                  <!-- gridlines -->
+                  <g stroke="rgba(31,41,55,0.06)" stroke-width="1">
+                    <line x1="40" y1="30" x2="540" y2="30"/>
+                    <line x1="40" y1="75" x2="540" y2="75"/>
+                    <line x1="40" y1="120" x2="540" y2="120"/>
+                    <line x1="40" y1="165" x2="540" y2="165"/>
+                  </g>
+                  <!-- y labels -->
+                  <g font-family="JetBrains Mono" font-size="9" fill="#9CA3AF">
+                    <text x="32" y="34" text-anchor="end">3.5M</text>
+                    <text x="32" y="79" text-anchor="end">2.5M</text>
+                    <text x="32" y="124" text-anchor="end">1.5M</text>
+                    <text x="32" y="169" text-anchor="end">0.5M</text>
+                  </g>
+                  <!-- area -->
+                  <path d="M60,150 L160,128 L260,102 L360,84 L460,64 L540,38 L540,190 L60,190 Z" fill="url(#areaGrad)"/>
+                  <!-- line -->
+                  <path d="M60,150 L160,128 L260,102 L360,84 L460,64 L540,38" fill="none" stroke="url(#lineGrad)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                  <!-- points -->
+                  <g>
+                    <circle cx="60" cy="150" r="4" fill="#fff" stroke="#4472C4" stroke-width="2.5"/>
+                    <circle cx="160" cy="128" r="4" fill="#fff" stroke="#4472C4" stroke-width="2.5"/>
+                    <circle cx="260" cy="102" r="4" fill="#fff" stroke="#4472C4" stroke-width="2.5"/>
+                    <circle cx="360" cy="84" r="4" fill="#fff" stroke="#4472C4" stroke-width="2.5"/>
+                    <circle cx="460" cy="64" r="4" fill="#fff" stroke="#4472C4" stroke-width="2.5"/>
+                    <circle cx="540" cy="38" r="6" fill="#4472C4" stroke="#fff" stroke-width="3"/>
+                  </g>
+                  <!-- highlight last point -->
+                  <g>
+                    <rect x="492" y="10" width="96" height="26" rx="7" fill="#1F2937"/>
+                    <text x="540" y="27" text-anchor="middle" font-family="JetBrains Mono" font-size="11" font-weight="600" fill="#fff">UGX 3.245M</text>
+                  </g>
+                  <!-- x labels -->
+                  <g font-family="Inter" font-size="10.5" fill="#6B7280" font-weight="500">
+                    <text x="60" y="208" text-anchor="middle">Aug</text>
+                    <text x="160" y="208" text-anchor="middle">Sep</text>
+                    <text x="260" y="208" text-anchor="middle">Oct</text>
+                    <text x="360" y="208" text-anchor="middle">Nov</text>
+                    <text x="460" y="208" text-anchor="middle">Dec</text>
+                    <text x="540" y="208" text-anchor="middle" font-weight="700" fill="#1F2937">Jan</text>
+                  </g>
+                </svg>
+              </div>
+            </div>
+
+            <!-- CHILDREN PORTFOLIOS -->
+            <div class="cell s-port">
+              <div class="cell-head">
+                <div class="cell-title">Children Portfolios</div>
+                <button class="btn btn-ghost btn-sm">View All</button>
+              </div>
+              <table class="port-table">
+                <thead><tr><th>Child</th><th>Saved</th><th>Goal</th><th>Progress</th></tr></thead>
+                <tbody>
+                  <tr>
+                    <td><div class="child-cell"><div class="child-av" style="background:#F472B6;">E</div><div><div class="child-name">Emma</div><div class="child-age">Age 10</div></div></div></td>
+                    <td class="mono-num">850,000</td>
+                    <td class="mono-num" style="color:var(--muted);">1,000,000</td>
+                    <td>
+                      <div style="display:flex;align-items:center;gap:10px;">
+                        <div class="mini-bar"><span style="width:85%;background:#F472B6;"></span></div>
+                        <span class="pct-pill" style="background:#FCE7F3;color:#BE185D;">85%</span>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><div class="child-cell"><div class="child-av" style="background:#60A5FA;">L</div><div><div class="child-name">Liam</div><div class="child-age">Age 8</div></div></div></td>
+                    <td class="mono-num">420,000</td>
+                    <td class="mono-num" style="color:var(--muted);">800,000</td>
+                    <td>
+                      <div style="display:flex;align-items:center;gap:10px;">
+                        <div class="mini-bar"><span style="width:52%;background:#60A5FA;"></span></div>
+                        <span class="pct-pill" style="background:#DBEAFE;color:#1D4ED8;">52%</span>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><div class="child-cell"><div class="child-av" style="background:#34D399;">Z</div><div><div class="child-name">Zara</div><div class="child-age">Age 12</div></div></div></td>
+                    <td class="mono-num">1,975,000</td>
+                    <td class="mono-num" style="color:var(--muted);">3,200,000</td>
+                    <td>
+                      <div style="display:flex;align-items:center;gap:10px;">
+                        <div class="mini-bar"><span style="width:62%;background:#34D399;"></span></div>
+                        <span class="pct-pill" style="background:#D1FAE5;color:#15803D;">62%</span>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- RECENT ACTIVITY (TALL) -->
+            <div class="cell s-tall">
+              <div class="cell-head">
+                <div class="cell-title">Recent Activity</div>
+                <button class="btn btn-ghost btn-sm">All</button>
+              </div>
+              <div class="activity-list">
+                <div class="activity-item">
+                  <div class="act-ic save">↓</div>
+                  <div class="act-body"><div class="act-title">Emma · Weekly Allowance</div><div class="act-meta">Today · 2:14 PM · Savings</div></div>
+                  <div class="act-amt pos">+UGX 50,000<br><span style="font-size:11px;color:var(--green);font-family:var(--font-mono);">+2 ◈</span></div>
+                </div>
+                <div class="activity-item">
+                  <div class="act-ic inv">↗</div>
+                  <div class="act-body"><div class="act-title">Zara · Treasury Bond</div><div class="act-meta">Today · 11:02 AM · Investment</div></div>
+                  <div class="act-amt neg">−UGX 200,000<br><span style="font-size:11px;color:var(--muted-2);font-family:var(--font-mono);">0 ◈</span></div>
+                </div>
+                <div class="activity-item">
+                  <div class="act-ic wd">↑</div>
+                  <div class="act-body"><div class="act-title">Liam · Toy Purchase</div><div class="act-meta">Yesterday · Withdrawal</div></div>
+                  <div class="act-amt neg">−UGX 30,000<br><span style="font-size:11px;color:var(--red);font-family:var(--font-mono);">−1 ◈</span></div>
+                </div>
+                <div class="activity-item">
+                  <div class="act-ic rdm">★</div>
+                  <div class="act-body"><div class="act-title">Emma · Movie Ticket</div><div class="act-meta">Yesterday · Token Redeem</div></div>
+                  <div class="act-amt neg">−UGX 15,000<br><span style="font-size:11px;color:var(--red);font-family:var(--font-mono);">−5 ◈</span></div>
+                </div>
+                <div class="activity-item">
+                  <div class="act-ic save">↓</div>
+                  <div class="act-body"><div class="act-title">Zara · Art Prize Reward</div><div class="act-meta">2 days ago · Savings</div></div>
+                  <div class="act-amt pos">+UGX 80,000<br><span style="font-size:11px;color:var(--green);font-family:var(--font-mono);">+3 ◈</span></div>
+                </div>
+                <div class="activity-item">
+                  <div class="act-ic save">↓</div>
+                  <div class="act-body"><div class="act-title">Liam · Chore Reward</div><div class="act-meta">3 days ago · Savings</div></div>
+                  <div class="act-amt pos">+UGX 25,000<br><span style="font-size:11px;color:var(--green);font-family:var(--font-mono);">+1 ◈</span></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- FAMILY SPENDING (FULL WIDTH) -->
+            <div class="cell s-full">
+              <div class="cell-head">
+                <div>
+                  <div class="cell-title">Family Spending — This Month</div>
+                  <div style="font-family:var(--font-serif);font-size:20px;font-weight:700;margin-top:4px;">UGX 1,240,000 <span style="font-size:13px;color:var(--muted);font-family:var(--font-sans);font-weight:500;">of UGX 1,600,000 budget</span></div>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;background:var(--green-soft);padding:6px 12px;border-radius:20px;">
+                  <span class="trend-up">▼ 6.1%</span><span style="font-size:11.5px;color:var(--green);font-weight:600;">under budget</span>
+                </div>
+              </div>
+              <div class="spend-row">
+                <div class="spend-av" style="background:#F472B6;">E</div>
+                <div class="spend-body">
+                  <div class="spend-top"><div class="spend-name">Emma <span style="font-weight:400;color:var(--muted);">· Age 10</span></div><div class="spend-amt">UGX 180,000 <small>/ 250,000</small></div></div>
+                  <div class="spend-bar"><span style="width:72%;background:#F472B6;"></span></div>
+                </div>
+              </div>
+              <div class="spend-row">
+                <div class="spend-av" style="background:#60A5FA;">L</div>
+                <div class="spend-body">
+                  <div class="spend-top"><div class="spend-name">Liam <span style="font-weight:400;color:var(--muted);">· Age 8</span></div><div class="spend-amt">UGX 220,000 <small>/ 300,000</small></div></div>
+                  <div class="spend-bar"><span style="width:73%;background:#60A5FA;"></span></div>
+                </div>
+              </div>
+              <div class="spend-row">
+                <div class="spend-av" style="background:#34D399;">Z</div>
+                <div class="spend-body">
+                  <div class="spend-top"><div class="spend-name">Zara <span style="font-weight:400;color:var(--muted);">· Age 12</span></div><div class="spend-amt">UGX 340,000 <small>/ 450,000</small></div></div>
+                  <div class="spend-bar"><span style="width:76%;background:#34D399;"></span></div>
+                </div>
+              </div>
+              <div class="spend-row">
+                <div class="spend-av" style="background:linear-gradient(135deg,#6366F1,#8B5CF6);">A</div>
+                <div class="spend-body">
+                  <div class="spend-top"><div class="spend-name">Alexander <span style="font-weight:400;color:var(--muted);">· Father</span></div><div class="spend-amt">UGX 300,000 <small>/ 350,000</small></div></div>
+                  <div class="spend-bar"><span style="width:86%;background:linear-gradient(90deg,#6366F1,#8B5CF6);"></span></div>
+                </div>
+              </div>
+              <div class="spend-row">
+                <div class="spend-av" style="background:linear-gradient(135deg,#EC4899,#F472B6);">S</div>
+                <div class="spend-body">
+                  <div class="spend-top"><div class="spend-name">Sarah <span style="font-weight:400;color:var(--muted);">· Mother</span></div><div class="spend-amt">UGX 200,000 <small>/ 250,000</small></div></div>
+                  <div class="spend-bar"><span style="width:80%;background:linear-gradient(90deg,#EC4899,#F472B6);"></span></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- SMART INSIGHTS (FULL WIDTH) -->
+            <div class="cell s-full">
+              <div class="cell-head">
+                <div>
+                  <div class="cell-title">Smart Insights & Recommendations</div>
+                  <div style="font-family:var(--font-serif);font-size:20px;font-weight:700;margin-top:4px;">AI-Powered Guidance</div>
+                </div>
+                <button class="btn btn-primary btn-sm">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  Ask Coach
+                </button>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;">
+                <div class="insight">
+                  <div class="insight-ic tip">💡</div>
+                  <div class="insight-body">
+                    <h4>Boost Liam's Pace</h4>
+                    <p>Liam is saving UGX 12,000/week. Increasing weekly allowance by UGX 5,000 would put him on track for his gaming console by August.</p>
+                    <span class="insight-tag">→ Apply suggestion</span>
+                  </div>
+                </div>
+                <div class="insight">
+                  <div class="insight-ic warn">⚠️</div>
+                  <div class="insight-body">
+                    <h4>Snack Spending Trend</h4>
+                    <p>Family snack spending is 30% above target this month. Consider setting a UGX 50,000 monthly cap to recover the "Reduce Snacks" goal.</p>
+                    <span class="insight-tag" style="color:var(--accent);">→ Set spending cap</span>
+                  </div>
+                </div>
+                <div class="insight">
+                  <div class="insight-ic good">✓</div>
+                  <div class="insight-body">
+                    <h4>Zara Ready to Invest</h4>
+                    <p>Zara's savings exceed UGX 1.9M — above the recommended threshold. A low-risk treasury bond could add UGX 78,000/year in compound growth.</p>
+                    <span class="insight-tag" style="color:var(--green);">→ Review options</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ============ CHILDREN ============ -->
+        <div class="pane" data-pane="children">
+          <div class="child-grid">
+
+            <!-- EMMA -->
+            <div class="child-card">
+              <div class="child-card-top emma">
+                <div class="child-big-av" style="background:linear-gradient(135deg,#F472B6,#EC4899);">E</div>
+                <div class="child-card-name">Emma Sterling</div>
+                <div class="child-card-meta">Age 10 · Saving since 2023</div>
+                <div class="child-card-stats">
+                  <div class="child-stat"><div class="v">UGX 850K</div><div class="l">Saved</div></div>
+                  <div class="child-stat"><div class="v">47</div><div class="l">Tokens</div></div>
+                  <div class="child-stat"><div class="v">4</div><div class="l">Badges</div></div>
+                </div>
+              </div>
+              <div class="child-card-body">
+                <div class="child-goal-name"><span>Active Goal</span><b>Emma's Bicycle</b></div>
+                <div class="progress"><span style="width:85%;background:linear-gradient(90deg,#F472B6,#EC4899);"></span></div>
+                <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);"><span>UGX 850,000</span><span>of UGX 1,000,000 · 85%</span></div>
+              </div>
+              <div class="child-card-foot">
+                <button class="btn btn-ghost btn-sm" style="flex:1;">View Profile</button>
+                <button class="btn btn-accent btn-sm" style="flex:1;">Award Tokens</button>
+              </div>
+            </div>
+
+            <!-- LIAM -->
+            <div class="child-card">
+              <div class="child-card-top liam">
+                <div class="child-big-av" style="background:linear-gradient(135deg,#60A5FA,#3B82F6);">L</div>
+                <div class="child-card-name">Liam Sterling</div>
+                <div class="child-card-meta">Age 8 · Saving since 2024</div>
+                <div class="child-card-stats">
+                  <div class="child-stat"><div class="v">UGX 420K</div><div class="l">Saved</div></div>
+                  <div class="child-stat"><div class="v">32</div><div class="l">Tokens</div></div>
+                  <div class="child-stat"><div class="v">3</div><div class="l">Badges</div></div>
+                </div>
+              </div>
+              <div class="child-card-body">
+                <div class="child-goal-name"><span>Active Goal</span><b>Gaming Console</b></div>
+                <div class="progress"><span style="width:52%;background:linear-gradient(90deg,#60A5FA,#3B82F6);"></span></div>
+                <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);"><span>UGX 420,000</span><span>of UGX 800,000 · 52%</span></div>
+              </div>
+              <div class="child-card-foot">
+                <button class="btn btn-ghost btn-sm" style="flex:1;">View Profile</button>
+                <button class="btn btn-accent btn-sm" style="flex:1;">Award Tokens</button>
+              </div>
+            </div>
+
+            <!-- ZARA -->
+            <div class="child-card">
+              <div class="child-card-top zara">
+                <div class="child-big-av" style="background:linear-gradient(135deg,#34D399,#10B981);">Z</div>
+                <div class="child-card-name">Zara Sterling</div>
+                <div class="child-card-meta">Age 12 · Saving since 2022</div>
+                <div class="child-card-stats">
+                  <div class="child-stat"><div class="v">UGX 1.97M</div><div class="l">Saved</div></div>
+                  <div class="child-stat"><div class="v">48</div><div class="l">Tokens</div></div>
+                  <div class="child-stat"><div class="v">6</div><div class="l">Badges</div></div>
+                </div>
+              </div>
+              <div class="child-card-body">
+                <div class="child-goal-name"><span>Active Goal</span><b>College Fund</b></div>
+                <div class="progress"><span style="width:62%;background:linear-gradient(90deg,#34D399,#10B981);"></span></div>
+                <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);"><span>UGX 1,975,000</span><span>of UGX 3,200,000 · 62%</span></div>
+              </div>
+              <div class="child-card-foot">
+                <button class="btn btn-ghost btn-sm" style="flex:1;">View Profile</button>
+                <button class="btn btn-accent btn-sm" style="flex:1;">Award Tokens</button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ============ TRANSACTIONS ============ -->
+        <div class="pane" data-pane="transactions">
+          <div class="ledger">
+            <div class="ledger-head">
+              <div>
+                <div style="font-family:var(--font-serif);font-size:20px;font-weight:700;">Transaction Ledger</div>
+                <div style="font-size:12.5px;color:var(--muted);margin-top:2px;">11 records · January 2026</div>
+              </div>
+              <div class="ledger-filters">
+                <button class="filter-chip active">All</button>
+                <button class="filter-chip">Save</button>
+                <button class="filter-chip">Withdraw</button>
+                <button class="filter-chip">Invest</button>
+                <button class="filter-chip">Redeem</button>
+                <button class="btn btn-primary btn-sm">Export CSV</button>
+              </div>
+            </div>
+            <table class="ledger-table">
+              <thead><tr><th>Date</th><th>Child</th><th>Type</th><th>Amount</th><th>Token Δ</th><th>Note</th></tr></thead>
+              <tbody>
+                <tr><td class="mono">2026-01-15</td><td><div class="child-cell"><div class="child-av sm" style="width:28px;height:28px;font-size:11px;background:#F472B6;">E</div>Emma</div></td><td><span class="type-pill save">↓ Save</span></td><td class="mono amt-pos">+UGX 50,000</td><td class="token-delta pos">+2 ◈</td><td>Weekly allowance</td></tr>
+                <tr><td class="mono">2026-01-14</td><td><div class="child-cell"><div class="child-av sm" style="width:28px;height:28px;font-size:11px;background:#34D399;">Z</div>Zara</div></td><td><span class="type-pill invest">↗ Invest</span></td><td class="mono amt-neg">−UGX 200,000</td><td class="token-delta zero">0 ◈</td><td>Treasury bond purchase</td></tr>
+                <tr><td class="mono">2026-01-13</td><td><div class="child-cell"><div class="child-av sm" style="width:28px;height:28px;font-size:11px;background:#60A5FA;">L</div>Liam</div></td><td><span class="type-pill withdraw">↑ Withdraw</span></td><td class="mono amt-neg">−UGX 30,000</td><td class="token-delta neg">−1 ◈</td><td>Toy purchase (action figure)</td></tr>
+                <tr><td class="mono">2026-01-12</td><td><div class="child-cell"><div class="child-av sm" style="width:28px;height:28px;font-size:11px;background:#F472B6;">E</div>Emma</div></td><td><span class="type-pill redeem">★ Redeem</span></td><td class="mono amt-neg">−UGX 15,000</td><td class="token-delta neg">−5 ◈</td><td>Movie ticket reward</td></tr>
+                <tr><td class="mono">2026-01-11</td><td><div class="child-cell"><div class="child-av sm" style="width:28px;height:28px;font-size:11px;background:#34D399;">Z</div>Zara</div></td><td><span class="type-pill save">↓ Save</span></td><td class="mono amt-pos">+UGX 100,000</td><td class="token-delta pos">+4 ◈</td><td>Birthday gift deposit</td></tr>
+                <tr><td class="mono">2026-01-10</td><td><div class="child-cell"><div class="child-av sm" style="width:28px;height:28px;font-size:11px;background:#60A5FA;">L</div>Liam</div></td><td><span class="type-pill save">↓ Save</span></td><td class="mono amt-pos">+UGX 25,000</td><td class="token-delta pos">+1 ◈</td><td>Chore reward (garden)</td></tr>
+                <tr><td class="mono">2026-01-09</td><td><div class="child-cell"><div class="child-av sm" style="width:28px;height:28px;font-size:11px;background:#F472B6;">E</div>Emma</div></td><td><span class="type-pill invest">↗ Invest</span></td><td class="mono amt-neg">−UGX 150,000</td><td class="token-delta zero">0 ◈</td><td>Index fund contribution</td></tr>
+                <tr><td class="mono">2026-01-08</td><td><div class="child-cell"><div class="child-av sm" style="width:28px;height:28px;font-size:11px;background:#34D399;">Z</div>Zara</div></td><td><span class="type-pill redeem">★ Redeem</span></td><td class="mono amt-neg">−UGX 20,000</td><td class="token-delta neg">−8 ◈</td><td>Book set purchase</td></tr>
+                <tr><td class="mono">2026-01-07</td><td><div class="child-cell"><div class="child-av sm" style="width:28px;height:28px;font-size:11px;background:#60A5FA;">L</div>Liam</div></td><td><span class="type-pill save">↓ Save</span></td><td class="mono amt-pos">+UGX 40,000</td><td class="token-delta pos">+2 ◈</td><td>Grade bonus (A in math)</td></tr>
+                <tr><td class="mono">2026-01-06</td><td><div class="child-cell"><div class="child-av sm" style="width:28px;height:28px;font-size:11px;background:#F472B6;">E</div>Emma</div></td><td><span class="type-pill save">↓ Save</span></td><td class="mono amt-pos">+UGX 60,000</td><td class="token-delta pos">+3 ◈</td><td>Monthly savings deposit</td></tr>
+                <tr><td class="mono">2026-01-05</td><td><div class="child-cell"><div class="child-av sm" style="width:28px;height:28px;font-size:11px;background:#34D399;">Z</div>Zara</div></td><td><span class="type-pill save">↓ Save</span></td><td class="mono amt-pos">+UGX 80,000</td><td class="token-delta pos">+3 ◈</td><td>Art competition prize</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ============ GOALS ============ -->
+        <div class="pane" data-pane="goals">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+            <div>
+              <div style="font-family:var(--font-serif);font-size:22px;font-weight:700;">Family Goals</div>
+              <div style="font-size:13px;color:var(--muted);margin-top:2px;">5 active goals · 3 saving targets, 1 spending target, 1 family goal</div>
+            </div>
+            <button class="btn btn-primary">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              New Goal
+            </button>
+          </div>
+          <div class="goals-grid">
+
+            <div class="goal-card">
+              <div class="goal-top">
+                <div class="goal-ic save">🚲</div>
+                <div><div class="goal-name">Emma's Bicycle</div><div class="goal-owner"><div class="child-av sm" style="width:20px;height:20px;font-size:9px;background:#F472B6;">E</div>Emma · Age 10</div></div>
+                <span class="goal-type save">Save</span>
+              </div>
+              <div class="goal-amounts"><span class="now">UGX 850,000</span><span class="tot">/ UGX 1,000,000</span></div>
+              <div class="progress"><span style="width:85%;background:linear-gradient(90deg,#F472B6,#EC4899);"></span></div>
+              <div class="goal-meta"><span><b>85%</b> complete</span><span>~3 weeks remaining</span></div>
+            </div>
+
+            <div class="goal-card">
+              <div class="goal-top">
+                <div class="goal-ic save">🎮</div>
+                <div><div class="goal-name">Gaming Console</div><div class="goal-owner"><div class="child-av sm" style="width:20px;height:20px;font-size:9px;background:#60A5FA;">L</div>Liam · Age 8</div></div>
+                <span class="goal-type save">Save</span>
+              </div>
+              <div class="goal-amounts"><span class="now">UGX 420,000</span><span class="tot">/ UGX 800,000</span></div>
+              <div class="progress"><span style="width:52%;background:linear-gradient(90deg,#60A5FA,#3B82F6);"></span></div>
+              <div class="goal-meta"><span><b>52%</b> complete</span><span>~4 months remaining</span></div>
+            </div>
+
+            <div class="goal-card">
+              <div class="goal-top">
+                <div class="goal-ic save">🎓</div>
+                <div><div class="goal-name">Zara's College Fund</div><div class="goal-owner"><div class="child-av sm" style="width:20px;height:20px;font-size:9px;background:#34D399;">Z</div>Zara · Age 12</div></div>
+                <span class="goal-type save">Save</span>
+              </div>
+              <div class="goal-amounts"><span class="now">UGX 1,975,000</span><span class="tot">/ UGX 3,200,000</span></div>
+              <div class="progress"><span style="width:62%;background:linear-gradient(90deg,#34D399,#10B981);"></span></div>
+              <div class="goal-meta"><span><b>62%</b> complete</span><span>~3 years remaining</span></div>
+            </div>
+
+            <div class="goal-card">
+              <div class="goal-top">
+                <div class="goal-ic save">🏝️</div>
+                <div><div class="goal-name">Family Holiday</div><div class="goal-owner">🇺🇬 Sterling Family</div></div>
+                <span class="goal-type save">Save</span>
+              </div>
+              <div class="goal-amounts"><span class="now">UGX 2,400,000</span><span class="tot">/ UGX 6,000,000</span></div>
+              <div class="progress"><span style="width:40%;background:linear-gradient(90deg,#FFC000,#F59E0B);"></span></div>
+              <div class="goal-meta"><span><b>40%</b> complete</span><span>Target: December 2026</span></div>
+            </div>
+
+            <div class="goal-card" style="grid-column:span 2;">
+              <div class="goal-top">
+                <div class="goal-ic spend">🍫</div>
+                <div><div class="goal-name">Reduce Snack Spending</div><div class="goal-owner">🎯 Family Behavior Goal</div></div>
+                <span class="goal-type spend">Spend Less</span>
+              </div>
+              <div class="goal-amounts"><span class="now">UGX 105,000</span><span class="tot">/ target cap UGX 75,000/mo</span></div>
+              <div class="progress"><span style="width:30%;background:linear-gradient(90deg,#ED7D31,#F59E0B);"></span></div>
+              <div class="goal-meta"><span><b>30%</b> toward target reduction</span><span>Currently 30% over monthly cap</span></div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- ============ SETTINGS ============ -->
+        <div class="pane" data-pane="settings">
+
+          <div class="settings-section">
+            <h3>Family Profiles</h3>
+            <p class="desc">Manage parent and family identity. Photos appear across the dashboard and child view.</p>
+
+            <div class="profile-row">
+              <div class="profile-photo" style="background:linear-gradient(135deg,#6366F1,#8B5CF6);">
+                AS
+                <div class="upload"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+              </div>
+              <div class="profile-fields">
+                <div class="field"><label>Full Name</label><input value="Alexander Sterling" /></div>
+                <div class="field"><label>Role</label><input value="Father · Primary Admin" /></div>
+                <div class="field"><label>Email</label><input value="alexander@sterling.family" /></div>
+              </div>
+            </div>
+
+            <div class="profile-row">
+              <div class="profile-photo" style="background:linear-gradient(135deg,#EC4899,#F472B6);">
+                SS
+                <div class="upload"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
+              </div>
+              <div class="profile-fields">
+                <div class="field"><label>Full Name</label><input value="Sarah Sterling" /></div>
+                <div class="field"><label>Role</label><input value="Mother · Co-Admin" /></div>
+                <div class="field"><label>Email</label><input value="sarah@sterling.family" /></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <h3>Annual Theme & Monthly Quote</h3>
+            <p class="desc">Set the family motto displayed on the child dashboard and weekly digest emails.</p>
+            <div class="profile-fields" style="gap:16px;">
+              <div class="field" style="min-width:100%;"><label>2026 Annual Theme</label><input value="Grow Together, Save Forever" style="font-family:var(--font-serif);font-size:16px;font-weight:600;" /></div>
+              <div class="field" style="min-width:100%;"><label>January Quote</label><textarea rows="3" style="resize:vertical;">"A shilling saved today is a future planted for tomorrow. Let every coin count, little one." — Sarah Sterling</textarea></div>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:18px;">
+              <button class="btn btn-primary">Save Changes</button>
+              <button class="btn btn-ghost">Reset to Default</button>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <h3>Theme Switcher</h3>
+            <p class="desc">Choose the visual theme for the family dashboard. Children inherit the parent's theme.</p>
+            <div class="theme-swatches">
+              <div class="swatch active" onclick="pickSwatch(this)"><div class="color" style="background:#FFFFFF;border-color:var(--border-strong);"></div><div class="name">White</div></div>
+              <div class="swatch" onclick="pickSwatch(this)"><div class="color" style="background:linear-gradient(135deg,#EFF6FF,#DBEAFE);"></div><div class="name">Blue</div></div>
+              <div class="swatch" onclick="pickSwatch(this)"><div class="color" style="background:linear-gradient(135deg,#0F172A,#1E293B);"></div><div class="name">Dark</div></div>
+              <div class="swatch" onclick="pickSwatch(this)"><div class="color" style="background:linear-gradient(135deg,#FEFCE8,#FEF9C3);"></div><div class="name">Light</div></div>
+              <div class="swatch" onclick="pickSwatch(this)"><div class="color" style="background:linear-gradient(135deg,#FDF2F8,#FCE7F3);"></div><div class="name">Pink</div></div>
+              <div class="swatch" onclick="pickSwatch(this)"><div class="color" style="background:linear-gradient(135deg,#7F1D1D,#991B1B);"></div><div class="name">Red</div></div>
+            </div>
+          </div>
+
+          <div class="settings-section danger-zone">
+            <h3>Danger Zone</h3>
+            <p class="desc">Irreversible actions. These will permanently affect all family data, including children's savings history and achievements.</p>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px;background:#fff;border:1px solid rgba(220,38,38,0.2);border-radius:12px;">
+              <div>
+                <div style="font-weight:700;font-size:14px;">Reset all family data</div>
+                <div style="font-size:12.5px;color:var(--muted);margin-top:2px;">Deletes all transactions, goals, tokens, and achievements. Children profiles are preserved.</div>
+              </div>
+              <button class="btn btn-danger">Reset Data</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ============================================================
+           CHILD VIEW
+           ============================================================ -->
+      <div class="view" id="view-child">
+        <div class="child-shell">
+
+          <!-- HERO -->
+          <div class="child-hero">
+            <div class="mascot">🐬</div>
+            <div class="child-hero-body">
+              <div class="child-greet">Good afternoon, <b>Emma!</b> 🌟</div>
+              <div class="child-hero-name">Your Savings Cove</div>
+              <div class="child-hero-amount"><span class="cur">UGX</span>850,000</div>
+              <div style="font-size:13px;color:var(--muted);margin-top:6px;">You're <b style="color:var(--green);">UGX 150,000</b> away from your bicycle! 🚲</div>
+            </div>
+            <div class="star-wallet">
+              <div class="ic">⭐</div>
+              <div class="v">47</div>
+              <div class="l">Star Wallet</div>
+            </div>
+          </div>
+
+          <!-- GROWING TREE -->
+          <div class="tree-section">
+            <div class="tree-head">
+              <div>
+                <h3>Your Growing Savings Tree 🌳</h3>
+                <div style="font-size:12.5px;color:var(--muted);margin-top:2px;">Watch your savings grow from seed to star-bloom</div>
+              </div>
+              <div style="font-family:var(--font-serif);font-size:24px;font-weight:700;color:var(--green);">Stage 3 of 5</div>
+            </div>
+            <div class="tree-stages">
+              <div class="tree-stage active"><div class="emoji">🌱</div><div class="lbl">Seed</div><div class="tree-line done"></div></div>
+              <div class="tree-stage active"><div class="emoji">🌿</div><div class="lbl">Sprout</div><div class="tree-line done"></div></div>
+              <div class="tree-stage active"><div class="emoji">🌳</div><div class="lbl">Sapling</div><div class="tree-line"></div></div>
+              <div class="tree-stage"><div class="emoji">🌸</div><div class="lbl">Bloom</div><div class="tree-line"></div></div>
+              <div class="tree-stage"><div class="emoji">🌟</div><div class="lbl">Star-Bloom</div></div>
+            </div>
+            <div class="tree-progress">
+              <div class="progress" style="flex:1;"><span style="width:60%;background:linear-gradient(90deg,#16A34A,#34D399);"></span></div>
+              <div style="font-family:var(--font-mono);font-size:13px;font-weight:600;color:var(--green);">60%</div>
+            </div>
+          </div>
+
+          <!-- CHILD TABS -->
+          <div class="child-tabs">
+            <button class="child-tab active" data-cpane="cove"><span class="ic">🐬</span> Cove</button>
+            <button class="child-tab" data-cpane="cgoals"><span class="ic">🎯</span> Goals</button>
+            <button class="child-tab" data-cpane="cstars"><span class="ic">⭐</span> Stars</button>
+            <button class="child-tab" data-cpane="clearn"><span class="ic">📚</span> Learn</button>
+            <button class="child-tab" data-cpane="cbadges"><span class="ic">🏆</span> Badges</button>
+          </div>
+
+          <!-- COVE PANE -->
+          <div class="cpane active" data-cpane="cove">
+            <div class="cove-grid">
+              <div class="cove-scene">
+                <div class="water"></div>
+                <div class="msg">"Welcome back, Emma! You earned <b style="color:var(--accent);">2 ⭐</b> today. Keep it up!"</div>
+                <div class="dolphin">🐬</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:14px;">
+                <div class="cell" style="padding:18px;">
+                  <div class="cell-title">Today's Quest</div>
+                  <div style="font-family:var(--font-serif);font-size:17px;font-weight:700;margin-top:6px;">Save UGX 5,000</div>
+                  <div style="font-size:12.5px;color:var(--muted);margin-top:4px;">Reward: 2 ⭐ stars</div>
+                  <button class="btn btn-primary btn-sm" style="margin-top:12px;width:100%;">Complete Quest</button>
+                </div>
+                <div class="cell" style="padding:18px;">
+                  <div class="cell-title">Streak</div>
+                  <div style="font-family:var(--font-serif);font-size:28px;font-weight:700;margin-top:6px;color:var(--accent);">12 days 🔥</div>
+                  <div style="font-size:12.5px;color:var(--muted);margin-top:4px;">Save daily to grow your streak!</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- GOALS PANE -->
+          <div class="cpane" data-cpane="cgoals">
+            <div class="child-goals-grid">
+              <div class="cgoal-card">
+                <div class="cgoal-top">
+                  <div class="cgoal-emoji">🚲</div>
+                  <div><div class="cgoal-name">My Bicycle</div><div class="cgoal-sub">Target: UGX 1,000,000</div></div>
+                </div>
+                <div class="cgoal-amts"><span class="cgoal-now">UGX 850,000</span><span class="cgoal-tot">/ 1,000,000</span></div>
+                <div class="progress"><span style="width:85%;background:linear-gradient(90deg,#F472B6,#EC4899);"></span></div>
+                <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:10px;"><span><b style="color:var(--foreground);">85%</b> complete</span><span>~3 weeks to go</span></div>
+              </div>
+              <div class="cgoal-card">
+                <div class="cgoal-top">
+                  <div class="cgoal-emoji">📚</div>
+                  <div><div class="cgoal-name">Book Collection</div><div class="cgoal-sub">Target: UGX 300,000</div></div>
+                </div>
+                <div class="cgoal-amts"><span class="cgoal-now">UGX 180,000</span><span class="cgoal-tot">/ 300,000</span></div>
+                <div class="progress"><span style="width:60%;background:linear-gradient(90deg,#5B9BD5,#4472C4);"></span></div>
+                <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:10px;"><span><b style="color:var(--foreground);">60%</b> complete</span><span>~5 weeks to go</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- STARS PANE -->
+          <div class="cpane" data-cpane="cstars">
+            <div class="stars-grid">
+              <div class="star-card"><div class="ic">⭐</div><div class="v">47</div><div class="l">Total Stars</div></div>
+              <div class="star-card"><div class="ic">📈</div><div class="v">+12</div><div class="l">This Week</div></div>
+              <div class="star-card"><div class="ic">🔥</div><div class="v">12</div><div class="l">Day Streak</div></div>
+              <div class="star-card"><div class="ic">🎯</div><div class="v">5</div><div class="l">Quests Done</div></div>
+              <div class="star-card"><div class="ic">🎁</div><div class="v">3</div><div class="l">Redeemed</div></div>
+              <div class="star-card"><div class="ic">💎</div><div class="v">Silver</div><div class="l">Tier</div></div>
+            </div>
+            <div class="cell" style="margin-top:18px;padding:22px;">
+              <div class="cell-title" style="margin-bottom:14px;">Recent Star Earnings</div>
+              <div class="activity-list">
+                <div class="activity-item"><div class="act-ic save">↓</div><div class="act-body"><div class="act-title">Weekly Allowance</div><div class="act-meta">Today · 2:14 PM</div></div><div class="act-amt" style="color:var(--accent);">+2 ⭐</div></div>
+                <div class="activity-item"><div class="act-ic save">📖</div><div class="act-body"><div class="act-title">Lesson: What Is Saving?</div><div class="act-meta">Yesterday</div></div><div class="act-amt" style="color:var(--accent);">+3 ⭐</div></div>
+                <div class="activity-item"><div class="act-ic save">🎯</div><div class="act-body"><div class="act-title">Daily Quest Complete</div><div class="act-meta">Yesterday</div></div><div class="act-amt" style="color:var(--accent);">+2 ⭐</div></div>
+                <div class="activity-item"><div class="act-ic save">🏆</div><div class="act-body"><div class="act-title">Badge: Consistent Saver</div><div class="act-meta">2 days ago</div></div><div class="act-amt" style="color:var(--accent);">+5 ⭐</div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- LEARN PANE -->
+          <div class="cpane" data-cpane="clearn">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+              <div>
+                <div style="font-family:var(--font-serif);font-size:22px;font-weight:700;">Learn</div>
+                <div style="font-size:13px;color:var(--muted);margin-top:2px;">3 lessons available · 2 completed</div>
+              </div>
+              <button class="btn btn-primary">Continue Learning</button>
+            </div>
+            <div class="lessons-grid">
+
+              <div class="lesson-card">
+                <div class="lesson-banner l1">🐷<span class="lvl">L1 · Beginner</span></div>
+                <div class="lesson-body">
+                  <div class="lesson-cat">Foundations</div>
+                  <div class="lesson-title">What Is Saving?</div>
+                  <div class="lesson-desc">Discover why putting a little aside today helps you reach big dreams tomorrow.</div>
+                  <div class="lesson-foot">
+                    <div class="lesson-time">⏱ 5 min</div>
+                    <div class="lesson-reward">⭐ +3 stars</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="lesson-card">
+                <div class="lesson-banner l2">🛒<span class="lvl">L2 · Beginner</span></div>
+                <div class="lesson-body">
+                  <div class="lesson-cat">Smart Spending</div>
+                  <div class="lesson-title">Needs vs Wants</div>
+                  <div class="lesson-desc">Learn to tell the difference between what you need and what you want — and why it matters.</div>
+                  <div class="lesson-foot">
+                    <div class="lesson-time">⏱ 7 min</div>
+                    <div class="lesson-reward">⭐ +4 stars</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="lesson-card">
+                <div class="lesson-banner l3">📈<span class="lvl">L3 · Intermediate</span></div>
+                <div class="lesson-body">
+                  <div class="lesson-cat">Growing Money</div>
+                  <div class="lesson-title">Power of Compound Growth</div>
+                  <div class="lesson-desc">See how money can grow itself over time — the secret behind every great saver.</div>
+                  <div class="lesson-foot">
+                    <div class="lesson-time">⏱ 10 min</div>
+                    <div class="lesson-reward">⭐ +6 stars</div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- BADGES PANE -->
+          <div class="cpane" data-cpane="cbadges">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+              <div>
+                <div style="font-family:var(--font-serif);font-size:22px;font-weight:700;">Achievements</div>
+                <div style="font-size:13px;color:var(--muted);margin-top:2px;">4 earned · 3 locked · keep saving to unlock more!</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;background:var(--accent-soft);padding:8px 16px;border-radius:20px;">
+                <span style="font-size:18px;">🏆</span><span style="font-weight:700;color:var(--accent);font-family:var(--font-mono);">4 / 7</span>
+              </div>
+            </div>
+            <div class="badges-grid">
+
+              <div class="badge earned">
+                <div class="badge-ic"><span class="emoji">👣</span></div>
+                <div class="badge-name">First Steps</div>
+                <div class="badge-desc">First saving</div>
+              </div>
+              <div class="badge earned">
+                <div class="badge-ic"><span class="emoji">💪</span></div>
+                <div class="badge-name">Consistent Saver</div>
+                <div class="badge-desc">7-day streak</div>
+              </div>
+              <div class="badge earned">
+                <div class="badge-ic"><span class="emoji">🎯</span></div>
+                <div class="badge-name">Goal Achieved</div>
+                <div class="badge-desc">Completed a goal</div>
+              </div>
+              <div class="badge earned">
+                <div class="badge-ic"><span class="emoji">🧠</span></div>
+                <div class="badge-name">Curious Mind</div>
+                <div class="badge-desc">3 lessons done</div>
+              </div>
+
+              <div class="badge locked">
+                <div class="badge-ic"><span class="emoji">🌟</span></div>
+                <div class="badge-name">Star Saver</div>
+                <div class="badge-desc">100 stars</div>
+              </div>
+              <div class="badge locked">
+                <div class="badge-ic"><span class="emoji">📚</span></div>
+                <div class="badge-name">Scholar</div>
+                <div class="badge-desc">All lessons</div>
+              </div>
+              <div class="badge locked">
+                <div class="badge-ic"><span class="emoji">💎</span></div>
+                <div class="badge-name">Diamond Tier</div>
+                <div class="badge-desc">UGX 1M saved</div>
+              </div>
+              <div class="badge locked" style="opacity:0.35;border-style:dashed;">
+                <div class="badge-ic"><span class="emoji">❓</span></div>
+                <div class="badge-name">Mystery</div>
+                <div class="badge-desc">???</div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   NAVIGATION
+   ============================================================ */
+function switchView(view){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  const activeView = document.getElementById('view-'+view);
+  activeView.classList.add('active');
+  document.getElementById('parentToggle').classList.toggle('active', view==='parent');
+  document.getElementById('childToggle').classList.toggle('active', view==='child');
+  // sync sidebar active
+  document.querySelectorAll('.nav-item').forEach(n=>{
+    n.classList.toggle('active', n.dataset.view===view && (view==='child' ? n.dataset.tab==='cove' : n.dataset.tab==='overview'));
+  });
+  // update topbar title
+  const titles = {
+    parent:{t:'Overview', s:'Sterling Family · January 2026'},
+    child:{t:'Child Dashboard', s:'Emma Sterling · Age 10'}
+  };
+  document.getElementById('pageTitle').textContent = titles[view].t;
+  document.getElementById('pageSub').textContent = titles[view].s;
+  animateProgress(activeView);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* Parent tabs */
+document.querySelectorAll('#parentTabs .tab').forEach(tab=>{
+  tab.addEventListener('click', ()=>{
+    const target = tab.dataset.tab;
+    document.querySelectorAll('#parentTabs .tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    const pane = document.querySelector('#view-parent .pane[data-pane="'+target+'"]');
+    document.querySelectorAll('#view-parent .pane').forEach(p=>p.classList.remove('active'));
+    pane.classList.add('active');
+    // sync sidebar
+    document.querySelectorAll('.nav-item[data-view="parent"]').forEach(n=>n.classList.toggle('active', n.dataset.tab===target));
+    const labels = {overview:'Overview', children:'Children', transactions:'Transactions', goals:'Goals', settings:'Settings'};
+    document.getElementById('pageTitle').textContent = labels[target];
+    animateProgress(pane);
+    window.scrollTo({top:0,behavior:'smooth'});
+  });
+});
+
+/* Sidebar nav items */
+document.querySelectorAll('.nav-item').forEach(item=>{
+  item.addEventListener('click', ()=>{
+    const view = item.dataset.view;
+    const tab = item.dataset.tab;
+    if(view==='child'){
+      switchView('child');
+      // activate child tab
+      document.querySelectorAll('.child-tab').forEach(t=>t.classList.toggle('active', t.dataset.cpane===tab));
+      document.querySelectorAll('.cpane').forEach(p=>p.classList.remove('active'));
+      const pane = document.querySelector('.cpane[data-cpane="'+tab+'"]');
+      if(pane){ pane.classList.add('active'); animateProgress(pane); }
+    } else {
+      switchView('parent');
+      document.querySelectorAll('#parentTabs .tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===tab));
+      document.querySelectorAll('#view-parent .pane').forEach(p=>p.classList.remove('active'));
+      const pane = document.querySelector('#view-parent .pane[data-pane="'+tab+'"]');
+      if(pane){ pane.classList.add('active'); animateProgress(pane); }
+      const labels = {overview:'Overview', children:'Children', transactions:'Transactions', goals:'Goals', settings:'Settings'};
+      document.getElementById('pageTitle').textContent = labels[tab];
+    }
+    if(window.innerWidth<=820){ closeSidebar(); }
+  });
+});
+
+/* Child tabs */
+document.querySelectorAll('.child-tab').forEach(tab=>{
+  tab.addEventListener('click', ()=>{
+    const target = tab.dataset.cpane;
+    document.querySelectorAll('.child-tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    const pane = document.querySelector('.cpane[data-cpane="'+target+'"]');
+    document.querySelectorAll('.cpane').forEach(p=>p.classList.remove('active'));
+    pane.classList.add('active');
+    animateProgress(pane);
+  });
+});
+
+/* Theme swatches */
+function pickSwatch(el){
+  el.parentElement.querySelectorAll('.swatch').forEach(s=>s.classList.remove('active'));
+  el.classList.add('active');
+}
+
+/* Sidebar mobile */
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('show');
+}
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('overlay').classList.remove('show');
+}
+
+/* Animate progress bars within a given scope (defaults to whole doc) */
+function animateProgress(scope){
+  (scope || document).querySelectorAll('.progress > span, .mini-bar > span, .spend-bar > span').forEach(bar=>{
+    const w = bar.style.width;
+    bar.style.width = '0%';
+    requestAnimationFrame(()=>{ setTimeout(()=>{ bar.style.width = w; }, 50); });
+  });
+}
+// initial run on the active overview pane
+window.addEventListener('load', ()=>animateProgress());
+
+/* Filter chip toggle (visual only) */
+document.querySelectorAll('.filter-chip').forEach(chip=>{
+  chip.addEventListener('click', ()=>{
+    const siblings = chip.parentElement.querySelectorAll('.filter-chip');
+    siblings.forEach(s=>s.classList.remove('active'));
+    chip.classList.add('active');
+  });
+});
+</script>
+</body>
+</html>
