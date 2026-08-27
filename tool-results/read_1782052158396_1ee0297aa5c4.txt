@@ -1,0 +1,783 @@
+     1→"use client";
+     2→
+     3→// ============================================================================
+     4→// CHILD DASHBOARD — Planned Kids Savings
+     5→// ============================================================================
+     6→// Per-child view with four tabs: Overview, Spending, Worksheet, Investments.
+     7→//
+     8→// Bugs addressed here:
+     9→//   #8  — Overview "This month" stat shows savings credits, not spending
+    10→//   #10 — Encouragement randomized per call (in phrases.ts)
+    11→//   #11 — Worksheet totalReceived filters to this month only
+    12→//   #12 — Spending entries surface immediately through getChildCategories
+    13→// ============================================================================
+    14→
+    15→import { useMemo, useState } from "react";
+    16→import {
+    17→  ArrowUpRight,
+    18→  ArrowDownRight,
+    19→  Sparkles,
+    20→  PiggyBank,
+    21→  TrendingUp,
+    22→  Wallet,
+    23→  Plus,
+    24→  Trophy,
+    25→  Calendar,
+    26→  Target,
+    27→  BookOpen,
+    28→  Award,
+    29→  LayoutDashboard,
+    30→} from "lucide-react";
+    31→import { useShallow } from "zustand/react/shallow";
+    32→import { useStore, childTokenBalance, getChildCategories, childInvestments, childTransactions, childAccount, thisMonthSaved, totalInvested, childSpendingThisMonth } from "@/lib/store";
+    33→import {
+    34→  formatUGX,
+    35→  formatUGXPlain,
+    36→  getEncouragement,
+    37→  timeAgo,
+    38→  TOKEN_REDEEM_RATE,
+    39→} from "@/lib/phrases";
+    40→import type { Child } from "@/lib/types";
+    41→import {
+    42→  SaveMoneyModal,
+    43→  GiveTokensModal,
+    44→  AddSpendingModal,
+    45→  RedeemTokensModal,
+    46→  InvestmentDetailModal,
+    47→} from "./modals";
+    48→import { FamilyThemeFooter } from "./family-theme-footer";
+    49→import { Avatar } from "./avatar";
+    50→import { MobileBottomNav } from "./ui-primitives";
+    51→import { LearnTab } from "./learn-tab";
+    52→import { AchievementsPanel } from "./achievements-panel";
+    53→import { RecommendationsPanel } from "./recommendations-panel";
+    54→import { AICoach } from "./ai-coach";
+    55→import { MaturityScoreCard } from "./maturity-score-card";
+    56→import { FamilyCharterDisplay } from "./family-charter";
+    57→import type { Investment } from "@/lib/types";
+    58→
+    59→type Tab = "overview" | "spending" | "worksheet" | "investments" | "learn" | "achievements";
+    60→
+    61→export function ChildDashboard({
+    62→  child,
+    63→  onBack,
+    64→}: {
+    65→  child: Child;
+    66→  onBack: () => void;
+    67→}) {
+    68→  const [tab, setTab] = useState<Tab>("overview");
+    69→  const [modal, setModal] = useState<null | "save" | "give" | "spend" | "redeem">(null);
+    70→  const [detailInvestment, setDetailInvestment] = useState<Investment | null>(null);
+    71→
+    72→  const tabs: { id: Tab; label: string }[] = [
+    73→    { id: "overview", label: "Overview" },
+    74→    { id: "spending", label: "Spending" },
+    75→    { id: "worksheet", label: "Worksheet" },
+    76→    { id: "investments", label: "Investments" },
+    77→    { id: "learn", label: "Learn" },
+    78→    { id: "achievements", label: "Badges" },
+    79→  ];
+    80→
+    81→  return (
+    82→    <div className="min-h-screen bg-background">
+    83→      {/* Header */}
+    84→      <header className="border-b border-[rgba(201,168,76,0.10)] sticky top-0 z-30 bg-background/80 backdrop-blur-md">
+    85→        <div className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
+    86→          <button
+    87→            onClick={onBack}
+    88→            className="btn-ghost px-3 py-2 rounded text-xs tracking-wider"
+    89→          >
+    90→            ← Family Overview
+    91→          </button>
+    92→          <div className="flex items-center gap-3">
+    93→            <Avatar
+    94→              name={child.name}
+    95→              color={child.avatarColor}
+    96→              photo={child.avatarPhoto}
+    97→              size={36}
+    98→            />
+    99→            <div className="text-right">
+   100→              <div className="font-editorial text-sm tracking-wide text-foreground">{child.name}</div>
+   101→              <div className="micro-label">Age {child.age}</div>
+   102→            </div>
+   103→          </div>
+   104→        </div>
+   105→      </header>
+   106→
+   107→      <main className="max-w-6xl mx-auto px-6 py-8">
+   108→        {/* Hero balance */}
+   109→        <section className="mb-10 animate-fade-up">
+   110→          <div className="surface-wood-strong rounded-lg p-8 md:p-10 relative overflow-hidden">
+   111→            <div
+   112→              className="absolute -top-32 -right-32 w-96 h-96 rounded-full pointer-events-none animate-breathe"
+   113→              style={{
+   114→                background:
+   115→                  "radial-gradient(circle, rgba(201,168,76,0.18) 0%, transparent 70%)",
+   116→              }}
+   117→            />
+   118→            <div className="relative">
+   119→              <div className="micro-label-gold mb-3">Current Savings</div>
+   120→              <div className="font-editorial text-5xl md:text-6xl text-gold-foil tabular-nums leading-none">
+   121→                {formatUGX(child.currentAmount)}
+   122→              </div>
+   123→              <div className="mt-4 flex flex-wrap items-center gap-4 text-xs">
+   124→                <span className="micro-label">Goal: {child.goalName}</span>
+   125→                <span className="font-editorial tabular-nums text-foreground/70">
+   126→                  {formatUGX(child.goalAmount)}
+   127→                </span>
+   128→              </div>
+   129→              <div className="progress-thin mt-4 max-w-md">
+   130→                <div
+   131→                  style={{
+   132→                    width: `${Math.min(100, (child.currentAmount / child.goalAmount) * 100)}%`,
+   133→                  }}
+   134→                />
+   135→              </div>
+   136→              <div className="mt-2 text-xs text-foreground/50 tabular-nums">
+   137→                {((child.currentAmount / child.goalAmount) * 100).toFixed(1)}% to goal
+   138→              </div>
+   139→            </div>
+   140→          </div>
+   141→        </section>
+   142→
+   143→        {/* Tabs */}
+   144→        <div className="flex items-center gap-1 mb-8 border-b border-[rgba(201,168,76,0.10)] overflow-x-auto">
+   145→          {tabs.map((t) => (
+   146→            <button
+   147→              key={t.id}
+   148→              onClick={() => setTab(t.id)}
+   149→              className={`px-5 py-3 text-xs tracking-wider transition-colors relative whitespace-nowrap ${
+   150→                tab === t.id
+   151→                  ? "text-[#E8D5A0]"
+   152→                  : "text-foreground/50 hover:text-foreground/80"
+   153→              }`}
+   154→            >
+   155→              {t.label.toUpperCase()}
+   156→              {tab === t.id && (
+   157→                <span
+   158→                  className="absolute bottom-0 left-3 right-3 h-px"
+   159→                  style={{
+   160→                    background: "linear-gradient(90deg, transparent, #C9A84C, transparent)",
+   161→                  }}
+   162→                />
+   163→              )}
+   164→            </button>
+   165→          ))}
+   166→        </div>
+   167→
+   168→        {/* Tab content */}
+   169→        {tab === "overview" && <OverviewTab child={child} onAction={setModal} />}
+   170→        {tab === "spending" && <SpendingTab child={child} onSpend={() => setModal("spend")} />}
+   171→        {tab === "worksheet" && <WorksheetTab child={child} />}
+   172→        {tab === "investments" && (
+   173→          <InvestmentsTab child={child} onSelect={setDetailInvestment} />
+   174→        )}
+   175→        {tab === "learn" && <LearnTab child={child} />}
+   176→        {tab === "achievements" && <AchievementsPanel child={child} />}
+   177→      </main>
+   178→
+   179→      {/* Family theme footer — annual theme + monthly quote from parent */}
+   180→      <div className="max-w-6xl mx-auto px-6">
+   181→        <FamilyThemeFooter />
+   182→      </div>
+   183→
+   184→      {/* Family Charter — shared values + house rules visible to children */}
+   185→      <div className="max-w-6xl mx-auto px-6">
+   186→        <FamilyCharterDisplay childName={child.name} />
+   187→      </div>
+   188→
+   189→      {/* Modals */}
+   190→      {modal === "save" && <SaveMoneyModal child={child} onClose={() => setModal(null)} />}
+   191→      {modal === "give" && <GiveTokensModal child={child} onClose={() => setModal(null)} />}
+   192→      {modal === "spend" && <AddSpendingModal child={child} onClose={() => setModal(null)} />}
+   193→      {modal === "redeem" && <RedeemTokensModal child={child} onClose={() => setModal(null)} />}
+   194→      {detailInvestment && (
+   195→        <InvestmentDetailModal
+   196→          investment={detailInvestment}
+   197→          onClose={() => setDetailInvestment(null)}
+   198→        />
+   199→      )}
+   200→
+   201→      {/* Floating action button — quick actions */}
+   202→      <div className="fixed bottom-6 right-6 z-20 flex flex-col gap-2">
+   203→        <button
+   204→          onClick={() => setModal("spend")}
+   205→          className="btn-outline px-4 py-2 rounded text-xs tracking-wider flex items-center gap-2 shadow-lg"
+   206→        >
+   207→          <Plus className="h-3 w-3" /> Log Spend
+   208→        </button>
+   209→        <button
+   210→          onClick={() => setModal("save")}
+   211→          className="btn-gold px-4 py-2 rounded text-xs tracking-wider flex items-center gap-2 shadow-lg"
+   212→        >
+   213→          <PiggyBank className="h-3 w-3" /> Save Money
+   214→        </button>
+   215→      </div>
+   216→
+   217→      {/* Mobile bottom navigation — thumb-friendly for children too */}
+   218→      <MobileBottomNav
+   219→        items={[
+   220→          { id: "overview", label: "Home", icon: LayoutDashboard },
+   221→          { id: "spending", label: "Spend", icon: Wallet },
+   222→          { id: "learn", label: "Learn", icon: BookOpen },
+   223→          { id: "achievements", label: "Badges", icon: Award },
+   224→          { id: "investments", label: "Invest", icon: TrendingUp },
+   225→        ]}
+   226→        activeId={tab}
+   227→        onSelect={(id) => setTab(id as Tab)}
+   228→      />
+   229→
+   230→      {/* AI Financial Coach — ask questions, get educational answers */}
+   231→      <AICoach child={child} />
+   232→    </div>
+   233→  );
+   234→}
+   235→
+   236→// ---- Overview Tab ----------------------------------------------------------
+   237→// Bug #8 fix: "This Month" stat card shows THIS MONTH'S SAVINGS CREDITS,
+   238→// not totalSpent. The previous version conflated the two.
+   239→
+   240→function OverviewTab({
+   241→  child,
+   242→  onAction,
+   243→}: {
+   244→  child: Child;
+   245→  onAction: (m: "save" | "give" | "spend" | "redeem") => void;
+   246→}) {
+   247→  const saved = useStore(thisMonthSaved(child.id));
+   248→  const invested = useStore(totalInvested(child.id));
+   249→  const tokens = useStore(childTokenBalance(child.id));
+   250→  const account = useStore(childAccount(child.id));
+   251→  // Raw state subscription, derive child's transactions in useMemo.
+   252→  const allTransactions = useStore((s) => s.transactions);
+   253→  const transactions = useMemo(
+   254→    () => allTransactions.filter((t) => t.childId === child.id),
+   255→    [allTransactions, child.id]
+   256→  );
+   257→
+   258→  const encouragement = useMemo(() => getEncouragement(), []);
+   259→
+   260→  const stats = [
+   261→    {
+   262→      label: "This Month Saved",
+   263→      value: formatUGX(saved),
+   264→      icon: Calendar,
+   265→      tone: "gold" as const,
+   266→      sub: "credits to savings",
+   267→    },
+   268→    {
+   269→      label: "Total Investments",
+   270→      value: formatUGX(invested),
+   271→      icon: TrendingUp,
+   272→      tone: "green" as const,
+   273→      sub: "active positions",
+   274→    },
+   275→    {
+   276→      label: "Token Balance",
+   277→      value: `${tokens} ◈`,
+   278→      icon: Sparkles,
+   279→      tone: "gold" as const,
+   280→      sub: `≈ UGX ${tokens * TOKEN_REDEEM_RATE} if redeemed`,
+   281→    },
+   282→    {
+   283→      label: "Linked Account",
+   284→      value: account ? formatUGX(account.balance) : "—",
+   285→      icon: Wallet,
+   286→      tone: "amber" as const,
+   287→      sub: account?.name ?? "No linked account",
+   288→    },
+   289→  ];
+   290→
+   291→  return (
+   292→    <div className="space-y-8 animate-fade-up">
+   293→      {/* Encouragement */}
+   294→      <div className="surface-flat rounded-lg p-6 border-l-2 border-[#C9A84C]">
+   295→        <div className="micro-label-gold mb-2">Today's Note</div>
+   296→        <p className="font-editorial text-lg md:text-xl text-foreground/90 italic tracking-wide leading-relaxed">
+   297→          “{encouragement}”
+   298→        </p>
+   299→      </div>
+   300→
+   301→      {/* Stat cards */}
+   302→      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+   303→        {stats.map((s) => (
+   304→          <div key={s.label} className="surface-wood rounded-lg p-5">
+   305→            <div className="flex items-center justify-between mb-3">
+   306→              <div className="micro-label">{s.label}</div>
+   307→              <s.icon
+   308→                className="h-3.5 w-3.5"
+   309→                style={{
+   310→                  color:
+   311→                    s.tone === "gold" ? "#C9A84C" : s.tone === "green" ? "#6BBF8A" : "#D4943A",
+   312→                }}
+   313→              />
+   314→            </div>
+   315→            <div className="font-editorial text-xl text-foreground tabular-nums leading-tight">
+   316→              {s.value}
+   317→            </div>
+   318→            <div className="text-[10px] text-foreground/45 mt-1">{s.sub}</div>
+   319→          </div>
+   320→        ))}
+   321→      </div>
+   322→
+   323→      {/* Quick actions */}
+   324→      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 stagger">
+   325→        <button
+   326→          onClick={() => onAction("save")}
+   327→          className="surface-wood rounded-lg p-4 text-left card-hover"
+   328→        >
+   329→          <PiggyBank className="h-4 w-4 mb-3" style={{ color: "var(--primary)" }} />
+   330→          <div className="font-editorial text-sm text-foreground tracking-wide">Save Money</div>
+   331→          <div className="micro-label mt-1">From linked account</div>
+   332→        </button>
+   333→        <button
+   334→          onClick={() => onAction("redeem")}
+   335→          className="surface-wood rounded-lg p-4 text-left card-hover"
+   336→        >
+   337→          <Sparkles className="h-4 w-4 mb-3" style={{ color: "var(--chart-5)" }} />
+   338→          <div className="font-editorial text-sm text-foreground tracking-wide">Redeem Tokens</div>
+   339→          <div className="micro-label mt-1">Convert to savings</div>
+   340→        </button>
+   341→        <button
+   342→          onClick={() => onAction("spend")}
+   343→          className="surface-wood rounded-lg p-4 text-left card-hover"
+   344→        >
+   345→          <Wallet className="h-4 w-4 mb-3" style={{ color: "var(--chart-3)" }} />
+   346→          <div className="font-editorial text-sm text-foreground tracking-wide">Log Spending</div>
+   347→          <div className="micro-label mt-1">Track a purchase</div>
+   348→        </button>
+   349→        <button
+   350→          onClick={() => onAction("give")}
+   351→          className="surface-wood rounded-lg p-4 text-left card-hover"
+   352→        >
+   353→          <Trophy className="h-4 w-4 mb-3" style={{ color: "var(--chart-2)" }} />
+   354→          <div className="font-editorial text-sm text-foreground tracking-wide">View Tokens</div>
+   355→          <div className="micro-label mt-1">Parent awards</div>
+   356→        </button>
+   357→      </div>
+   358→
+   359→      {/* Recent activity */}
+   360→      <div>
+   361→        <div className="flex items-center justify-between mb-4">
+   362→          <h3 className="font-editorial text-lg tracking-wide text-foreground">Recent Activity</h3>
+   363→          <span className="micro-label">{transactions.length} total</span>
+   364→        </div>
+   365→        <div className="surface-wood rounded-lg overflow-hidden">
+   366→          {transactions.slice(0, 6).map((t, i) => {
+   367→            const credit = t.type === "save" || t.type === "redeem" || t.type === "parent_give";
+   368→            return (
+   369→              <div
+   370→                key={t.id}
+   371→                className={`flex items-center justify-between px-5 py-4 ${
+   372→                  i > 0 ? "border-t border-[rgba(201,168,76,0.06)]" : ""
+   373→                }`}
+   374→              >
+   375→                <div className="flex items-center gap-4">
+   376→                  <div
+   377→                    className="h-8 w-8 rounded-full flex items-center justify-center"
+   378→                    style={{
+   379→                      background: credit
+   380→                        ? "color-mix(in srgb, var(--chart-2) 12%, transparent)"
+   381→                        : "color-mix(in srgb, var(--chart-3) 12%, transparent)",
+   382→                    }}
+   383→                  >
+   384→                    {credit ? (
+   385→                      <ArrowDownRight className="h-3.5 w-3.5" style={{ color: "var(--chart-2)" }} />
+   386→                    ) : (
+   387→                      <ArrowUpRight className="h-3.5 w-3.5" style={{ color: "var(--chart-3)" }} />
+   388→                    )}
+   389→                  </div>
+   390→                  <div>
+   391→                    <div className="text-sm text-foreground tracking-wide">{t.note}</div>
+   392→                    <div className="micro-label mt-0.5">
+   393→                      {t.type.replace("_", " ")} · {timeAgo(t.timestamp)}
+   394→                    </div>
+   395→                  </div>
+   396→                </div>
+   397→                <div className="text-right">
+   398→                  {t.amount > 0 && (
+   399→                    <div
+   400→                      className="font-editorial tabular-nums text-sm"
+   401→                      style={{ color: credit ? "var(--chart-2)" : "var(--chart-3)" }}
+   402→                    >
+   403→                      {credit ? "+" : "−"}
+   404→                      {formatUGXPlain(t.amount)}
+   405→                    </div>
+   406→                  )}
+   407→                  {t.tokenDelta > 0 && (
+   408→                    <div className="font-editorial tabular-nums text-sm" style={{ color: "var(--chart-5)" }}>
+   409→                      +{t.tokenDelta} ◈
+   410→                    </div>
+   411→                  )}
+   412→                </div>
+   413→              </div>
+   414→            );
+   415→          })}
+   416→        </div>
+   417→      </div>
+   418→
+   419→      {/* Smart recommendations — educational, encouraging, never shaming */}
+   420→      <RecommendationsPanel childId={child.id} />
+   421→
+   422→      {/* Financial Maturity Score — transparent, explainable */}
+   423→      <MaturityScoreCard child={child} />
+   424→    </div>
+   425→  );
+   426→}
+   427→
+   428→// ---- Spending Tab ----------------------------------------------------------
+   429→
+   430→function SpendingTab({ child, onSpend }: { child: Child; onSpend: () => void }) {
+   431→  // Subscribe to RAW state — never derive arrays in the selector (causes
+   432→  // infinite re-renders because each call produces new object references).
+   433→  const categories = useStore((s) => s.categories);
+   434→  const spending = useStore((s) => s.spending);
+   435→
+   436→  // Derive per-child category breakdown with useMemo.
+   437→  const childCategories = useMemo(() => {
+   438→    const monthStart = new Date();
+   439→    monthStart.setDate(1);
+   440→    monthStart.setHours(0, 0, 0, 0);
+   441→    const monthStartTime = monthStart.getTime();
+   442→
+   443→    return categories.map((category) => {
+   444→      const spent = spending
+   445→        .filter(
+   446→          (e) =>
+   447→            e.ownerId === child.id &&
+   448→            e.category === category.name &&
+   449→            e.timestamp >= monthStartTime
+   450→        )
+   451→        .reduce((sum, e) => sum + e.amount, 0);
+   452→      const remaining = Math.max(0, category.budget - spent);
+   453→      const pct = category.budget > 0 ? Math.min(100, (spent / category.budget) * 100) : 0;
+   454→      return { category, spent, remaining, pct };
+   455→    });
+   456→  }, [categories, spending, child.id]);
+   457→
+   458→  const childSpending = useMemo(
+   459→    () =>
+   460→      spending
+   461→        .filter((e) => e.ownerId === child.id)
+   462→        .sort((a, b) => b.timestamp - a.timestamp),
+   463→    [spending, child.id]
+   464→  );
+   465→
+   466→  const totalSpent = childSpending
+   467→    .filter((e) => new Date(e.timestamp).getMonth() === new Date().getMonth())
+   468→    .reduce((sum, e) => sum + e.amount, 0);
+   469→
+   470→  const totalBudget = childCategories.reduce((sum, c) => sum + c.category.budget, 0);
+   471→
+   472→  return (
+   473→    <div className="space-y-8 animate-fade-up">
+   474→      <div className="flex items-end justify-between">
+   475→        <div>
+   476→          <div className="micro-label-gold mb-2">Monthly Budget</div>
+   477→          <div className="font-editorial text-3xl text-gold-foil-static tabular-nums">
+   478→            {formatUGX(totalSpent)}
+   479→          </div>
+   480→          <div className="micro-label mt-1">of {formatUGX(totalBudget)} allocated</div>
+   481→        </div>
+   482→        <button
+   483→          onClick={onSpend}
+   484→          className="btn-gold px-4 py-2 rounded text-xs tracking-wider flex items-center gap-2"
+   485→        >
+   486→          <Plus className="h-3 w-3" /> Log Spend
+   487→        </button>
+   488→      </div>
+   489→
+   490→      <div className="grid md:grid-cols-2 gap-4">
+   491→        {childCategories.map(({ category, spent, remaining, pct }) => (
+   492→          <div key={category.id} className="surface-wood rounded-lg p-5">
+   493→            <div className="flex items-center justify-between mb-3">
+   494→              <div className="font-editorial text-sm tracking-wide text-foreground">
+   495→                {category.name}
+   496→              </div>
+   497→              <span className={`pill ${pct >= 100 ? "pill-amber" : pct >= 75 ? "pill-amber" : "pill-green"}`}>
+   498→                {pct.toFixed(0)}%
+   499→              </span>
+   500→            </div>
+   501→            <div className="progress-thin mb-3">
+   502→              <div style={{ width: `${Math.min(100, pct)}%` }} />
+   503→            </div>
+   504→            <div className="flex justify-between text-xs">
+   505→              <span className="micro-label">Spent</span>
+   506→              <span className="font-editorial tabular-nums text-foreground/80">
+   507→                {formatUGX(spent)}
+   508→              </span>
+   509→            </div>
+   510→            <div className="flex justify-between text-xs mt-1">
+   511→              <span className="micro-label">Remaining</span>
+   512→              <span
+   513→                className="font-editorial tabular-nums"
+   514→                style={{ color: remaining > 0 ? "#E8D5A0" : "#D4943A" }}
+   515→              >
+   516→                {formatUGX(remaining)}
+   517→              </span>
+   518→            </div>
+   519→          </div>
+   520→        ))}
+   521→      </div>
+   522→
+   523→      <div>
+   524→        <h3 className="font-editorial text-lg tracking-wide text-foreground mb-4">
+   525→          Spending Log
+   526→        </h3>
+   527→        <div className="surface-wood rounded-lg overflow-hidden">
+   528→          <table className="ledger-table">
+   529→            <thead>
+   530→              <tr>
+   531→                <th>Date</th>
+   532→                <th>Category</th>
+   533→                <th>Note</th>
+   534→                <th className="text-right">Amount</th>
+   535→              </tr>
+   536→            </thead>
+   537→            <tbody>
+   538→              {childSpending.slice(0, 15).map((e) => (
+   539→                <tr key={e.id}>
+   540→                  <td className="text-foreground/50 text-xs tabular-nums">
+   541→                    {new Date(e.timestamp).toLocaleDateString("en-GB", {
+   542→                      day: "numeric",
+   543→                      month: "short",
+   544→                    })}
+   545→                  </td>
+   546→                  <td className="text-foreground/85">{e.category}</td>
+   547→                  <td className="text-foreground/60">{e.note}</td>
+   548→                  <td className="text-right font-editorial tabular-nums" style={{ color: "var(--chart-3)" }}>
+   549→                    −{formatUGXPlain(e.amount)}
+   550→                  </td>
+   551→                </tr>
+   552→              ))}
+   553→              {spending.length === 0 && (
+   554→                <tr>
+   555→                  <td colSpan={4} className="text-center text-foreground/40 py-8">
+   556→                    No spending logged yet.
+   557→                  </td>
+   558→                </tr>
+   559→              )}
+   560→            </tbody>
+   561→          </table>
+   562→        </div>
+   563→      </div>
+   564→    </div>
+   565→  );
+   566→}
+   567→
+   568→// ---- Worksheet Tab ---------------------------------------------------------
+   569→// Bug #11 fix: totalReceived filters to THIS MONTH only — previously it summed
+   570→// all-time credits which made it mismatch totalSpent (which was month-only).
+   571→
+   572→function WorksheetTab({ child }: { child: Child }) {
+   573→  const now = new Date();
+   574→  const monthLabel = now.toLocaleDateString("en-GB", {
+   575→    month: "long",
+   576→    year: "numeric",
+   577→  });
+   578→
+   579→  // Raw state subscriptions (avoid derived arrays in selectors).
+   580→  const allTransactions = useStore((s) => s.transactions);
+   581→  const allSpending = useStore((s) => s.spending);
+   582→
+   583→  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+   584→
+   585→  const transactions = useMemo(
+   586→    () => allTransactions.filter((t) => t.childId === child.id),
+   587→    [allTransactions, child.id]
+   588→  );
+   589→  const spending = useMemo(
+   590→    () => allSpending.filter((e) => e.ownerId === child.id),
+   591→    [allSpending, child.id]
+   592→  );
+   593→
+   594→  const receivedThisMonth = transactions
+   595→    .filter(
+   596→      (t) =>
+   597→        t.timestamp >= monthStart &&
+   598→        (t.type === "save" || t.type === "redeem")
+   599→    )
+   600→    .reduce((sum, t) => sum + t.amount, 0);
+   601→
+   602→  const spentThisMonth = spending
+   603→    .filter((e) => e.timestamp >= monthStart)
+   604→    .reduce((sum, e) => sum + e.amount, 0);
+   605→
+   606→  const net = receivedThisMonth - spentThisMonth;
+   607→
+   608→  const rows = [
+   609→    { label: "Savings Deposits (this month)", value: receivedThisMonth, type: "credit" },
+   610→    { label: "Spending (this month)", value: spentThisMonth, type: "debit" },
+   611→    { label: "Net Cash Flow", value: net, type: net >= 0 ? "credit" : "debit" },
+   612→  ];
+   613→
+   614→  return (
+   615→    <div className="space-y-8 animate-fade-up">
+   616→      <div>
+   617→        <div className="micro-label-gold mb-2">Monthly Worksheet</div>
+   618→        <h2 className="font-editorial text-3xl text-foreground tracking-wide">
+   619→          {monthLabel}
+   620→        </h2>
+   621→      </div>
+   622→
+   623→      <div className="surface-wood-strong rounded-lg p-6">
+   624→        <div className="micro-label mb-4">Cash Flow Summary</div>
+   625→        <div className="divider-gold mb-5" />
+   626→        <div className="space-y-4">
+   627→          {rows.map((r) => (
+   628→            <div key={r.label} className="flex items-center justify-between">
+   629→              <span className="text-sm text-foreground/70 tracking-wide">{r.label}</span>
+   630→              <span
+   631→                className="font-editorial text-xl tabular-nums"
+   632→                style={{
+   633→                  color:
+   634→                    r.type === "credit" ? "#6BBF8A" : "#D4943A",
+   635→                }}
+   636→              >
+   637→                {r.type === "credit" ? "+" : "−"}
+   638→                {formatUGXPlain(Math.abs(r.value))}
+   639→              </span>
+   640→            </div>
+   641→          ))}
+   642→        </div>
+   643→        <div className="divider-gold my-5" />
+   644→        <div className="flex items-center justify-between">
+   645→          <span className="micro-label-gold">Net Position</span>
+   646→          <span
+   647→            className="font-editorial text-2xl text-gold-foil-static tabular-nums"
+   648→          >
+   649→            {net >= 0 ? "+" : "−"}
+   650→            {formatUGXPlain(Math.abs(net))}
+   651→          </span>
+   652→        </div>
+   653→      </div>
+   654→
+   655→      <div className="grid md:grid-cols-2 gap-4">
+   656→        <div className="surface-wood rounded-lg p-5">
+   657→          <div className="flex items-center gap-2 mb-3">
+   658→            <Target className="h-3.5 w-3.5" style={{ color: "var(--primary)" }} />
+   659→            <span className="micro-label-gold">Goal Progress</span>
+   660→          </div>
+   661→          <div className="font-editorial text-2xl tabular-nums text-foreground">
+   662→            {formatUGX(child.currentAmount)}
+   663→          </div>
+   664→          <div className="micro-label mt-1">of {formatUGX(child.goalAmount)}</div>
+   665→          <div className="progress-thin mt-3">
+   666→            <div
+   667→              style={{
+   668→                width: `${Math.min(100, (child.currentAmount / child.goalAmount) * 100)}%`,
+   669→              }}
+   670→            />
+   671→          </div>
+   672→        </div>
+   673→        <div className="surface-wood rounded-lg p-5">
+   674→          <div className="flex items-center gap-2 mb-3">
+   675→            <Calendar className="h-3.5 w-3.5" style={{ color: "var(--primary)" }} />
+   676→            <span className="micro-label-gold">Daily Save Avg</span>
+   677→          </div>
+   678→          <div className="font-editorial text-2xl tabular-nums text-foreground">
+   679→            {formatUGX(receivedThisMonth / Math.max(1, now.getDate()))}
+   680→          </div>
+   681→          <div className="micro-label mt-1">this month, per day</div>
+   682→        </div>
+   683→      </div>
+   684→    </div>
+   685→  );
+   686→}
+   687→
+   688→// ---- Investments Tab -------------------------------------------------------
+   689→
+   690→function InvestmentsTab({
+   691→  child,
+   692→  onSelect,
+   693→}: {
+   694→  child: Child;
+   695→  onSelect: (i: Investment) => void;
+   696→}) {
+   697→  const allInvestments = useStore((s) => s.investments);
+   698→  const investments = useMemo(
+   699→    () => allInvestments.filter((i) => i.childId === child.id),
+   700→    [allInvestments, child.id]
+   701→  );
+   702→  const totalValue = investments
+   703→    .filter((i) => i.status === "active")
+   704→    .reduce((sum, i) => sum + i.currentValue, 0);
+   705→  const totalPrincipal = investments
+   706→    .filter((i) => i.status === "active")
+   707→    .reduce((sum, i) => sum + i.amountInvested, 0);
+   708→  const gain = totalValue - totalPrincipal;
+   709→
+   710→  return (
+   711→    <div className="space-y-8 animate-fade-up">
+   712→      <div className="surface-wood-strong rounded-lg p-6">
+   713→        <div className="micro-label-gold mb-2">Portfolio Value</div>
+   714→        <div className="font-editorial text-4xl text-gold-foil tabular-nums">
+   715→          {formatUGX(totalValue)}
+   716→        </div>
+   717→        <div className="mt-3 flex items-center gap-3">
+   718→          <span
+   719→            className="text-sm tabular-nums"
+   720→            style={{ color: gain >= 0 ? "#6BBF8A" : "#D4943A" }}
+   721→          >
+   722→            {gain >= 0 ? "+" : "−"}
+   723→            {formatUGXPlain(Math.abs(gain))}
+   724→          </span>
+   725→          <span className="micro-label">all-time gain</span>
+   726→        </div>
+   727→      </div>
+   728→
+   729→      <div className="surface-wood rounded-lg overflow-hidden">
+   730→        <table className="ledger-table">
+   731→          <thead>
+   732→            <tr>
+   733→              <th>Position</th>
+   734→              <th>Type</th>
+   735→              <th className="text-right">Principal</th>
+   736→              <th className="text-right">Value</th>
+   737→              <th className="text-right">Gain</th>
+   738→            </tr>
+   739→          </thead>
+   740→          <tbody>
+   741→            {investments.map((inv) => {
+   742→              const g = inv.currentValue - inv.amountInvested;
+   743→              const pct = inv.amountInvested > 0 ? (g / inv.amountInvested) * 100 : 0;
+   744→              return (
+   745→                <tr
+   746→                  key={inv.id}
+   747→                  onClick={() => onSelect(inv)}
+   748→                  className="cursor-pointer"
+   749→                >
+   750→                  <td className="font-editorial tracking-wide text-foreground">
+   751→                    {inv.name}
+   752→                  </td>
+   753→                  <td className="text-foreground/60 text-xs">{inv.type}</td>
+   754→                  <td className="text-right tabular-nums text-foreground/70">
+   755→                    {formatUGXPlain(inv.amountInvested)}
+   756→                  </td>
+   757→                  <td className="text-right tabular-nums text-foreground">
+   758→                    {formatUGXPlain(inv.currentValue)}
+   759→                  </td>
+   760→                  <td
+   761→                    className="text-right tabular-nums"
+   762→                    style={{ color: g >= 0 ? "#6BBF8A" : "#D4943A" }}
+   763→                  >
+   764→                    {g >= 0 ? "+" : ""}
+   765→                    {pct.toFixed(1)}%
+   766→                  </td>
+   767→                </tr>
+   768→              );
+   769→            })}
+   770→            {investments.length === 0 && (
+   771→              <tr>
+   772→                <td colSpan={5} className="text-center text-foreground/40 py-8">
+   773→                  No investments yet.
+   774→                </td>
+   775→              </tr>
+   776→            )}
+   777→          </tbody>
+   778→        </table>
+   779→      </div>
+   780→    </div>
+   781→  );
+   782→}
+   783→

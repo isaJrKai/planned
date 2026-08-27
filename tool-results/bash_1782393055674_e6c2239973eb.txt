@@ -1,0 +1,1720 @@
+diff --git a/backups/2026-06-22_225025_PDT_586b7bc/BACKUP_README.md b/backups/2026-06-22_225025_PDT_586b7bc/BACKUP_README.md
+new file mode 100755
+index 0000000..36df328
+--- /dev/null
++++ b/backups/2026-06-22_225025_PDT_586b7bc/BACKUP_README.md
+@@ -0,0 +1,171 @@
++# BACKUP_README.md
++
++This backup was created as a snapshot before any further modifications.
++No application code was modified in the creation of this backup.
++
++---
++
++## Backup Metadata
++
++| Field | Value |
++|---|---|
++| **Backup created (UTC)** | 2026-06-23 05:50:25 UTC |
++| **Backup created (user tz — America/Los_Angeles)** | 2026-06-22 22:50:25 PDT |
++| **Epoch seconds** | 1782193825 |
++| **Git branch** | `main` |
++| **Git commit hash (full)** | `586b7bc13d12d71921e7b4fc1b83ed6a4f6360df` |
++| **Git commit hash (short)** | `586b7bc` |
++| **Working tree state** | Clean (no uncommitted changes) |
++| **Repository root** | `/home/z/my-project` |
++
++---
++
++## Current Configuration (as of backup time)
++
++### Prisma Provider
++
++```prisma
++datasource db {
++  provider = "sqlite"
++  url      = env("DATABASE_URL")
++}
++```
++
++**Provider:** `sqlite`
++
++### DATABASE_URL
++
++| Source | Value |
++|---|---|
++| `.env` (loaded by Next.js) | `file:./db/custom.db` |
++| `process.env.DATABASE_URL` (Node) | `file:/home/z/my-project/db/custom.db` |
++| `.env.example` (template) | `postgresql://user:password@host/database?sslmode=require` |
++
++**Note:** `.env` (actually loaded) uses SQLite. `.env.example` (template, not loaded) shows a Postgres example. These do not match — a Vercel redeploy relying on the committed `schema.prisma` (`provider = "sqlite"`) will not work against a Postgres `DATABASE_URL`.
++
++### Git State
++
++- Branch: `main`
++- Commit: `586b7bc13d12d71921e7b4fc1b83ed6a4f6360df`
++- Working tree: clean
++- 19 commits ahead of `origin/main` (unpushed)
++
++---
++
++## Files Preserved (explicit copies)
++
++Located in `./preserved-files/` with original paths preserved:
++
++| Source Path | Backup Path | Size | Purpose |
++|---|---|---|---|
++| `db/custom.db` | `preserved-files/db/custom.db` | 524 KB | Live SQLite database (32 tables, 1 User row, 1 SystemSettings row) |
++| `db/custom.db.broken-backup` | `preserved-files/db/custom.db.broken-backup` | 512 KB | Pre-fix snapshot of the stale DB (old `role` column, no `platformRole`/`familyRole`) |
++| `prisma/schema.prisma` | `preserved-files/prisma/schema.prisma` | 20 KB | Prisma schema — currently `provider = "sqlite"` |
++| `package.json` | `preserved-files/package.json` | 4.0 KB | NPM package manifest (version 0.2.0) |
++| `.env.example` | `preserved-files/.env.example` | 612 B | Template env file (shows Postgres example) |
++
++---
++
++## Full Repository Zip
++
++A complete repository snapshot is included as:
++
++```
++planned-repo-586b7bc.zip
++```
++
++### Zip contents
++
++Includes **all tracked and untracked files** in the repository working tree, **excluding**:
++
++- `node_modules/` (1.2 GB — regenerable via `npm install`)
++- `.next/` (178 MB — regenerable via `npm run build`)
++- `backups/` (this directory — avoids recursive backup)
++
++### What's included in the zip
++
++- `src/` — application source code
++- `prisma/` — schema + migrations
++- `db/` — SQLite databases (`custom.db` + `custom.db.broken-backup`)
++- `scripts/` — utility scripts
++- `public/` — static assets
++- `reports/` — audit / analysis reports
++- `examples/` — example code
++- `upload/` — uploaded screenshots
++- `download/` — generated deliverables
++- `.git/` — full git history (81 MB)
++- Root config files: `package.json`, `package-lock.json`, `bun.lock`, `tsconfig.json`, `eslint.config.mjs`, `next.config.ts`, `tailwind.config.ts`, `postcss.config.mjs`, `components.json`, `Caddyfile`, `.env.example`, `.env`, `README.md`, `DEPLOY.md`, `worklog.md`, etc.
++
++### To restore from zip
++
++```bash
++unzip planned-repo-586b7bc.zip -d /path/to/restore
++cd /path/to/restore
++npm install           # regenerate node_modules
++npx prisma generate   # regenerate Prisma client
++# DB files (db/custom.db) are included in the zip — no need to re-push
++```
++
++---
++
++## Current Database State (at backup time)
++
++### User table (1 row)
++
++| Field | Value |
++|---|---|
++| `id` | `cmqq7vb2x0000oy5vnwz9ctlm` |
++| `email` | `founder@planned.app` |
++| `platformRole` | `FOUNDER` |
++| `familyRole` | `FAMILY_MANAGER` |
++| `twoFactorEnabled` | `false` |
++| `failedLoginAttempts` | `0` |
++| `passwordHash` | set (bcrypt) |
++| `deletedAt` | `null` |
++
++### SystemSettings table (1 row)
++
++| Field | Value |
++|---|---|
++| `id` | `singleton` |
++| `isInitialized` | `true` |
++| `superAdminUserId` | `cmqq7vb2x0000oy5vnwz9ctlm` |
++| `superAdminEmail` | `founder@planned.app` |
++| `setupCompletedAt` | 1782193289434 (epoch ms) |
++
++### RateLimitEntry table
++
++Empty (0 rows) — cleared after login chain verification.
++
++---
++
++## Verification
++
++All 5 preserved files were copied with `cp -p` (preserving timestamps).
++Working tree was clean at backup time (no uncommitted application code changes).
++No source files under `src/`, `prisma/`, `scripts/`, `public/`, or root configs were modified during this backup operation.
++
++---
++
++## Restore Procedure (if needed)
++
++1. **Restore preserved files individually:**
++   ```bash
++   cp preserved-files/db/custom.db /home/z/my-project/db/custom.db
++   cp preserved-files/db/custom.db.broken-backup /home/z/my-project/db/custom.db.broken-backup
++   cp preserved-files/prisma/schema.prisma /home/z/my-project/prisma/schema.prisma
++   cp preserved-files/package.json /home/z/my-project/package.json
++   cp preserved-files/.env.example /home/z/my-project/.env.example
++   ```
++
++2. **Restore entire repo from zip:**
++   ```bash
++   unzip planned-repo-586b7bc.zip -d /home/z/my-project
++   cd /home/z/my-project && npm install && npx prisma generate
++   ```
++
++3. **Verify git state matches backup:**
++   ```bash
++   git rev-parse HEAD
++   # Should output: 586b7bc13d12d71921e7b4fc1b83ed6a4f6360df
++   ```
+diff --git a/backups/2026-06-22_225025_PDT_586b7bc/planned-repo-586b7bc.zip b/backups/2026-06-22_225025_PDT_586b7bc/planned-repo-586b7bc.zip
+new file mode 100755
+index 0000000..d705656
+Binary files /dev/null and b/backups/2026-06-22_225025_PDT_586b7bc/planned-repo-586b7bc.zip differ
+diff --git a/backups/2026-06-22_225025_PDT_586b7bc/preserved-files/db/custom.db b/backups/2026-06-22_225025_PDT_586b7bc/preserved-files/db/custom.db
+new file mode 100755
+index 0000000..9190662
+Binary files /dev/null and b/backups/2026-06-22_225025_PDT_586b7bc/preserved-files/db/custom.db differ
+diff --git a/backups/2026-06-22_225025_PDT_586b7bc/preserved-files/db/custom.db.broken-backup b/backups/2026-06-22_225025_PDT_586b7bc/preserved-files/db/custom.db.broken-backup
+new file mode 100755
+index 0000000..0ad5761
+Binary files /dev/null and b/backups/2026-06-22_225025_PDT_586b7bc/preserved-files/db/custom.db.broken-backup differ
+diff --git a/backups/2026-06-22_225025_PDT_586b7bc/preserved-files/package.json b/backups/2026-06-22_225025_PDT_586b7bc/preserved-files/package.json
+new file mode 100755
+index 0000000..6693768
+--- /dev/null
++++ b/backups/2026-06-22_225025_PDT_586b7bc/preserved-files/package.json
+@@ -0,0 +1,103 @@
++{
++  "name": "planned",
++  "version": "0.2.0",
++  "private": true,
++  "scripts": {
++    "dev": "next dev -p 3000",
++    "build": "prisma generate && next build",
++    "start": "next start",
++    "lint": "eslint .",
++    "typecheck": "tsc --noEmit",
++    "db:push": "prisma db push",
++    "db:generate": "prisma generate",
++    "db:migrate": "prisma migrate dev",
++    "db:reset": "prisma migrate reset",
++    "security:check": "node scripts/security-check.js",
++    "founder:recover": "node scripts/founder-recover.js",
++    "postinstall": "prisma generate"
++  },
++  "dependencies": {
++    "@dnd-kit/core": "^6.3.1",
++    "@dnd-kit/sortable": "^10.0.0",
++    "@dnd-kit/utilities": "^3.2.2",
++    "@hookform/resolvers": "^5.1.1",
++    "@mdxeditor/editor": "^3.39.1",
++    "@prisma/client": "^6.11.1",
++    "@radix-ui/react-accordion": "^1.2.11",
++    "@radix-ui/react-alert-dialog": "^1.1.14",
++    "@radix-ui/react-aspect-ratio": "^1.1.7",
++    "@radix-ui/react-avatar": "^1.1.10",
++    "@radix-ui/react-checkbox": "^1.3.2",
++    "@radix-ui/react-collapsible": "^1.1.11",
++    "@radix-ui/react-context-menu": "^2.2.15",
++    "@radix-ui/react-dialog": "^1.1.14",
++    "@radix-ui/react-dropdown-menu": "^2.1.15",
++    "@radix-ui/react-hover-card": "^1.1.14",
++    "@radix-ui/react-label": "^2.1.7",
++    "@radix-ui/react-menubar": "^1.1.15",
++    "@radix-ui/react-navigation-menu": "^1.2.13",
++    "@radix-ui/react-popover": "^1.1.14",
++    "@radix-ui/react-progress": "^1.1.7",
++    "@radix-ui/react-radio-group": "^1.3.7",
++    "@radix-ui/react-scroll-area": "^1.2.9",
++    "@radix-ui/react-select": "^2.2.5",
++    "@radix-ui/react-separator": "^1.1.7",
++    "@radix-ui/react-slider": "^1.3.5",
++    "@radix-ui/react-slot": "^1.2.3",
++    "@radix-ui/react-switch": "^1.2.5",
++    "@radix-ui/react-tabs": "^1.1.12",
++    "@radix-ui/react-toast": "^1.2.14",
++    "@radix-ui/react-toggle": "^1.1.9",
++    "@radix-ui/react-toggle-group": "^1.1.10",
++    "@radix-ui/react-tooltip": "^1.2.7",
++    "@reactuses/core": "^6.0.5",
++    "@tanstack/react-query": "^5.82.0",
++    "@tanstack/react-table": "^8.21.3",
++    "bcryptjs": "^3.0.3",
++    "class-variance-authority": "^0.7.1",
++    "clsx": "^2.1.1",
++    "cmdk": "^1.1.1",
++    "date-fns": "^4.1.0",
++    "embla-carousel-react": "^8.6.0",
++    "framer-motion": "^12.23.2",
++    "input-otp": "^1.4.2",
++    "jose": "^6.2.3",
++    "lucide-react": "^0.525.0",
++    "next": "^16.1.1",
++    "next-intl": "^4.3.4",
++    "next-themes": "^0.4.6",
++    "otpauth": "^9.5.1",
++    "prisma": "^6.11.1",
++    "qrcode": "^1.5.4",
++    "react": "^19.0.0",
++    "react-day-picker": "^9.8.0",
++    "react-dom": "^19.0.0",
++    "react-hook-form": "^7.60.0",
++    "react-markdown": "^10.1.0",
++    "react-resizable-panels": "^3.0.3",
++    "react-syntax-highlighter": "^15.6.1",
++    "recharts": "^2.15.4",
++    "sharp": "^0.34.3",
++    "sonner": "^2.0.6",
++    "tailwind-merge": "^3.3.1",
++    "tailwindcss-animate": "^1.0.7",
++    "uuid": "^11.1.0",
++    "vaul": "^1.1.2",
++    "z-ai-web-dev-sdk": "^0.0.18",
++    "zod": "^4.0.2",
++    "zustand": "^5.0.6"
++  },
++  "devDependencies": {
++    "@tailwindcss/postcss": "^4",
++    "@types/bcryptjs": "^2.4.6",
++    "@types/qrcode": "^1.5.6",
++    "@types/react": "^19",
++    "@types/react-dom": "^19",
++    "bun-types": "^1.3.4",
++    "eslint": "^9",
++    "eslint-config-next": "^16.1.1",
++    "tailwindcss": "^4",
++    "tw-animate-css": "^1.3.5",
++    "typescript": "^5"
++  }
++}
+diff --git a/backups/2026-06-22_225025_PDT_586b7bc/preserved-files/prisma/schema.prisma b/backups/2026-06-22_225025_PDT_586b7bc/preserved-files/prisma/schema.prisma
+new file mode 100755
+index 0000000..5107bf9
+--- /dev/null
++++ b/backups/2026-06-22_225025_PDT_586b7bc/preserved-files/prisma/schema.prisma
+@@ -0,0 +1,577 @@
++// ============================================================================
++// PRISMA SCHEMA — Planned Family Savings & Allowance App
++// ============================================================================
++// Mirrors the Zustand store types in src/lib/types.ts so the hydration layer
++// is a clean 1:1 mapping. All money in UGX (integer). All timestamps in
++// milliseconds since epoch (stored as BigInt to be safe across SQLite).
++// ============================================================================
++
++generator client {
++  provider = "prisma-client-js"
++}
++
++datasource db {
++  provider = "sqlite"
++  url      = env("DATABASE_URL")
++}
++
++// ---- Family members --------------------------------------------------------
++
++model Child {
++  id            String   @id
++  name          String
++  age           Int
++  avatarColor   String
++  avatarPhoto   String?  // base64 data URL or external URL
++  currentAmount Int      @default(0)  // UGX live savings balance
++  goalAmount    Int      @default(0)
++  goalName      String
++  createdAt     DateTime @default(now())
++  updatedAt     DateTime @updatedAt
++
++  accounts     Account[]
++  transactions Transaction[]
++  spending     SpendingEntry[]
++  investments  Investment[]
++  tokenLedger  TokenLedgerEntry[]
++  goals        Goal[]                  @relation("ChildGoals")
++}
++
++model ParentProfile {
++  id           String   @id
++  name         String
++  role         String   // "Mother" | "Father" | "Guardian"
++  avatarColor  String
++  avatarPhoto  String?
++  createdAt    DateTime @default(now())
++  updatedAt    DateTime @updatedAt
++
++  spending     SpendingEntry[]
++  goals        Goal[]                  @relation("ParentGoals")
++}
++
++// ---- Financial entities ---------------------------------------------------
++
++model Account {
++  id        String   @id @default(cuid())
++  childId   String
++  name      String
++  balance   Int      @default(0)  // UGX external balance
++  createdAt DateTime @default(now())
++  updatedAt DateTime @updatedAt
++
++  child     Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
++}
++
++model Transaction {
++  id           String   @id @default(cuid())
++  childId      String
++  type         String   // save | withdraw | invest | redeem | parent_give
++  amount       Int      @default(0)  // UGX, always positive
++  tokenDelta   Int      @default(0)
++  accountId    String?
++  investmentId String?
++  note         String
++  timestamp    BigInt                          @default(0)
++  createdAt    DateTime @default(now())
++
++  child        Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
++
++  @@index([childId])
++  @@index([timestamp])
++}
++
++model SpendingCategory {
++  id      String @id
++  name    String
++  budget  Int    @default(0)  // UGX monthly budget
++}
++
++model SpendingEntry {
++  id         String   @id @default(cuid())
++  ownerId    String   // child id OR parent id
++  ownerKind  String   // "parent" | "child"
++  ownerName  String   // denormalized for convenience
++  category   String
++  amount     Int      @default(0)
++  note       String
++  timestamp  BigInt                         @default(0)
++  createdAt  DateTime @default(now())
++
++  child      Child?   @relation(fields: [childId], references: [id], onDelete: Cascade)
++  parent     ParentProfile? @relation(fields: [parentId], references: [id], onDelete: Cascade)
++  childId    String?
++  parentId   String?
++
++  @@index([ownerId])
++  @@index([timestamp])
++}
++
++model Investment {
++  id             String   @id @default(cuid())
++  childId        String
++  name           String
++  type           String   // Equity | Bond | Savings Bond | Treasury Bill | Unit Trust
++  amountInvested Int      @default(0)
++  currentValue   Int      @default(0)
++  status         String   @default("active")  // active | closed
++  openedAt       BigInt                          @default(0)
++  createdAt      DateTime @default(now())
++  updatedAt      DateTime @updatedAt
++
++  child          Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
++}
++
++model TokenLedgerEntry {
++  id        String   @id @default(cuid())
++  childId   String
++  type      String   // parent_give | redeem
++  tokens    Int      @default(0)
++  note      String
++  timestamp BigInt                          @default(0)
++  createdAt DateTime @default(now())
++
++  child     Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
++
++  @@index([childId])
++}
++
++model Goal {
++  id            String   @id @default(cuid())
++  ownerId       String   // child id OR parent id
++  ownerKind     String   // "parent" | "child"
++  ownerName     String
++  title         String
++  type          String   // save | spend_less
++  cadence       String   // weekly | monthly | annual
++  visibility    String   // private | revealed
++  targetAmount  Int      @default(0)
++  currentAmount Int      @default(0)
++  createdAt     DateTime @default(now())
++  updatedAt     DateTime @updatedAt
++  periodStart   BigInt                          @default(0)
++  note          String?
++
++  child         Child?   @relation("ChildGoals", fields: [childId], references: [id], onDelete: Cascade)
++  parent        ParentProfile? @relation("ParentGoals", fields: [parentId], references: [id], onDelete: Cascade)
++  childId       String?
++  parentId      String?
++
++  @@index([ownerId])
++}
++
++// ---- Family-level settings (single row) -----------------------------------
++
++model FamilySettings {
++  id              String   @id @default("singleton")
++  familyId        String   @unique @default("singleton")
++  annualTheme     String   @default("")
++  monthlyQuote    String   @default("")
++  currency        String   @default("UGX")
++  notifyOnSave    Boolean  @default(true)
++  notifyOnGoalReached Boolean @default(true)
++  notifyOnTokenAward Boolean @default(true)
++  monthlyReportDay Int    @default(1)
++  lastMonthlySummaryAt DateTime?
++  createdAt       DateTime @default(now())
++  updatedAt       DateTime @updatedAt
++}
++
++// ============================================================================
++// PRODUCTION INFRASTRUCTURE MODELS (Prompt 1)
++// ============================================================================
++
++// ---- Authentication -------------------------------------------------------
++
++model User {
++  id                  String   @id @default(cuid())
++  email               String   @unique
++  passwordHash        String?
++  name                String
++  platformRole        String   @default("USER")  // FOUNDER | USER
++  familyRole          String   @default("PARENT") // FAMILY_MANAGER | PARENT | CHILD
++  familyId            String?
++  childId             String?  // Links to Child if familyRole=CHILD
++  emailVerified       DateTime?
++  image               String?
++  // Founder-only security: security question + hashed answer for recovery
++  securityQuestion    String?
++  securityAnswerHash  String?
++  // TOTP 2FA
++  twoFactorSecret     String?
++  twoFactorEnabled    Boolean  @default(false)
++  twoFactorEnrolledAt DateTime?
++  twoFactorBackupCodesHash String?
++  // Child PIN login (4-digit code, bcrypt hashed)
++  pinHash             String?
++  failedLoginAttempts Int      @default(0)
++  lockedUntil         DateTime?
++  lastLoginAt         DateTime?
++  createdAt           DateTime @default(now())
++  updatedAt           DateTime @updatedAt
++  deletedAt           DateTime?
++
++  sessions            Session[]
++  auditLogs           AuditLog[]
++  notifications       Notification[]
++  devices             Device[]
++  pushSubscriptions   PushSubscription[]
++  passwordResetTokens PasswordResetToken[]
++  lessonProgress      LessonProgress[]
++  quizAttempts        QuizAttempt[]
++  achievements        UserAchievement[]
++
++  @@index([familyId])
++  @@index([email])
++  @@index([deletedAt])
++  @@index([platformRole])
++}
++
++// ---- System Settings (singleton) -----------------------------------------
++// superAdminUserId is AUTHORITATIVE. superAdminEmail is metadata only.
++model SystemSettings {
++  id                String   @id @default("singleton")
++  isInitialized     Boolean  @default(false)
++  superAdminUserId  String?
++  superAdminEmail   String?
++  setupCompletedAt  DateTime?
++  createdAt         DateTime @default(now())
++  updatedAt         DateTime @updatedAt
++}
++
++model Session {
++  id            String   @id @default(cuid())
++  sessionToken  String   @unique
++  userId        String
++  expires       DateTime
++  ipAddress     String?
++  userAgent     String?
++  createdAt     DateTime @default(now())
++
++  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
++
++  @@index([userId])
++  @@index([expires])
++}
++
++model PasswordResetToken {
++  id        String   @id @default(cuid())
++  userId    String
++  token     String   @unique
++  expires   DateTime
++  usedAt    DateTime?
++  createdAt DateTime @default(now())
++
++  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
++
++  @@index([userId])
++  @@index([token])
++}
++
++// ---- Audit Trail ----------------------------------------------------------
++
++model AuditLog {
++  id         String   @id @default(cuid())
++  userId     String?
++  familyId   String?
++  action     String
++  entityType String
++  entityId   String
++  before     String?  // JSON
++  after      String?  // JSON
++  ipAddress  String?
++  userAgent  String?
++  success    Boolean  @default(true)
++  createdAt  DateTime @default(now())
++
++  user       User?    @relation(fields: [userId], references: [id])
++
++  @@index([userId, createdAt])
++  @@index([familyId, createdAt])
++  @@index([entityType, entityId])
++  @@index([action])
++}
++
++// ---- Notifications --------------------------------------------------------
++
++model Notification {
++  id        String   @id @default(cuid())
++  userId    String
++  channel   String   @default("IN_APP")  // IN_APP | EMAIL | PUSH
++  status    String   @default("UNREAD")  // UNREAD | READ | DISMISSED
++  title     String
++  body      String
++  metadata  String?  // JSON
++  createdAt DateTime @default(now())
++  readAt    DateTime?
++
++  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
++
++  @@index([userId, status])
++  @@index([createdAt])
++}
++
++// ---- File Uploads ---------------------------------------------------------
++
++model FileUpload {
++  id           String   @id @default(cuid())
++  familyId     String
++  uploaderId   String
++  filename     String
++  mimeType     String
++  size         Int
++  storageKey   String
++  storageUrl   String
++  thumbnailUrl String?
++  createdAt    DateTime @default(now())
++  deletedAt    DateTime?
++
++  @@index([familyId, createdAt])
++  @@index([storageKey])
++}
++
++// ---- Devices + Push -------------------------------------------------------
++
++model Device {
++  id         String   @id @default(cuid())
++  userId     String
++  name       String
++  userAgent  String?
++  lastSeenAt DateTime @default(now())
++  createdAt  DateTime @default(now())
++
++  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
++
++  @@index([userId])
++}
++
++model PushSubscription {
++  id            String   @id @default(cuid())
++  userId        String
++  endpoint      String
++  keys          String   // JSON
++  createdAt     DateTime @default(now())
++  deactivatedAt DateTime?
++
++  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
++
++  @@index([userId])
++}
++
++// ---- Email Log ------------------------------------------------------------
++
++model EmailLog {
++  id         String   @id @default(cuid())
++  to         String
++  subject    String
++  template   String
++  status     String   // sent | failed | bounced
++  providerId String?
++  error      String?
++  createdAt  DateTime @default(now())
++
++  @@index([to, createdAt])
++  @@index([status])
++}
++
++// ============================================================================
++// BUSINESS DOMAIN MODELS (Prompt 2)
++// ============================================================================
++
++// ---- Achievements Domain --------------------------------------------------
++
++model Achievement {
++  id            String   @id @default(cuid())
++  code          String   @unique  // e.g. "FIRST_SAVE", "STREAK_7", "GOAL_COMPLETER"
++  title         String
++  description   String
++  icon          String   // lucide icon name
++  category      String   // savings | spending | goals | tokens | education | streaks
++  tier          String   @default("bronze")  // bronze | silver | gold | platinum
++  points        Int      @default(10)
++  requirement   String   // JSON describing the evaluation criteria
++  createdAt     DateTime @default(now())
++
++  userAchievements UserAchievement[]
++
++  @@index([category])
++  @@index([tier])
++}
++
++model UserAchievement {
++  id            String   @id @default(cuid())
++  userId        String
++  achievementId String
++  earnedAt      DateTime @default(now())
++  metadata      String?  // JSON with context (e.g. which goal, which streak)
++
++  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
++  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
++
++  @@unique([userId, achievementId])
++  @@index([userId])
++  @@index([achievementId])
++}
++
++// ---- Education Domain -----------------------------------------------------
++
++model Lesson {
++  id            String   @id @default(cuid())
++  slug          String   @unique
++  title         String
++  description   String
++  subject       String   // saving | budgeting | investing | risk | compound_growth | delayed_gratification | entrepreneurship
++  difficulty    String   @default("beginner")  // beginner | intermediate | advanced
++  ageMin        Int      @default(7)
++  ageMax        Int      @default(18)
++  estimatedMinutes Int   @default(10)
++  content       String   // Markdown content
++  quiz          String?  // JSON array of {question, options[], correctIndex, explanation}
++  order         Int      @default(0)
++  learningPathId String?
++  learningPath  LearningPath? @relation(fields: [learningPathId], references: [id])
++  createdAt     DateTime @default(now())
++  updatedAt     DateTime @updatedAt
++
++  progress      LessonProgress[]
++  quizAttempts  QuizAttempt[]
++
++  @@index([subject])
++  @@index([difficulty])
++  @@index([order])
++}
++
++model LearningPath {
++  id          String   @id @default(cuid())
++  slug        String   @unique
++  title       String
++  description String
++  subject     String
++  icon        String
++  createdAt   DateTime @default(now())
++
++  lessons     Lesson[]
++}
++
++model LessonProgress {
++  id           String   @id @default(cuid())
++  userId       String
++  lessonId     String
++  status       String   @default("NOT_STARTED")  // NOT_STARTED | IN_PROGRESS | COMPLETED
++  startedAt    DateTime?
++  completedAt  DateTime?
++  timeSpentSec Int      @default(0)
++  createdAt    DateTime @default(now())
++  updatedAt    DateTime @updatedAt
++
++  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
++  lesson       Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
++
++  @@unique([userId, lessonId])
++  @@index([userId, status])
++}
++
++model QuizAttempt {
++  id           String   @id @default(cuid())
++  userId       String
++  lessonId     String
++  answers      String   // JSON array of selected indices
++  score        Int      // 0-100
++  passed       Boolean
++  attemptedAt  DateTime @default(now())
++
++  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
++  lesson       Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
++
++  @@index([userId, lessonId])
++  @@index([attemptedAt])
++}
++
++// ---- Recommendations Domain -----------------------------------------------
++
++model Recommendation {
++  id           String   @id @default(cuid())
++  userId       String
++  type         String   // savings | spending | goals | education | investment | general
++  priority     Int      @default(5)  // 1 (highest) to 10 (lowest)
++  title        String
++  body         String
++  actionLabel  String?
++  actionTarget String?  // URL or action identifier
++  status       String   @default("ACTIVE")  // ACTIVE | DISMISSED | ACTED_UPON
++  createdAt    DateTime @default(now())
++  expiresAt    DateTime?
++
++  @@index([userId, status, priority])
++  @@index([createdAt])
++}
++
++// ---- Saving Streaks -------------------------------------------------------
++
++model SavingStreak {
++  id           String   @id @default(cuid())
++  childId      String
++  currentStreak Int     @default(0)
++  longestStreak Int     @default(0)
++  lastSaveDate DateTime?
++  createdAt    DateTime @default(now())
++  updatedAt    DateTime @updatedAt
++
++  @@unique([childId])
++  @@index([childId])
++}
++
++// ---- Rate Limiting (DB-backed, survives restarts) ------------------------
++model RateLimitEntry {
++  id        String   @id @default(cuid())
++  key       String   // e.g. "login:ip:127.0.0.1"
++  count     Int      @default(1)
++  resetAt   DateTime
++  createdAt DateTime @default(now())
++
++  @@unique([key])
++  @@index([resetAt])
++}
++
++// ---- 2FA Challenges (DB-backed, auto-expiring) ---------------------------
++model TwoFactorChallenge {
++  id        String   @id @default(cuid())
++  token     String   @unique
++  userId    String
++  expiresAt DateTime
++  consumed  Boolean  @default(false)
++  createdAt DateTime @default(now())
++
++  @@index([token])
++  @@index([expiresAt])
++}
++
++
++model ChildProfile {
++  id              String   @id @default(cuid())
++  userId          String   @unique
++  childId         String   @unique
++  nickname        String
++  birthDate       DateTime?
++  animalCompanion String?
++  theme           String   @default("nature")
++  grade           String?
++  favoriteColor   String   @default("#C9A84C")
++  unlockLevel     Int      @default(1)
++  dashboardMode   String   @default("explorer")
++  createdAt       DateTime @default(now())
++  updatedAt       DateTime @updatedAt
++  @@index([userId])
++  @@index([childId])
++}
++
++model ChildPreferences {
++  id              String   @id @default(cuid())
++  childId         String   @unique
++  lastTab         String   @default("home")
++  lastRoute       String   @default("/child")
++  motionEnabled   Boolean  @default(true)
++  soundEnabled    Boolean  @default(true)
++  createdAt       DateTime @default(now())
++  updatedAt       DateTime @updatedAt
++}
+diff --git a/bun.lock b/bun.lock
+old mode 100644
+new mode 100755
+diff --git a/db/custom.db b/db/custom.db
+index 0ad5761..150d8b8 100755
+Binary files a/db/custom.db and b/db/custom.db differ
+diff --git a/db/custom.db.broken-backup b/db/custom.db.broken-backup
+new file mode 100755
+index 0000000..0ad5761
+Binary files /dev/null and b/db/custom.db.broken-backup differ
+diff --git a/prisma/schema.prisma b/prisma/schema.prisma
+index 13410bf..2ada13d 100755
+--- a/prisma/schema.prisma
++++ b/prisma/schema.prisma
+@@ -11,7 +11,7 @@ generator client {
+ }
+ 
+ datasource db {
+-  provider = "postgresql"
++  provider = "sqlite"
+   url      = env("DATABASE_URL")
+ }
+ 
+@@ -247,11 +247,15 @@ model Session {
+   ipAddress     String?
+   userAgent     String?
+   createdAt     DateTime @default(now())
++  lastSeenAt    DateTime @default(now())  // Refreshed on each authenticated request (debounced)
++  revokedAt     DateTime?  // NULL = active, set = revoked (soft delete for audit trail)
+ 
+   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+ 
+   @@index([userId])
+   @@index([expires])
++  @@index([revokedAt])
++  @@index([lastSeenAt])
+ }
+ 
+ model PasswordResetToken {
+diff --git a/scripts/check-state.js b/scripts/check-state.js
+new file mode 100755
+index 0000000..4814ab4
+--- /dev/null
++++ b/scripts/check-state.js
+@@ -0,0 +1,16 @@
++const { PrismaClient } = require("@prisma/client");
++const db = new PrismaClient();
++(async () => {
++  try {
++    const ss = await db.systemSettings.findUnique({ where: { id: "singleton" } });
++    console.log("SystemSettings:", JSON.stringify(ss, null, 2));
++    const users = await db.user.findMany({ select: { id: true, email: true, role: true, familyRole: true, deletedAt: true, twoFactorEnabled: true } });
++    console.log("Users:", JSON.stringify(users, null, 2));
++    const rl = await db.rateLimitEntry.findMany();
++    console.log("RateLimit entries:", JSON.stringify(rl, null, 2));
++  } catch (e) {
++    console.error("Error:", e.message);
++  } finally {
++    await db.$disconnect();
++  }
++})();
+diff --git a/scripts/seed-founder.js b/scripts/seed-founder.js
+new file mode 100755
+index 0000000..5cd1e69
+--- /dev/null
++++ b/scripts/seed-founder.js
+@@ -0,0 +1,150 @@
++// ============================================================================
++// scripts/seed-founder.js — Seed a real founder account + SystemSettings row
++// ============================================================================
++// This script is idempotent. It creates a working founder account so the
++// login flow actually functions. Use it after a fresh `prisma db push`.
++// ============================================================================
++
++/* eslint-disable @typescript-eslint/no-require-imports */
++const { PrismaClient } = require("@prisma/client");
++const bcrypt = require("bcryptjs");
++
++const FOUNUNDER_EMAIL = (process.env.FOUNDER_EMAIL || "founder@planned.app").trim().toLowerCase();
++const FOUNDER_PASSWORD = process.env.FOUNDER_PASSWORD || "PlannedFound3r!2026";
++const FOUNDER_NAME = process.env.FOUNDER_NAME || "Founder";
++const SECURITY_QUESTION = "What is the name of your first pet?";
++const SECURITY_ANSWER = "tobias";
++
++const BCRYPT_COST = 12;
++
++async function main() {
++  const db = new PrismaClient();
++  try {
++    console.log("");
++    console.log("=".repeat(72));
++    console.log("  PLANNED — SEED FOUNDER ACCOUNT");
++    console.log("=".repeat(72));
++    console.log("");
++    console.log("  Email:           " + FOUNUNDER_EMAIL);
++    console.log("  Password:        " + FOUNDER_PASSWORD);
++    console.log("  Name:            " + FOUNDER_NAME);
++    console.log("  Security Q:      " + SECURITY_QUESTION);
++    console.log("  Security A:      " + SECURITY_ANSWER);
++    console.log("");
++
++    // Step 1: check if SystemSettings already initialized
++    const existingSettings = await db.systemSettings.findUnique({ where: { id: "singleton" } });
++    if (existingSettings?.isInitialized) {
++      console.log("  ⚠ System already initialized. Checking for existing founder...");
++      const existing = await db.user.findFirst({ where: { platformRole: "FOUNDER", deletedAt: null } });
++      if (existing) {
++        console.log("  ✓ Founder already exists: " + existing.email);
++        console.log("  → If you forgot the password, delete db/custom.db and re-run.");
++        return;
++      }
++    }
++
++    // Step 2: hash password + security answer
++    console.log("Step 1: Hashing password (bcrypt cost " + BCRYPT_COST + ")...");
++    const passwordHash = await bcrypt.hash(FOUNDER_PASSWORD, BCRYPT_COST);
++    const securityAnswerHash = await bcrypt.hash(SECURITY_ANSWER.trim().toLowerCase().replace(/\s+/g, " "), BCRYPT_COST);
++
++    // Step 3: create founder + SystemSettings in a transaction
++    console.log("Step 2: Creating founder user + SystemSettings...");
++    const result = await db.$transaction(async (tx) => {
++      // Delete any pre-existing founder with the same email (soft-deleted or otherwise)
++      await tx.user.deleteMany({ where: { email: FOUNUNDER_EMAIL } });
++
++      const founder = await tx.user.create({
++        data: {
++          email: FOUNUNDER_EMAIL,
++          name: FOUNDER_NAME,
++          passwordHash,
++          platformRole: "FOUNDER",
++          familyRole: "FAMILY_MANAGER",
++          securityQuestion: SECURITY_QUESTION,
++          securityAnswerHash,
++          emailVerified: new Date(),
++          lastLoginAt: null,
++          twoFactorEnabled: false,
++          failedLoginAttempts: 0,
++        },
++      });
++
++      await tx.systemSettings.upsert({
++        where: { id: "singleton" },
++        update: {
++          isInitialized: true,
++          superAdminUserId: founder.id,
++          superAdminEmail: founder.email,
++          setupCompletedAt: new Date(),
++        },
++        create: {
++          id: "singleton",
++          isInitialized: true,
++          superAdminUserId: founder.id,
++          superAdminEmail: founder.email,
++          setupCompletedAt: new Date(),
++        },
++      });
++
++      await tx.auditLog.create({
++        data: {
++          userId: founder.id,
++          action: "FOUNDER_SEEDED_VIA_SCRIPT",
++          entityType: "system",
++          entityId: "singleton",
++          after: JSON.stringify({ email: founder.email, name: founder.name, userId: founder.id, twoFactorEnabled: false }),
++          ipAddress: "127.0.0.1",
++          userAgent: "seed-founder-script",
++          success: true,
++        },
++      });
++
++      return founder;
++    });
++
++    console.log("  ✓ Founder created: " + result.email + " (id: " + result.id + ")");
++    console.log("  ✓ SystemSettings marked as initialized");
++
++    // Step 4: verify
++    console.log("");
++    console.log("Step 3: Verifying...");
++    const verifyUser = await db.user.findUnique({
++      where: { email: FOUNUNDER_EMAIL },
++      select: { id: true, email: true, platformRole: true, familyRole: true, passwordHash: true, twoFactorEnabled: true, deletedAt: true },
++    });
++    const verifySettings = await db.systemSettings.findUnique({ where: { id: "singleton" } });
++    const verifyRate = await db.rateLimitEntry.findMany();
++
++    console.log("  User: " + JSON.stringify({
++      id: verifyUser.id,
++      email: verifyUser.email,
++      platformRole: verifyUser.platformRole,
++      familyRole: verifyUser.familyRole,
++      hasPassword: !!verifyUser.passwordHash,
++      twoFactorEnabled: verifyUser.twoFactorEnabled,
++      deletedAt: verifyUser.deletedAt,
++    }));
++    console.log("  SystemSettings.isInitialized: " + verifySettings.isInitialized);
++    console.log("  RateLimitEntry count: " + verifyRate.length + " (should be 0)");
++
++    console.log("");
++    console.log("=".repeat(72));
++    console.log("  SEED COMPLETE — login is now functional");
++    console.log("=".repeat(72));
++    console.log("");
++    console.log("  Login at: http://localhost:3000/login");
++    console.log("  Email:    " + FOUNUNDER_EMAIL);
++    console.log("  Password: " + FOUNDER_PASSWORD);
++    console.log("");
++  } catch (err) {
++    console.error("  ✗ Seed failed:", err.message);
++    console.error(err.stack);
++    process.exit(1);
++  } finally {
++    await db.$disconnect();
++  }
++}
++
++main();
+diff --git a/scripts/test-auth-persistence.sh b/scripts/test-auth-persistence.sh
+new file mode 100755
+index 0000000..65bc3bd
+--- /dev/null
++++ b/scripts/test-auth-persistence.sh
+@@ -0,0 +1,101 @@
++#!/bin/bash
++# ============================================================================
++# Acceptance tests for founder authentication persistence fix
++# ============================================================================
++set -u
++BASE="http://localhost:3000"
++PASS=0; FAIL=0
++ok()   { echo "  ✅ PASS: $1"; PASS=$((PASS+1)); }
++bad()  { echo "  ❌ FAIL: $1"; FAIL=$((FAIL+1)); }
++step() { echo ""; echo "▶ $1"; }
++
++step "TEST 1: Login → refresh → still logged in"
++rm -f /tmp/t1.txt
++LOGIN_RESP=$(curl -s -X POST "$BASE/api/auth/login" -H "Content-Type: application/json" -d '{"email":"founder@planned.app","password":"PlannedFound3r!2026"}' -c /tmp/t1.txt)
++echo "  Login response: $LOGIN_RESP"
++# "Refresh" = call /api/auth/me with the same cookie (simulates page reload)
++ME1=$(curl -s "$BASE/api/auth/me" -b /tmp/t1.txt)
++echo "  /api/auth/me after login: $ME1"
++echo "$ME1" | grep -q '"email":"founder@planned.app"' && ok "User still logged in after refresh" || bad "User lost after refresh"
++# Verify session record exists in DB
++SESSION_COUNT=$(python3 -c "import sqlite3; c=sqlite3.connect('/home/z/my-project/db/custom.db').cursor(); c.execute('SELECT COUNT(*) FROM Session WHERE revokedAt IS NULL'); print(c.fetchone()[0])")
++echo "  Active sessions in DB: $SESSION_COUNT"
++[ "$SESSION_COUNT" -ge "1" ] && ok "Session record exists in DB" || bad "No session record in DB"
++
++step "TEST 2: Login → logout → refresh → remain logged out"
++rm -f /tmp/t2.txt /tmp/t2-pre-logout.txt
++curl -s -X POST "$BASE/api/auth/login" -H "Content-Type: application/json" -d '{"email":"founder@planned.app","password":"PlannedFound3r!2026"}' -c /tmp/t2.txt > /dev/null
++# Save a copy of the pre-logout cookie so we can test that the REVOKED JWT is rejected
++cp /tmp/t2.txt /tmp/t2-pre-logout.txt
++echo "  Logged in. Verifying session is live..."
++curl -s "$BASE/api/auth/me" -b /tmp/t2.txt | grep -q 'founder@planned.app' && ok "Session live before logout" || bad "Session not live before logout"
++echo "  Calling logout..."
++LOGOUT_HEADERS=$(curl -s -X POST "$BASE/api/auth/logout" -b /tmp/t2.txt -c /tmp/t2.txt -D - -o /dev/null)
++echo "  Logout Set-Cookie header:"
++echo "$LOGOUT_HEADERS" | grep -i "set-cookie" | head -2
++echo "  Refreshing (calling /api/auth/me with updated cookie jar)..."
++ME2=$(curl -s "$BASE/api/auth/me" -b /tmp/t2.txt)
++echo "  /api/auth/me after logout: $ME2"
++echo "$ME2" | grep -q '"user":null' && ok "User is null after logout+refresh" || bad "User came back after logout"
++echo "  Critical sub-test: hitting /api/auth/me with the PRE-LOGOUT cookie from THIS test (JWT sig still valid, but session revoked)"
++ME2B=$(curl -s "$BASE/api/auth/me" -b /tmp/t2-pre-logout.txt)
++echo "  /api/auth/me with revoked-session JWT: $ME2B"
++echo "$ME2B" | grep -q '"user":null' && ok "Revoked session JWT is rejected (server-side check works!)" || bad "Revoked session JWT still authenticates — BUG"
++
++step "TEST 3: Open second browser → login there → first browser still works"
++rm -f /tmp/t3a.txt /tmp/t3b.txt
++# Browser A logs in
++curl -s -X POST "$BASE/api/auth/login" -H "Content-Type: application/json" -d '{"email":"founder@planned.app","password":"PlannedFound3r!2026"}' -c /tmp/t3a.txt > /dev/null
++echo "  Browser A logged in."
++# Browser B logs in (separate cookie jar)
++curl -s -X POST "$BASE/api/auth/login" -H "Content-Type: application/json" -d '{"email":"founder@planned.app","password":"PlannedFound3r!2026"}' -c /tmp/t3b.txt > /dev/null
++echo "  Browser B logged in."
++# Verify both sessions are active in DB
++ACTIVE_COUNT=$(python3 -c "import sqlite3; c=sqlite3.connect('/home/z/my-project/db/custom.db').cursor(); c.execute('SELECT COUNT(*) FROM Session WHERE revokedAt IS NULL'); print(c.fetchone()[0])")
++echo "  Active sessions in DB: $ACTIVE_COUNT (should be 2)"
++# Browser A should still work
++MEA=$(curl -s "$BASE/api/auth/me" -b /tmp/t3a.txt)
++MEB=$(curl -s "$BASE/api/auth/me" -b /tmp/t3b.txt)
++echo "$MEA" | grep -q 'founder@planned.app' && ok "Browser A still works after B logs in" || bad "Browser A lost after B login"
++echo "$MEB" | grep -q 'founder@planned.app' && ok "Browser B works" || bad "Browser B doesn't work"
++[ "$ACTIVE_COUNT" -ge "2" ] && ok "Two separate session records exist" || bad "Expected 2 sessions, got $ACTIVE_COUNT"
++
++step "TEST 4: Logout on browser A → browser B remains logged in"
++# Logout browser A only
++curl -s -X POST "$BASE/api/auth/logout" -b /tmp/t3a.txt -c /tmp/t3a.txt > /dev/null
++echo "  Browser A logged out."
++# A should be logged out
++MEA2=$(curl -s "$BASE/api/auth/me" -b /tmp/t3a.txt)
++echo "$MEA2" | grep -q '"user":null' && ok "Browser A is logged out" || bad "Browser A still logged in"
++# B should still be logged in
++MEB2=$(curl -s "$BASE/api/auth/me" -b /tmp/t3b.txt)
++echo "$MEB2" | grep -q 'founder@planned.app' && ok "Browser B still logged in (multi-device works!)" || bad "Browser B was logged out too"
++
++step "TEST 5: Revoke browser B session from server → browser B immediately loses access"
++# Get browser B's sessionId from the admin sessions list
++SESSIONS_LIST=$(curl -s "$BASE/api/admin/sessions" -b /tmp/t3b.txt)
++echo "  Sessions list: $SESSIONS_LIST"
++# Extract the first active session ID
++B_SESSION_ID=$(echo "$SESSIONS_LIST" | python3 -c "import sys, json; d=json.load(sys.stdin); s=[x for x in d['sessions'] if x['revokedAt'] is None]; print(s[0]['id'] if s else '')")
++echo "  Browser B's active session ID: $B_SESSION_ID"
++if [ -z "$B_SESSION_ID" ]; then
++  bad "Could not find an active session to revoke"
++else
++  # Revoke it via admin endpoint
++  REVOKE_RESP=$(curl -s -X POST "$BASE/api/admin/sessions" -b /tmp/t3b.txt -H "Content-Type: application/json" -d "{\"sessionId\":\"$B_SESSION_ID\"}")
++  echo "  Revoke response: $REVOKE_RESP"
++  # Browser B should immediately lose access on next request
++  MEB3=$(curl -s "$BASE/api/auth/me" -b /tmp/t3b.txt)
++  echo "  Browser B /api/auth/me after revocation: $MEB3"
++  echo "$MEB3" | grep -q '"user":null' && ok "Browser B immediately lost access after server-side revocation" || bad "Browser B still has access after revocation"
++  # Verify revokedAt is set in DB
++  REVOKED_COUNT=$(python3 -c "import sqlite3; c=sqlite3.connect('/home/z/my-project/db/custom.db').cursor(); c.execute('SELECT COUNT(*) FROM Session WHERE revokedAt IS NOT NULL'); print(c.fetchone()[0])")
++  echo "  Revoked sessions in DB: $REVOKED_COUNT"
++  [ "$REVOKED_COUNT" -ge "2" ] && ok "Revocation persisted to DB" || bad "Revocation not in DB"
++fi
++
++echo ""
++echo "================================================================"
++echo "  RESULTS: $PASS passed, $FAIL failed"
++echo "================================================================"
++[ "$FAIL" -eq "0" ] && exit 0 || exit 1
+diff --git a/src/app/api/admin/security/route.ts b/src/app/api/admin/security/route.ts
+index c5da4eb..1eafea1 100755
+--- a/src/app/api/admin/security/route.ts
++++ b/src/app/api/admin/security/route.ts
+@@ -1,7 +1,7 @@
+ import { NextRequest, NextResponse } from "next/server";
+ import {
+   getAuthUser, verifyPassword, hashSecurityAnswer, verifyTOTP, verifyBackupCode,
+-  auditLog, setSessionCookie, signSession,
++  auditLog, setSessionCookie, signSession, getSession,
+ } from "@/lib/auth";
+ import { db } from "@/lib/db";
+ import { logger } from "@/lib/logger";
+@@ -96,7 +96,13 @@ export async function POST(req: NextRequest) {
+     });
+ 
+     if (updates.email) {
+-      const token = await signSession({ sub: user.id, email: updates.email, platformRole: user.platformRole, familyRole: user.familyRole });
++      // Preserve the existing sessionId — the user's session is still valid,
++      // only the email claim in the JWT needs to be refreshed.
++      const currentSession = await getSession();
++      if (!currentSession?.sessionId) {
++        return NextResponse.json({ ok: false, error: "Session expired — please log in again" }, { status: 401 });
++      }
++      const token = await signSession({ sub: user.id, email: updates.email, platformRole: user.platformRole, familyRole: user.familyRole, sessionId: currentSession.sessionId });
+       await setSessionCookie(token);
+     }
+ 
+diff --git a/src/app/api/admin/sessions/route.ts b/src/app/api/admin/sessions/route.ts
+new file mode 100755
+index 0000000..e7915ef
+--- /dev/null
++++ b/src/app/api/admin/sessions/route.ts
+@@ -0,0 +1,41 @@
++import { NextRequest, NextResponse } from "next/server";
++import { getAuthUser, auditLog, listUserSessions, revokeSession, revokeAllUserSessions } from "@/lib/auth";
++
++export const dynamic = "force-dynamic";
++export const runtime = "nodejs";
++
++// GET /api/admin/sessions — list all sessions for the current founder
++export async function GET() {
++  const user = await getAuthUser();
++  if (!user) return NextResponse.json({ ok: false, error: "Authentication required" }, { status: 401 });
++  if (user.platformRole !== "FOUNDER") return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
++  const sessions = await listUserSessions(user.id);
++  return NextResponse.json({ ok: true, sessions });
++}
++
++// POST /api/admin/sessions — revoke sessions
++// Body: { sessionId?: string, all?: boolean }
++//   - If sessionId provided: revoke that single session (TEST 5 — revoke browser B)
++//   - If all=true: revoke ALL the founder's sessions (logout everywhere)
++export async function POST(req: NextRequest) {
++  const user = await getAuthUser();
++  if (!user) return NextResponse.json({ ok: false, error: "Authentication required" }, { status: 401 });
++  if (user.platformRole !== "FOUNDER") return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
++
++  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
++  const ua = req.headers.get("user-agent") ?? "unknown";
++  const body = await req.json();
++  const { sessionId, all } = body as { sessionId?: string; all?: boolean };
++
++  if (all === true) {
++    const count = await revokeAllUserSessions(user.id);
++    await auditLog({ userId: user.id, action: "SESSION_REVOKE_ALL", entityType: "user", entityId: user.id, ipAddress: ip, userAgent: ua, success: true, after: { count } });
++    return NextResponse.json({ ok: true, revoked: count });
++  }
++
++  if (!sessionId) return NextResponse.json({ ok: false, error: "sessionId required (or all=true)" }, { status: 400 });
++  const ok = await revokeSession(sessionId);
++  if (!ok) return NextResponse.json({ ok: false, error: "Session not found or already revoked" }, { status: 404 });
++  await auditLog({ userId: user.id, action: "SESSION_REVOKED", entityType: "session", entityId: sessionId, ipAddress: ip, userAgent: ua, success: true });
++  return NextResponse.json({ ok: true, sessionId });
++}
+diff --git a/src/app/api/auth/child-login/route.ts b/src/app/api/auth/child-login/route.ts
+old mode 100644
+new mode 100755
+index 5d29f4c..4979fd9
+--- a/src/app/api/auth/child-login/route.ts
++++ b/src/app/api/auth/child-login/route.ts
+@@ -1,6 +1,6 @@
+ import { NextRequest, NextResponse } from "next/server";
+ import { db } from "@/lib/db";
+-import { signSession, setSessionCookie, auditLog } from "@/lib/auth";
++import { signSession, setSessionCookie, auditLog, getSession } from "@/lib/auth";
+ import { logger } from "@/lib/logger";
+ import bcrypt from "bcryptjs";
+ 
+@@ -28,10 +28,16 @@ export async function POST(req: NextRequest) {
+     if (!user || !user.pinHash) return NextResponse.json({ ok: false, error: "Your secret code isn't set up yet. Ask your parent!" }, { status: 400 });
+     const pinOk = await bcrypt.compare(pin, user.pinHash);
+     if (!pinOk) return NextResponse.json({ ok: false, error: "That's not the right secret code. Try again!" }, { status: 401 });
+-    const token = await signSession({ sub: user.id, email: user.email ?? profile.nickname, platformRole: user.platformRole, familyRole: "CHILD" });
+-    await setSessionCookie(token);
++    // Create a server-side session record so child logout/revocation works the
++    // same as parent logout. Reuses the same Session table.
+     const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+-    await auditLog({ userId: user.id, action: "CHILD_LOGIN_SUCCESS", entityType: "user", entityId: user.id, ipAddress: ip, success: true });
++    const ua = req.headers.get("user-agent") ?? "unknown";
++    const sessionToken = crypto.randomUUID() + crypto.randomUUID();
++    const expires = new Date(Date.now() + 60 * 60 * 24 * 7 * 1000);  // 7 days, matches SESSION_TTL_SECONDS
++    const session = await db.session.create({ data: { sessionToken, userId: user.id, expires, ipAddress: ip, userAgent: ua } });
++    const token = await signSession({ sub: user.id, email: user.email ?? profile.nickname, platformRole: user.platformRole, familyRole: "CHILD", sessionId: session.id });
++    await setSessionCookie(token);
++    await auditLog({ userId: user.id, action: "CHILD_LOGIN_SUCCESS", entityType: "user", entityId: user.id, ipAddress: ip, success: true, after: { sessionId: session.id } });
+     return NextResponse.json({ ok: true, user: { id: user.id, nickname: profile.nickname, animalCompanion: profile.animalCompanion } });
+   } catch (err) {
+     logger.error("Child login error", { err });
+diff --git a/src/app/api/auth/logout/route.ts b/src/app/api/auth/logout/route.ts
+index 4b8ab51..d7d212a 100755
+--- a/src/app/api/auth/logout/route.ts
++++ b/src/app/api/auth/logout/route.ts
+@@ -5,7 +5,14 @@ export const dynamic = "force-dynamic";
+ export const runtime = "nodejs";
+ 
+ export async function POST() {
++  // Read the sessionId from the JWT BEFORE clearing the cookie — we need it
++  // to revoke the server-side session record. This is the key fix: logout
++  // now invalidates the session server-side, so even if the cookie survives
++  // (browser quirks, cached JWT, another tab), the session is dead.
+   const session = await getSession();
+-  await logout({ userId: session?.sub });
++  await logout({
++    userId: session?.sub,
++    sessionId: session?.sessionId,
++  });
+   return NextResponse.json({ ok: true });
+ }
+diff --git a/src/app/api/auth/register/route.ts b/src/app/api/auth/register/route.ts
+old mode 100644
+new mode 100755
+diff --git a/src/app/api/child/state/route.ts b/src/app/api/child/state/route.ts
+old mode 100644
+new mode 100755
+diff --git a/src/app/api/mutations/route.ts b/src/app/api/mutations/route.ts
+index 9bc5e9c..1c71955 100755
+--- a/src/app/api/mutations/route.ts
++++ b/src/app/api/mutations/route.ts
+@@ -25,10 +25,16 @@ import {
+   createParent,
+   getFullState,
+ } from "@/lib/db-queries";
++import { getAuthUser } from "@/lib/auth";
+ 
+ export const dynamic = "force-dynamic";
+ 
+ export async function POST(req: NextRequest) {
++  // Auth gate: same logic as /api/state — must verify session is not revoked.
++  const user = await getAuthUser();
++  if (!user) {
++    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
++  }
+   try {
+     const body = await req.json();
+     const { action, payload } = body as { action: string; payload: any };
+diff --git a/src/app/api/state/route.ts b/src/app/api/state/route.ts
+index 7080419..a5bfe6e 100755
+--- a/src/app/api/state/route.ts
++++ b/src/app/api/state/route.ts
+@@ -4,10 +4,18 @@
+ 
+ import { NextResponse } from "next/server";
+ import { getFullState } from "@/lib/db-queries";
++import { getAuthUser } from "@/lib/auth";
+ 
+ export const dynamic = "force-dynamic";
+ 
+ export async function GET() {
++  // Auth gate: middleware lets requests with a valid JWT through, but only
++  // getAuthUser() verifies the server-side session is still active (not revoked).
++  // Without this check, a logged-out user with a cached JWT could still read state.
++  const user = await getAuthUser();
++  if (!user) {
++    return NextResponse.json({ error: "Authentication required" }, { status: 401 });
++  }
+   try {
+     const state = await getFullState();
+     return NextResponse.json(state);
+diff --git a/src/app/child/page.tsx b/src/app/child/page.tsx
+old mode 100644
+new mode 100755
+diff --git a/src/app/login/page.tsx b/src/app/login/page.tsx
+index 63fe26c..2dbea85 100755
+--- a/src/app/login/page.tsx
++++ b/src/app/login/page.tsx
+@@ -1,5 +1,5 @@
+ import { redirect } from "next/navigation";
+-import { isSystemInitialized } from "@/lib/auth";
++import { isSystemInitialized, getAuthUser } from "@/lib/auth";
+ import { LoginForm } from "./LoginForm";
+ 
+ export const dynamic = "force-dynamic";
+@@ -7,6 +7,21 @@ export const dynamic = "force-dynamic";
+ export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
+   const initialized = await isSystemInitialized();
+   if (!initialized) redirect("/setup");
++
++  // If the visitor already has a valid (non-revoked, non-expired) session,
++  // send them straight to their dashboard instead of showing the login form.
++  // This closes the "I'm logged in but seeing /login" UX confusion, and also
++  // prevents the founder session from "coming back" after logout — if their
++  // session is still valid, they shouldn't be on /login; if it's revoked,
++  // getAuthUser() returns null and we show the form.
++  const user = await getAuthUser();
++  if (user) {
++    const { next } = await searchParams;
++    const safeNext = next && next.startsWith("/") && !next.startsWith("//") ? next : "/";
++    // CHILD users go to /child, everyone else to /
++    redirect(user.familyRole === "CHILD" ? "/child" : safeNext);
++  }
++
+   const { next } = await searchParams;
+   const safeNext = next && next.startsWith("/") && !next.startsWith("//") ? next : "/";
+   return (
+diff --git a/src/app/signup/SignupForm.tsx b/src/app/signup/SignupForm.tsx
+old mode 100644
+new mode 100755
+diff --git a/src/app/signup/page.tsx b/src/app/signup/page.tsx
+old mode 100644
+new mode 100755
+diff --git a/src/components/child/ChildDashboardClient.tsx b/src/components/child/ChildDashboardClient.tsx
+old mode 100644
+new mode 100755
+diff --git a/src/lib/auth-edge.ts b/src/lib/auth-edge.ts
+index 7f4ca16..e025e55 100755
+--- a/src/lib/auth-edge.ts
++++ b/src/lib/auth-edge.ts
+@@ -3,7 +3,18 @@ export const SESSION_COOKIE = "planned-session";
+ const INSECURE_DEFAULT = "DEV-ONLY-INSECURE-SECRET-DO-NOT-USE-IN-PRODUCTION-change-me-please";
+ const JWT_SECRET_STRING = process.env.JWT_SECRET ?? INSECURE_DEFAULT;
+ const JWT_SECRET = new TextEncoder().encode(JWT_SECRET_STRING);
+-export interface SessionPayload { sub: string; email: string; platformRole: string; familyRole: string; iat?: number; exp?: number; }
++export interface SessionPayload { sub: string; email: string; platformRole: string; familyRole: string; sessionId: string; iat?: number; exp?: number; }
++// ⚠ EDGE-RUNTIME TRUST MODEL ⚠
++// This module runs in middleware (Edge runtime), which CANNOT access Prisma/SQLite.
++// It performs JWT-signature verification only — it does NOT verify that the
++// session record still exists in the DB. The real session-validity check
++// (revoked? expired? deleted?) happens in getAuthUser() on the Node.js side,
++// which is called by every page server component and every protected API route.
++//
++// Middleware's job is the fast-path: reject obviously-bad requests (no cookie,
++// tampered JWT, wrong signature) before they reach the application. JWTs that
++// pass middleware but belong to a revoked session will be rejected by
++// getAuthUser() at the page/route level.
+ export async function getSessionFromCookieHeader(cookieHeader: string | null | undefined): Promise<SessionPayload | null> {
+   if (!cookieHeader) return null;
+   const cookies = Object.fromEntries(cookieHeader.split(";").map((c) => c.trim().split("=")).filter(([k]) => k).map(([k, ...rest]) => [k, decodeURIComponent(rest.join("="))]));
+@@ -11,7 +22,7 @@ export async function getSessionFromCookieHeader(cookieHeader: string | null | u
+   if (!token) return null;
+   try {
+     const { payload } = await jwtVerify(token, JWT_SECRET, { algorithms: ["HS256"] });
+-    if (typeof payload.sub !== "string" || typeof payload.email !== "string" || typeof payload.platformRole !== "string") return null;
+-    return { sub: payload.sub, email: payload.email, platformRole: payload.platformRole as string, familyRole: (payload.familyRole as string) || "PARENT", iat: payload.iat, exp: payload.exp };
++    if (typeof payload.sub !== "string" || typeof payload.email !== "string" || typeof payload.platformRole !== "string" || typeof payload.sessionId !== "string") return null;
++    return { sub: payload.sub, email: payload.email, platformRole: payload.platformRole as string, familyRole: (payload.familyRole as string) || "PARENT", sessionId: payload.sessionId as string, iat: payload.iat, exp: payload.exp };
+   } catch { return null; }
+ }
+diff --git a/src/lib/auth.ts b/src/lib/auth.ts
+index bd1fdcf..a9e4140 100755
+--- a/src/lib/auth.ts
++++ b/src/lib/auth.ts
+@@ -41,6 +41,7 @@ export interface SessionPayload {
+   email: string;
+   platformRole: string;
+   familyRole: string;
++  sessionId: string;  // DB-backed session ID — verified on every authenticated request
+   iat?: number;
+   exp?: number;
+ }
+@@ -93,7 +94,8 @@ export async function verifySecurityAnswer(answer: string, hash: string): Promis
+ // ---- JWT session -----------------------------------------------------------
+ 
+ export async function signSession(payload: SessionPayload): Promise<string> {
+-  return new SignJWT({ email: payload.email, platformRole: payload.platformRole, familyRole: payload.familyRole })
++  if (!payload.sessionId) throw new Error("signSession: sessionId is required");
++  return new SignJWT({ email: payload.email, platformRole: payload.platformRole, familyRole: payload.familyRole, sessionId: payload.sessionId })
+     .setProtectedHeader({ alg: "HS256" })
+     .setSubject(payload.sub)
+     .setIssuedAt()
+@@ -104,8 +106,8 @@ export async function signSession(payload: SessionPayload): Promise<string> {
+ async function verifySession(token: string): Promise<SessionPayload | null> {
+   try {
+     const { payload } = await jwtVerify(token, JWT_SECRET, { algorithms: ["HS256"] });
+-    if (typeof payload.sub !== "string" || typeof payload.email !== "string" || typeof payload.platformRole !== "string") return null;
+-    return { sub: payload.sub, email: payload.email, platformRole: payload.platformRole as string, familyRole: (payload.familyRole as string) || "PARENT", iat: payload.iat, exp: payload.exp };
++    if (typeof payload.sub !== "string" || typeof payload.email !== "string" || typeof payload.platformRole !== "string" || typeof payload.sessionId !== "string") return null;
++    return { sub: payload.sub, email: payload.email, platformRole: payload.platformRole as string, familyRole: (payload.familyRole as string) || "PARENT", sessionId: payload.sessionId as string, iat: payload.iat, exp: payload.exp };
+   } catch { return null; }
+ }
+ 
+@@ -121,8 +123,131 @@ export async function setSessionCookie(token: string): Promise<void> {
+ }
+ 
+ export async function clearSessionCookie(): Promise<void> {
++  // CRITICAL: deletion attributes MUST match the set attributes (RFC 6265).
++  // Omitting HttpOnly/SameSite/Secure on delete can cause some browsers to
++  // silently refuse the deletion, leaving the cookie in place and the user
++  // appearing "stuck logged in" after logout.
+   const store = await cookies();
+-  store.delete(SESSION_COOKIE);
++  store.set(SESSION_COOKIE, "", {
++    httpOnly: true,
++    secure: process.env.NODE_ENV === "production",
++    sameSite: "strict",
++    path: "/",
++    expires: new Date(0),  // epoch — tells browser to immediately discard
++    maxAge: 0,
++  });
++}
++
++// ---- Server-side session lifecycle ----------------------------------------
++//
++// JWT alone is NOT proof of an active session. The JWT contains a sessionId
++// that must exist in the Session table AND must not be revoked AND must not
++// be expired. This closes the "founder returns after logout" bug: even if a
++// browser cache or another tab holds the JWT, the revoked session row makes
++// getAuthUser() return null.
++//
++
++async function createSessionRecord(userId: string, ipAddress?: string, userAgent?: string): Promise<{ id: string; sessionToken: string } | null> {
++  try {
++    const sessionToken = crypto.randomUUID() + crypto.randomUUID();
++    const expires = new Date(Date.now() + SESSION_TTL_SECONDS * 1000);
++    const session = await db.session.create({
++      data: { sessionToken, userId, expires, ipAddress, userAgent },
++    });
++    return { id: session.id, sessionToken };
++  } catch (err) {
++    logger.error("Failed to create session record", { err, userId });
++    return null;
++  }
++}
++
++export async function revokeSession(sessionId: string): Promise<boolean> {
++  if (!sessionId) return false;
++  try {
++    // Soft-revoke (set revokedAt). Keeps audit trail; allows admin to see history.
++    const result = await db.session.updateMany({
++      where: { id: sessionId, revokedAt: null },
++      data: { revokedAt: new Date() },
++    });
++    return result.count > 0;
++  } catch (err) {
++    logger.error("Failed to revoke session", { err, sessionId });
++    return false;
++  }
++}
++
++export async function revokeAllUserSessions(userId: string, exceptSessionId?: string): Promise<number> {
++  try {
++    const result = await db.session.updateMany({
++      where: {
++        userId,
++        revokedAt: null,
++        ...(exceptSessionId ? { id: { not: exceptSessionId } } : {}),
++      },
++      data: { revokedAt: new Date() },
++    });
++    return result.count;
++  } catch (err) {
++    logger.error("Failed to revoke all user sessions", { err, userId });
++    return 0;
++  }
++}
++
++// In-memory cache of sessionId → last DB refresh timestamp.
++// Prevents hammering the Session table with UPDATE lastSeenAt on every single
++// request. We only refresh at most once per minute per active session.
++const LAST_SEEN_REFRESH_INTERVAL_MS = 60 * 1000;
++const lastSeenCache = new Map<string, number>();
++
++async function isSessionValid(sessionId: string): Promise<boolean> {
++  if (!sessionId) return false;
++  try {
++    const session = await db.session.findUnique({ where: { id: sessionId } });
++    if (!session) return false;
++    if (session.revokedAt) return false;
++    if (session.expires < new Date()) return false;
++
++    // Debounced refresh of lastSeenAt — at most once per minute per session.
++    // This powers future admin UI ("last active 2 min ago") without DB churn.
++    const now = Date.now();
++    const lastRefresh = lastSeenCache.get(sessionId) ?? 0;
++    if (now - lastRefresh > LAST_SEEN_REFRESH_INTERVAL_MS) {
++      lastSeenCache.set(sessionId, now);
++      // Fire-and-forget — don't block the auth check on this write
++      db.session.update({
++        where: { id: sessionId },
++        data: { lastSeenAt: new Date() },
++      }).catch((err) => {
++        logger.error("Failed to refresh lastSeenAt", { err, sessionId });
++        lastSeenCache.delete(sessionId);  // retry on next request
++      });
++    }
++    return true;
++  } catch (err) {
++    logger.error("Failed to validate session", { err, sessionId });
++    return false;  // fail-closed
++  }
++}
++
++export async function listUserSessions(userId: string): Promise<Array<{
++  id: string;
++  createdAt: Date;
++  expires: Date;
++  lastSeenAt: Date;
++  revokedAt: Date | null;
++  ipAddress: string | null;
++  userAgent: string | null;
++}>> {
++  try {
++    return await db.session.findMany({
++      where: { userId },
++      orderBy: { createdAt: "desc" },
++      select: { id: true, createdAt: true, expires: true, lastSeenAt: true, revokedAt: true, ipAddress: true, userAgent: true },
++    });
++  } catch (err) {
++    logger.error("Failed to list user sessions", { err, userId });
++    return [];
++  }
+ }
+ 
+ export async function getSession(): Promise<SessionPayload | null> {
+@@ -149,6 +274,11 @@ export async function getSessionFromCookieHeader(
+ export async function getAuthUser(): Promise<AuthUser | null> {
+   const session = await getSession();
+   if (!session) return null;
++  // CRITICAL: JWT alone is not enough — verify the DB-backed session is still
++  // active (not revoked, not expired). This is what prevents a logged-out user
++  // (or a stolen JWT) from authenticating after session revocation.
++  const sessionValid = await isSessionValid(session.sessionId);
++  if (!sessionValid) return null;
+   try {
+     const user: any = await db.user.findUnique({
+       where: { id: session.sub, deletedAt: null },
+@@ -372,9 +502,14 @@ export async function attemptLogin(params: {
+     }
+ 
+     await db.user.update({ where: { id: user.id }, data: { failedLoginAttempts: 0, lockedUntil: null, lastLoginAt: new Date() } });
+-    const token = await signSession({ sub: user.id, email: user.email, platformRole: user.platformRole, familyRole: user.familyRole });
++    const sessionRecord = await createSessionRecord(user.id, params.ipAddress, params.userAgent);
++    if (!sessionRecord) {
++      logger.error("Login succeeded but session record creation failed", { userId: user.id });
++      return { ok: false, error: "Failed to create session" };
++    }
++    const token = await signSession({ sub: user.id, email: user.email, platformRole: user.platformRole, familyRole: user.familyRole, sessionId: sessionRecord.id });
+     await setSessionCookie(token);
+-    await auditLog({ userId: user.id, action: "LOGIN_SUCCESS", entityType: "user", entityId: user.id, ipAddress: params.ipAddress, userAgent: params.userAgent, success: true });
++    await auditLog({ userId: user.id, action: "LOGIN_SUCCESS", entityType: "user", entityId: user.id, ipAddress: params.ipAddress, userAgent: params.userAgent, success: true, after: { sessionId: sessionRecord.id } });
+     return { ok: true, user: { id: user.id, email: user.email, platformRole: user.platformRole, familyRole: user.familyRole, name: user.name, twoFactorEnabled: user.twoFactorEnabled } };
+   } catch (err) {
+     logger.error("Login error", { err, email });
+@@ -418,9 +553,14 @@ export async function completeLoginWith2FA(params: {
+     }
+ 
+     await db.user.update({ where: { id: user.id }, data: { failedLoginAttempts: 0, lockedUntil: null, lastLoginAt: new Date() } });
+-    const token = await signSession({ sub: user.id, email: user.email, platformRole: user.platformRole, familyRole: user.familyRole });
++    const sessionRecord = await createSessionRecord(user.id, params.ipAddress, params.userAgent);
++    if (!sessionRecord) {
++      logger.error("2FA login succeeded but session record creation failed", { userId: user.id });
++      return { ok: false, error: "Failed to create session" };
++    }
++    const token = await signSession({ sub: user.id, email: user.email, platformRole: user.platformRole, familyRole: user.familyRole, sessionId: sessionRecord.id });
+     await setSessionCookie(token);
+-    await auditLog({ userId: user.id, action: usedBackupIndex !== null ? "LOGIN_2FA_BACKUP_SUCCESS" : "LOGIN_2FA_SUCCESS", entityType: "user", entityId: user.id, ipAddress: params.ipAddress, userAgent: params.userAgent, success: true, after: { backupCodesRemaining: usedBackupIndex !== null } });
++    await auditLog({ userId: user.id, action: usedBackupIndex !== null ? "LOGIN_2FA_BACKUP_SUCCESS" : "LOGIN_2FA_SUCCESS", entityType: "user", entityId: user.id, ipAddress: params.ipAddress, userAgent: params.userAgent, success: true, after: { backupCodesRemaining: usedBackupIndex !== null, sessionId: sessionRecord.id } });
+     return { ok: true, user: { id: user.id, email: user.email, platformRole: user.platformRole, familyRole: user.familyRole, name: user.name, twoFactorEnabled: user.twoFactorEnabled } };
+   } catch (err) {
+     logger.error("2FA complete error", { err });
+@@ -430,10 +570,22 @@ export async function completeLoginWith2FA(params: {
+ 
+ // ---- Logout flow -----------------------------------------------------------
+ 
+-export async function logout(params?: { userId?: string; ipAddress?: string; userAgent?: string }): Promise<void> {
++export async function logout(params?: { userId?: string; sessionId?: string; ipAddress?: string; userAgent?: string; revokeAll?: boolean }): Promise<void> {
++  // CRITICAL: revoke the server-side session FIRST. This ensures that even if
++  // the cookie deletion fails (browser quirks, network issues), the JWT in the
++  // cookie is now useless because the session record is revoked.
++  if (params?.sessionId) {
++    if (params.revokeAll && params.userId) {
++      // Revoke ALL of the user's sessions (used for "log out everywhere" / password change)
++      await revokeAllUserSessions(params.userId);
++    } else {
++      // Revoke ONLY this device's session — preserves multi-device support
++      await revokeSession(params.sessionId);
++    }
++  }
+   await clearSessionCookie();
+   if (params?.userId) {
+-    await auditLog({ userId: params.userId, action: "LOGOUT", entityType: "user", entityId: params.userId, ipAddress: params.ipAddress, userAgent: params.userAgent, success: true });
++    await auditLog({ userId: params.userId, action: "LOGOUT", entityType: "user", entityId: params.userId, ipAddress: params.ipAddress, userAgent: params.userAgent, success: true, after: { sessionId: params.sessionId, revokeAll: params.revokeAll ?? false } });
+   }
+ }
+ 
+@@ -534,12 +686,17 @@ export async function performFounderSetup(params: {
+     return f;
+   });
+ 
+-  const token = await signSession({ sub: founder.id, email: founder.email, platformRole: founder.platformRole, familyRole: founder.familyRole });
++  const sessionRecord = await createSessionRecord(founder.id, params.ipAddress, params.userAgent);
++  if (!sessionRecord) {
++    logger.error("Founder setup succeeded but session record creation failed", { userId: founder.id });
++    return { ok: false, error: "Account created but failed to start session. Please log in." };
++  }
++  const token = await signSession({ sub: founder.id, email: founder.email, platformRole: founder.platformRole, familyRole: founder.familyRole, sessionId: sessionRecord.id });
+   await setSessionCookie(token);
+ 
+   await auditLog({
+     userId: founder.id, action: "FOUNDER_SETUP_COMPLETED", entityType: "system", entityId: "singleton",
+-    after: { email: founder.email, name: founder.name, userId: founder.id, twoFactorEnabled: enrollTotp },
++    after: { email: founder.email, name: founder.name, userId: founder.id, twoFactorEnabled: enrollTotp, sessionId: sessionRecord.id },
+     ipAddress: params.ipAddress, userAgent: params.userAgent, success: true,
+   });
+ 

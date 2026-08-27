@@ -1,0 +1,1191 @@
+     1→// ============================================================================
+     2→// AUTH LIBRARY — JWT session, password hashing, TOTP 2FA, role checks, audit
+     3→// ============================================================================
+     4→// This is the single source of truth for authentication and authorization
+     5→// in Planned. The session is a JWT signed with jose, stored in an HttpOnly
+     6→// cookie. Server-side role checks happen here — client-side checks are
+     7→// decorative only and never trusted.
+     8→//
+     9→// Founder-only administration:
+    10→//   - Exactly one SUPER_ADMIN exists (enforced at /setup time)
+    11→//   - All other accounts default to USER — NEVER trust client-supplied role
+    12→//   - /admin/*, /system/*, /analytics/*, /feature-flags/*, /security/*
+    13→//     require role === "SUPER_ADMIN"
+    14→//   - Every access attempt is logged to AuditLog
+    15→//   - TOTP 2FA optional at enrollment, required for sensitive ops once on
+    16→//
+    17→// Authority principle:
+    18→//   - superAdminUserId is AUTHORITATIVE in SystemSettings
+    19→//   - Email is metadata only — can drift, never used for access checks
+    20→// ============================================================================
+    21→
+    22→import { SignJWT, jwtVerify } from "jose";
+    23→import bcrypt from "bcryptjs";
+    24→import * as OTPAuth from "otpauth";
+    25→import QRCode from "qrcode";
+    26→import { cookies } from "next/headers";
+    27→import { db } from "@/lib/db";
+    28→import { logger } from "@/lib/logger";
+    29→
+    30→// ---- Constants -------------------------------------------------------------
+    31→
+    32→export const SUPER_ADMIN_ROLE = "SUPER_ADMIN";
+    33→export const USER_ROLE = "USER";
+    34→
+    35→export const SESSION_COOKIE = "planned-session";
+    36→const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
+    37→const BCRYPT_COST = 12;
+    38→const MAX_LOGIN_ATTEMPTS = 10;
+    39→const LOCKOUT_MINUTES = 30;
+    40→const TOTP_WINDOW = 1; // allow ±1 step (30s each direction)
+    41→const BACKUP_CODE_COUNT = 8;
+    42→
+    43→// ---- JWT secret ------------------------------------------------------------
+    44→// In production this MUST be set via env. We HARD-FAIL if missing or default.
+    45→// This is non-negotiable — using a dev secret in prod = total auth compromise.
+    46→const INSECURE_DEFAULT = "DEV-ONLY-INSECURE-SECRET-DO-NOT-USE-IN-PRODUCTION-change-me-please";
+    47→const JWT_SECRET_STRING =
+    48→  process.env.JWT_SECRET ??
+    49→  process.env.NEXTAUTH_SECRET ??
+    50→  INSECURE_DEFAULT;
+    51→
+    52→if (
+    53→  process.env.NODE_ENV === "production" &&
+    54→  (JWT_SECRET_STRING === INSECURE_DEFAULT || JWT_SECRET_STRING.length < 32)
+    55→) {
+    56→  console.error(
+    57→    "\n" +
+    58→    "=".repeat(72) + "\n" +
+    59→    "FATAL: JWT_SECRET is missing or too short in production.\n" +
+    60→    "Authentication is compromised. Refusing to start.\n" +
+    61→    "Set JWT_SECRET in your environment to a 32+ character random string.\n" +
+    62→    "Generate one with: node -e \"console.log(crypto.randomBytes(48).toString('base64url'))\"\n" +
+    63→    "=".repeat(72) + "\n",
+    64→  );
+    65→  // In production, refuse to load. Throwing here prevents the module from
+    66→  // exporting anything usable.
+    67→  throw new Error("JWT_SECRET missing or insecure in production environment");
+    68→}
+    69→
+    70→const JWT_SECRET = new TextEncoder().encode(JWT_SECRET_STRING);
+    71→
+    72→// ---- Founder email (env-supplied default for /setup) ----------------------
+    73→
+    74→export const FOUNDER_EMAIL_DEFAULT =
+    75→  process.env.FOUNDER_EMAIL?.trim().toLowerCase() || "";
+    76→
+    77→// ---- Session types ---------------------------------------------------------
+    78→
+    79→export interface SessionPayload {
+    80→  sub: string; // user id
+    81→  email: string;
+    82→  role: string;
+    83→  iat?: number;
+    84→  exp?: number;
+    85→}
+    86→
+    87→export interface AuthUser {
+    88→  id: string;
+    89→  email: string;
+    90→  role: string;
+    91→  name: string;
+    92→  twoFactorEnabled: boolean;
+    93→}
+    94→
+    95→// ---- Password policy -------------------------------------------------------
+    96→// Enforced server-side everywhere a password is accepted. Client-side checks
+    97→// are decorative — this is the authoritative gate.
+    98→//   - minimum 12 characters
+    99→//   - at least one uppercase letter
+   100→//   - at least one lowercase letter
+   101→//   - at least one digit
+   102→// (Symbols recommended but not required — they're often problematic on
+   103→// mobile keyboards and the four rules above already defeat dictionary attacks
+   104→// when combined with 12+ length and bcrypt cost 12.)
+   105→
+   106→export const PASSWORD_MIN_LENGTH = 12;
+   107→
+   108→export function validatePasswordPolicy(password: string): {
+   109→  ok: boolean;
+   110→  error?: string;
+   111→} {
+   112→  if (password.length < PASSWORD_MIN_LENGTH) {
+   113→    return { ok: false, error: `Password must be at least ${PASSWORD_MIN_LENGTH} characters` };
+   114→  }
+   115→  if (!/[A-Z]/.test(password)) {
+   116→    return { ok: false, error: "Password must contain at least one uppercase letter" };
+   117→  }
+   118→  if (!/[a-z]/.test(password)) {
+   119→    return { ok: false, error: "Password must contain at least one lowercase letter" };
+   120→  }
+   121→  if (!/[0-9]/.test(password)) {
+   122→    return { ok: false, error: "Password must contain at least one digit" };
+   123→  }
+   124→  return { ok: true };
+   125→}
+   126→
+   127→// ---- Password hashing ------------------------------------------------------
+   128→
+   129→export async function hashPassword(password: string): Promise<string> {
+   130→  return bcrypt.hash(password, BCRYPT_COST);
+   131→}
+   132→
+   133→export async function verifyPassword(
+   134→  password: string,
+   135→  hash: string,
+   136→): Promise<boolean> {
+   137→  try {
+   138→    return await bcrypt.compare(password, hash);
+   139→  } catch {
+   140→    return false;
+   141→  }
+   142→}
+   143→
+   144→// ---- Security answer hashing (same treatment as passwords) -----------------
+   145→
+   146→export async function hashSecurityAnswer(answer: string): Promise<string> {
+   147→  // Normalize: trim, lowercase, collapse whitespace — so "Springfield"
+   148→  // and "  springfield " both match.
+   149→  const normalized = answer.trim().toLowerCase().replace(/\s+/g, " ");
+   150→  return bcrypt.hash(normalized, BCRYPT_COST);
+   151→}
+   152→
+   153→export async function verifySecurityAnswer(
+   154→  answer: string,
+   155→  hash: string,
+   156→): Promise<boolean> {
+   157→  const normalized = answer.trim().toLowerCase().replace(/\s+/g, " ");
+   158→  try {
+   159→    return await bcrypt.compare(normalized, hash);
+   160→  } catch {
+   161→    return false;
+   162→  }
+   163→}
+   164→
+   165→// ---- JWT session -----------------------------------------------------------
+   166→
+   167→export async function signSession(payload: SessionPayload): Promise<string> {
+   168→  return new SignJWT({ email: payload.email, role: payload.role })
+   169→    .setProtectedHeader({ alg: "HS256" })
+   170→    .setSubject(payload.sub)
+   171→    .setIssuedAt()
+   172→    .setExpirationTime(`${SESSION_TTL_SECONDS}s`)
+   173→    .sign(JWT_SECRET);
+   174→}
+   175→
+   176→async function verifySession(token: string): Promise<SessionPayload | null> {
+   177→  try {
+   178→    const { payload } = await jwtVerify(token, JWT_SECRET, {
+   179→      algorithms: ["HS256"],
+   180→    });
+   181→    if (
+   182→      typeof payload.sub !== "string" ||
+   183→      typeof payload.email !== "string" ||
+   184→      typeof payload.role !== "string"
+   185→    ) {
+   186→      return null;
+   187→    }
+   188→    return {
+   189→      sub: payload.sub,
+   190→      email: payload.email,
+   191→      role: payload.role,
+   192→      iat: payload.iat,
+   193→      exp: payload.exp,
+   194→    };
+   195→  } catch {
+   196→    return null;
+   197→  }
+   198→}
+   199→
+   200→// ---- Cookie helpers (server-side only) -------------------------------------
+   201→
+   202→export async function setSessionCookie(token: string): Promise<void> {
+   203→  const store = await cookies();
+   204→  store.set(SESSION_COOKIE, token, {
+   205→    httpOnly: true,
+   206→    secure: process.env.NODE_ENV === "production",
+   207→    sameSite: "strict",
+   208→    path: "/",
+   209→    maxAge: SESSION_TTL_SECONDS,
+   210→  });
+   211→}
+   212→
+   213→export async function clearSessionCookie(): Promise<void> {
+   214→  const store = await cookies();
+   215→  store.delete(SESSION_COOKIE);
+   216→}
+   217→
+   218→// Reads session from cookies(). Works in Server Components and Route Handlers.
+   219→// Does NOT work in middleware (use verifySessionFromRequest instead).
+   220→export async function getSession(): Promise<SessionPayload | null> {
+   221→  const store = await cookies();
+   222→  const token = store.get(SESSION_COOKIE)?.value;
+   223→  if (!token) return null;
+   224→  return verifySession(token);
+   225→}
+   226→
+   227→// Reads session from a raw cookie header string (for middleware use).
+   228→export async function getSessionFromCookieHeader(
+   229→  cookieHeader: string | null | undefined,
+   230→): Promise<SessionPayload | null> {
+   231→  if (!cookieHeader) return null;
+   232→  const cookies = Object.fromEntries(
+   233→    cookieHeader
+   234→      .split(";")
+   235→      .map((c) => c.trim().split("="))
+   236→      .filter(([k]) => k)
+   237→      .map(([k, ...rest]) => [k, decodeURIComponent(rest.join("="))]),
+   238→  );
+   239→  const token = cookies[SESSION_COOKIE];
+   240→  if (!token) return null;
+   241→  return verifySession(token);
+   242→}
+   243→
+   244→// ---- Authenticated user fetcher -------------------------------------------
+   245→
+   246→export async function getAuthUser(): Promise<AuthUser | null> {
+   247→  const session = await getSession();
+   248→  if (!session) return null;
+   249→
+   250→  // Always re-read role from DB — never trust the JWT alone.
+   251→  // If a SUPER_ADMIN is demoted, this catches it on next request.
+   252→  try {
+   253→    const user = await db.user.findUnique({
+   254→      where: { id: session.sub, deletedAt: null },
+   255→      select: {
+   256→        id: true,
+   257→        email: true,
+   258→        role: true,
+   259→        name: true,
+   260→        lockedUntil: true,
+   261→        twoFactorEnabled: true,
+   262→      },
+   263→    });
+   264→    if (!user) return null;
+   265→    if (user.lockedUntil && user.lockedUntil > new Date()) return null;
+   266→    return {
+   267→      id: user.id,
+   268→      email: user.email,
+   269→      role: user.role,
+   270→      name: user.name,
+   271→      twoFactorEnabled: user.twoFactorEnabled,
+   272→    };
+   273→  } catch (err) {
+   274→    logger.error("Failed to fetch auth user from DB", { err, sub: session.sub });
+   275→    return null;
+   276→  }
+   277→}
+   278→
+   279→// ---- Role checks -----------------------------------------------------------
+   280→
+   281→export function isSuperAdmin(user: AuthUser | null): boolean {
+   282→  return user?.role === SUPER_ADMIN_ROLE;
+   283→}
+   284→
+   285→// ---- Audit logging ---------------------------------------------------------
+   286→
+   287→export async function auditLog(params: {
+   288→  userId?: string;
+   289→  action: string;
+   290→  entityType?: string;
+   291→  entityId?: string;
+   292→  before?: unknown;
+   293→  after?: unknown;
+   294→  ipAddress?: string;
+   295→  userAgent?: string;
+   296→  success?: boolean;
+   297→}): Promise<void> {
+   298→  try {
+   299→    await db.auditLog.create({
+   300→      data: {
+   301→        userId: params.userId ?? null,
+   302→        familyId: null,
+   303→        action: params.action,
+   304→        entityType: params.entityType ?? "system",
+   305→        entityId: params.entityId ?? "-",
+   306→        before: params.before ? JSON.stringify(params.before) : null,
+   307→        after: params.after ? JSON.stringify(params.after) : null,
+   308→        ipAddress: params.ipAddress ?? null,
+   309→        userAgent: params.userAgent ?? null,
+   310→        success: params.success ?? true,
+   311→      },
+   312→    });
+   313→  } catch (err) {
+   314→    // Audit log must never break the request — log and continue.
+   315→    logger.error("Failed to write audit log", { err, action: params.action });
+   316→  }
+   317→}
+   318→
+   319→// ---- TOTP 2FA --------------------------------------------------------------
+   320→// RFC 6238 TOTP using SHA-1, 30s step, 6 digits — compatible with Google
+   321→// Authenticator, Authy, 1Password, Bitwarden, Microsoft Authenticator, etc.
+   322→// ============================================================================
+   323→
+   324→export interface TOTPSecret {
+   325→  base32: string;          // store this in DB
+   326→  otpauthUrl: string;      // for the QR code
+   327→  qrCodeDataUrl: string;   // ready to render in <img src=...>
+   328→}
+   329→
+   330→export async function generateTOTPSecret(userEmail: string): Promise<TOTPSecret> {
+   331→  const secret = new OTPAuth.Secret({ size: 20 });
+   332→
+   333→  const totp = new OTPAuth.TOTP({
+   334→    issuer: "Planned",
+   335→    label: userEmail,
+   336→    algorithm: "SHA1",
+   337→    digits: 6,
+   338→    period: 30,
+   339→    secret,
+   340→  });
+   341→
+   342→  const otpauthUrl = totp.toString();
+   343→  const qrCodeDataUrl = await QRCode.toDataURL(otpauthUrl, {
+   344→    margin: 1,
+   345→    width: 240,
+   346→    color: { dark: "#0A4D5C", light: "#FFFFFF" },
+   347→  });
+   348→
+   349→  return {
+   350→    base32: secret.base32,
+   351→    otpauthUrl,
+   352→    qrCodeDataUrl,
+   353→  };
+   354→}
+   355→
+   356→export function verifyTOTP(token: string, base32Secret: string): boolean {
+   357→  if (!/^\d{6}$/.test(token)) return false;
+   358→  const secret = OTPAuth.Secret.fromBase32(base32Secret);
+   359→  const totp = new OTPAuth.TOTP({
+   360→    issuer: "Planned",
+   361→    label: "",
+   362→    algorithm: "SHA1",
+   363→    digits: 6,
+   364→    period: 30,
+   365→    secret,
+   366→  });
+   367→  // otpauth returns 0 for invalid; we want a boolean.
+   368→  // window = TOTP_WINDOW allows ±1 step (30s each direction) for clock drift.
+   369→  const delta = totp.validate({ token, window: TOTP_WINDOW });
+   370→  return delta !== null;
+   371→}
+   372→
+   373→// Generate N single-use backup codes. Return both plaintext (to show user once)
+   374→// and bcrypt hashes (to store). Each plaintext code is 8 chars, dashed:
+   375→// e.g. "ABCD-1234-EFGH"
+   376→export async function generateBackupCodes(): Promise<{
+   377→  plaintext: string[];
+   378→  hashes: string[];
+   379→}> {
+   380→  const charset = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no ambiguous chars
+   381→  const plaintext: string[] = [];
+   382→  for (let i = 0; i < BACKUP_CODE_COUNT; i++) {
+   383→    const chars = Array.from(
+   384→      { length: 12 },
+   385→      () => charset[Math.floor(Math.random() * charset.length)],
+   386→    ).join("");
+   387→    plaintext.push(`${chars.slice(0, 4)}-${chars.slice(4, 8)}-${chars.slice(8, 12)}`);
+   388→  }
+   389→  const hashes = await Promise.all(plaintext.map((c) => bcrypt.hash(c, BCRYPT_COST)));
+   390→  return { plaintext, hashes };
+   391→}
+   392→
+   393→// Verify a backup code against the stored hash array, returning the index of
+   394→// the matched code (so the caller can remove it from the array).
+   395→export async function verifyBackupCode(
+   396→  candidate: string,
+   397→  hashesJson: string,
+   398→): Promise<number | null> {
+   399→  let hashes: string[] = [];
+   400→  try {
+   401→    hashes = JSON.parse(hashesJson);
+   402→  } catch {
+   403→    return null;
+   404→  }
+   405→  const normalized = candidate.trim().toUpperCase();
+   406→  for (let i = 0; i < hashes.length; i++) {
+   407→    const ok = await bcrypt.compare(normalized, hashes[i]);
+   408→    if (ok) return i;
+   409→  }
+   410→  return null;
+   411→}
+   412→
+   413→// ---- Safe user registration (NEVER trusts client role) --------------------
+   414→// Use this for ANY future public registration endpoint. It hardcodes role=USER
+   415→// and explicitly ignores any incoming `role` field. This is the only safe way
+   416→// to create non-founder accounts.
+   417→// ============================================================================
+   418→
+   419→export interface RegisterInput {
+   420→  email: string;
+   421→  password: string;
+   422→  name: string;
+   423→  // NOTE: deliberately no `role` field. Even if a caller passes role, we ignore.
+   424→}
+   425→
+   426→export async function registerUserAsUSER(input: RegisterInput): Promise<{
+   427→  ok: boolean;
+   428→  error?: string;
+   429→  userId?: string;
+   430→}> {
+   431→  const email = input.email.trim().toLowerCase();
+   432→  if (!email || !email.includes("@")) {
+   433→    return { ok: false, error: "Valid email required" };
+   434→  }
+   435→  const passwordCheck = validatePasswordPolicy(input.password);
+   436→  if (!passwordCheck.ok) {
+   437→    return { ok: false, error: passwordCheck.error };
+   438→  }
+   439→  if (input.name.trim().length < 2) {
+   440→    return { ok: false, error: "Name required" };
+   441→  }
+   442→
+   443→  // Check email not in use
+   444→  const existing = await db.user.findUnique({ where: { email } });
+   445→  if (existing) {
+   446→    return { ok: false, error: "Email already registered" };
+   447→  }
+   448→
+   449→  const passwordHash = await hashPassword(input.password);
+   450→
+   451→  // CRITICAL: role is hardcoded to USER_ROLE. NEVER accept this from the client.
+   452→  // Even if a future caller passes a role, we ignore it.
+   453→  const user = await db.user.create({
+   454→    data: {
+   455→      email,
+   456→      name: input.name.trim(),
+   457→      passwordHash,
+   458→      role: USER_ROLE, // <-- hardcoded, non-overridable
+   459→    },
+   460→  });
+   461→
+   462→  await auditLog({
+   463→    userId: user.id,
+   464→    action: "USER_REGISTERED",
+   465→    entityType: "user",
+   466→    entityId: user.id,
+   467→    after: { email: user.email, role: user.role },
+   468→    success: true,
+   469→  });
+   470→
+   471→  return { ok: true, userId: user.id };
+   472→}
+   473→
+   474→// ---- Login flow (2FA-aware) ------------------------------------------------
+   475→
+   476→export interface LoginResult {
+   477→  ok: boolean;
+   478→  error?: string;
+   479→  user?: AuthUser;
+   480→  /** When true, login requires a TOTP code via /api/auth/verify-2fa */
+   481→  twoFactorRequired?: boolean;
+   482→  /** Temporary token used to complete the 2FA step. Single-use, 5min expiry. */
+   483→  twoFactorChallenge?: string;
+   484→}
+   485→
+   486→// In-memory store of pending 2FA challenges. For production at scale, use
+   487→// Redis or DB-backed sessions. For Planned's single-admin scope, this is fine.
+   488→const twoFactorChallenges = new Map<
+   489→  string,
+   490→  { userId: string; expiresAt: number }
+   491→>();
+   492→const TWO_FACTOR_CHALLENGE_TTL_MS = 5 * 60 * 1000;
+   493→
+   494→function createTwoFactorChallenge(userId: string): string {
+   495→  const token = crypto.randomUUID() + crypto.randomUUID();
+   496→  twoFactorChallenges.set(token, {
+   497→    userId,
+   498→    expiresAt: Date.now() + TWO_FACTOR_CHALLENGE_TTL_MS,
+   499→  });
+   500→  return token;
+   501→}
+   502→
+   503→function consumeTwoFactorChallenge(token: string): string | null {
+   504→  const entry = twoFactorChallenges.get(token);
+   505→  if (!entry) return null;
+   506→  twoFactorChallenges.delete(token); // single-use
+   507→  if (Date.now() > entry.expiresAt) return null;
+   508→  return entry.userId;
+   509→}
+   510→
+   511→export async function attemptLogin(params: {
+   512→  email: string;
+   513→  password: string;
+   514→  ipAddress?: string;
+   515→  userAgent?: string;
+   516→}): Promise<LoginResult> {
+   517→  const email = params.email.trim().toLowerCase();
+   518→
+   519→  try {
+   520→    const user = await db.user.findUnique({
+   521→      where: { email },
+   522→    });
+   523→
+   524→    if (!user || !user.passwordHash || user.deletedAt) {
+   525→      // Don't reveal whether email exists — log and fail uniformly.
+   526→      await auditLog({
+   527→        action: "LOGIN_FAILED",
+   528→        entityType: "user",
+   529→        entityId: email,
+   530→        ipAddress: params.ipAddress,
+   531→        userAgent: params.userAgent,
+   532→        success: false,
+   533→      });
+   534→      return { ok: false, error: "Invalid email or password" };
+   535→    }
+   536→
+   537→    // Check lockout
+   538→    if (user.lockedUntil && user.lockedUntil > new Date()) {
+   539→      await auditLog({
+   540→        userId: user.id,
+   541→        action: "LOGIN_LOCKED",
+   542→        entityType: "user",
+   543→        entityId: user.id,
+   544→        ipAddress: params.ipAddress,
+   545→        userAgent: params.userAgent,
+   546→        success: false,
+   547→      });
+   548→      return {
+   549→        ok: false,
+   550→        error: "Account locked. Try again later or use security question recovery.",
+   551→      };
+   552→    }
+   553→
+   554→    const passwordOk = await verifyPassword(params.password, user.passwordHash);
+   555→    if (!passwordOk) {
+   556→      const newAttempts = user.failedLoginAttempts + 1;
+   557→      const shouldLock = newAttempts >= MAX_LOGIN_ATTEMPTS;
+   558→      await db.user.update({
+   559→        where: { id: user.id },
+   560→        data: {
+   561→          failedLoginAttempts: newAttempts,
+   562→          lockedUntil: shouldLock
+   563→            ? new Date(Date.now() + LOCKOUT_MINUTES * 60 * 1000)
+   564→            : null,
+   565→        },
+   566→      });
+   567→      await auditLog({
+   568→        userId: user.id,
+   569→        action: "LOGIN_FAILED",
+   570→        entityType: "user",
+   571→        entityId: user.id,
+   572→        ipAddress: params.ipAddress,
+   573→        userAgent: params.userAgent,
+   574→        success: false,
+   575→        after: { attempts: newAttempts, locked: shouldLock },
+   576→      });
+   577→      return { ok: false, error: "Invalid email or password" };
+   578→    }
+   579→
+   580→    // Password OK — if 2FA enabled, issue a challenge instead of session
+   581→    if (user.twoFactorEnabled && user.twoFactorSecret) {
+   582→      const challenge = createTwoFactorChallenge(user.id);
+   583→      await auditLog({
+   584→        userId: user.id,
+   585→        action: "LOGIN_2FA_CHALLENGE_ISSUED",
+   586→        entityType: "user",
+   587→        entityId: user.id,
+   588→        ipAddress: params.ipAddress,
+   589→        userAgent: params.userAgent,
+   590→        success: true,
+   591→      });
+   592→      return {
+   593→        ok: false,
+   594→        twoFactorRequired: true,
+   595→        twoFactorChallenge: challenge,
+   596→        error: "Two-factor authentication required",
+   597→      };
+   598→    }
+   599→
+   600→    // No 2FA — reset counters and issue session
+   601→    await db.user.update({
+   602→      where: { id: user.id },
+   603→      data: {
+   604→        failedLoginAttempts: 0,
+   605→        lockedUntil: null,
+   606→        lastLoginAt: new Date(),
+   607→      },
+   608→    });
+   609→
+   610→    const token = await signSession({
+   611→      sub: user.id,
+   612→      email: user.email,
+   613→      role: user.role,
+   614→    });
+   615→    await setSessionCookie(token);
+   616→
+   617→    await auditLog({
+   618→      userId: user.id,
+   619→      action: "LOGIN_SUCCESS",
+   620→      entityType: "user",
+   621→      entityId: user.id,
+   622→      ipAddress: params.ipAddress,
+   623→      userAgent: params.userAgent,
+   624→      success: true,
+   625→    });
+   626→
+   627→    return {
+   628→      ok: true,
+   629→      user: { id: user.id, email: user.email, role: user.role, name: user.name, twoFactorEnabled: user.twoFactorEnabled },
+   630→    };
+   631→  } catch (err) {
+   632→    logger.error("Login error", { err, email });
+   633→    return { ok: false, error: "An unexpected error occurred" };
+   634→  }
+   635→}
+   636→
+   637→// ---- Complete login with 2FA ------------------------------------------------
+   638→
+   639→export interface Complete2FAResult {
+   640→  ok: boolean;
+   641→  error?: string;
+   642→  user?: AuthUser;
+   643→}
+   644→
+   645→export async function completeLoginWith2FA(params: {
+   646→  challenge: string;
+   647→  code: string;
+   648→  ipAddress?: string;
+   649→  userAgent?: string;
+   650→}): Promise<Complete2FAResult> {
+   651→  try {
+   652→    const userId = consumeTwoFactorChallenge(params.challenge);
+   653→    if (!userId) {
+   654→      return { ok: false, error: "Invalid or expired 2FA challenge" };
+   655→    }
+   656→
+   657→    const user = await db.user.findUnique({
+   658→      where: { id: userId, deletedAt: null },
+   659→    });
+   660→    if (!user || !user.twoFactorEnabled || !user.twoFactorSecret) {
+   661→      return { ok: false, error: "2FA not enabled for this account" };
+   662→    }
+   663→
+   664→    // Try TOTP first
+   665→    let verified = false;
+   666→    let usedBackupIndex: number | null = null;
+   667→
+   668→    if (verifyTOTP(params.code, user.twoFactorSecret)) {
+   669→      verified = true;
+   670→    } else if (user.twoFactorBackupCodesHash) {
+   671→      // Try backup code
+   672→      usedBackupIndex = await verifyBackupCode(
+   673→        params.code,
+   674→        user.twoFactorBackupCodesHash,
+   675→      );
+   676→      if (usedBackupIndex !== null) {
+   677→        verified = true;
+   678→        // Remove the used backup code from the array
+   679→        const hashes: string[] = JSON.parse(user.twoFactorBackupCodesHash);
+   680→        hashes.splice(usedBackupIndex, 1);
+   681→        await db.user.update({
+   682→          where: { id: user.id },
+   683→          data: { twoFactorBackupCodesHash: JSON.stringify(hashes) },
+   684→        });
+   685→      }
+   686→    }
+   687→
+   688→    if (!verified) {
+   689→      await auditLog({
+   690→        userId: user.id,
+   691→        action: "LOGIN_2FA_FAILED",
+   692→        entityType: "user",
+   693→        entityId: user.id,
+   694→        ipAddress: params.ipAddress,
+   695→        userAgent: params.userAgent,
+   696→        success: false,
+   697→      });
+   698→      return { ok: false, error: "Invalid 2FA code" };
+   699→    }
+   700→
+   701→    // Success — reset counters and issue session
+   702→    await db.user.update({
+   703→      where: { id: user.id },
+   704→      data: {
+   705→        failedLoginAttempts: 0,
+   706→        lockedUntil: null,
+   707→        lastLoginAt: new Date(),
+   708→      },
+   709→    });
+   710→
+   711→    const token = await signSession({
+   712→      sub: user.id,
+   713→      email: user.email,
+   714→      role: user.role,
+   715→    });
+   716→    await setSessionCookie(token);
+   717→
+   718→    await auditLog({
+   719→      userId: user.id,
+   720→      action: usedBackupIndex !== null ? "LOGIN_2FA_BACKUP_SUCCESS" : "LOGIN_2FA_SUCCESS",
+   721→      entityType: "user",
+   722→      entityId: user.id,
+   723→      ipAddress: params.ipAddress,
+   724→      userAgent: params.userAgent,
+   725→      success: true,
+   726→      after: { backupCodesRemaining: usedBackupIndex !== null },
+   727→    });
+   728→
+   729→    return {
+   730→      ok: true,
+   731→      user: { id: user.id, email: user.email, role: user.role, name: user.name, twoFactorEnabled: user.twoFactorEnabled },
+   732→    };
+   733→  } catch (err) {
+   734→    logger.error("2FA complete error", { err });
+   735→    return { ok: false, error: "An unexpected error occurred" };
+   736→  }
+   737→}
+   738→
+   739→// ---- Logout flow -----------------------------------------------------------
+   740→
+   741→export async function logout(params?: {
+   742→  userId?: string;
+   743→  ipAddress?: string;
+   744→  userAgent?: string;
+   745→}): Promise<void> {
+   746→  await clearSessionCookie();
+   747→  if (params?.userId) {
+   748→    await auditLog({
+   749→      userId: params.userId,
+   750→      action: "LOGOUT",
+   751→      entityType: "user",
+   752→      entityId: params.userId,
+   753→      ipAddress: params.ipAddress,
+   754→      userAgent: params.userAgent,
+   755→      success: true,
+   756→    });
+   757→  }
+   758→}
+   759→
+   760→// ---- System initialization check -------------------------------------------
+   761→
+   762→export async function getSystemSettings() {
+   763→  try {
+   764→    const settings = await db.systemSettings.findUnique({
+   765→      where: { id: "singleton" },
+   766→    });
+   767→    return settings;
+   768→  } catch (err) {
+   769→    logger.error("Failed to read system settings", { err });
+   770→    return null;
+   771→  }
+   772→}
+   773→
+   774→export async function isSystemInitialized(): Promise<boolean> {
+   775→  const settings = await getSystemSettings();
+   776→  return !!settings?.isInitialized;
+   777→}
+   778→
+   779→// ---- Founder setup ---------------------------------------------------------
+   780→
+   781→export interface SetupResult {
+   782→  ok: boolean;
+   783→  error?: string;
+   784→  user?: AuthUser;
+   785→}
+   786→
+   787→export async function performFounderSetup(params: {
+   788→  email: string;
+   789→  password: string;
+   790→  name: string;
+   791→  securityQuestion: string;
+   792→  securityAnswer: string;
+   793→  // Optional TOTP enrollment at setup time
+   794→  totpSecret?: string;        // base32 secret (from generateTOTPSecret)
+   795→  totpVerificationCode?: string; // 6-digit code to confirm enrollment
+   796→  ipAddress?: string;
+   797→  userAgent?: string;
+   798→}): Promise<SetupResult> {
+   799→  const email = params.email.trim().toLowerCase();
+   800→
+   801→  // Validate inputs
+   802→  if (!email || !email.includes("@")) {
+   803→    return { ok: false, error: "A valid email is required" };
+   804→  }
+   805→  const passwordCheck = validatePasswordPolicy(params.password);
+   806→  if (!passwordCheck.ok) {
+   807→    return { ok: false, error: passwordCheck.error };
+   808→  }
+   809→  if (params.name.trim().length < 2) {
+   810→    return { ok: false, error: "Name is required" };
+   811→  }
+   812→  if (params.securityQuestion.trim().length < 10) {
+   813→    return { ok: false, error: "Security question must be at least 10 characters" };
+   814→  }
+   815→  if (params.securityAnswer.trim().length < 2) {
+   816→    return { ok: false, error: "Security answer is required" };
+   817→  }
+   818→
+   819→  // CRITICAL: refuse if already initialized
+   820→  const alreadyInitialized = await isSystemInitialized();
+   821→  if (alreadyInitialized) {
+   822→    await auditLog({
+   823→      action: "SETUP_REFUSED_ALREADY_INITIALIZED",
+   824→      entityType: "system",
+   825→      entityId: "singleton",
+   826→      ipAddress: params.ipAddress,
+   827→      userAgent: params.userAgent,
+   828→      success: false,
+   829→    });
+   830→    return { ok: false, error: "System is already initialized" };
+   831→  }
+   832→
+   833→  // Refuse if any SUPER_ADMIN already exists (defensive — shouldn't happen)
+   834→  try {
+   835→    const existing = await db.user.findFirst({
+   836→      where: { role: SUPER_ADMIN_ROLE, deletedAt: null },
+   837→    });
+   838→    if (existing) {
+   839→      return {
+   840→        ok: false,
+   841→        error: "A super admin already exists. Setup is no longer available.",
+   842→      };
+   843→    }
+   844→  } catch (err) {
+   845→    logger.error("Setup: failed to check existing super admin", { err });
+   846→    return { ok: false, error: "Setup check failed" };
+   847→  }
+   848→
+   849→  // Validate TOTP enrollment if provided
+   850→  let enrollTotp = false;
+   851→  if (params.totpSecret && params.totpVerificationCode) {
+   852→    if (!verifyTOTP(params.totpVerificationCode, params.totpSecret)) {
+   853→      return { ok: false, error: "Invalid 2FA verification code. Please try again." };
+   854→    }
+   855→    enrollTotp = true;
+   856→  }
+   857→
+   858→  // Hash credentials
+   859→  const [passwordHash, securityAnswerHash] = await Promise.all([
+   860→    hashPassword(params.password),
+   861→    hashSecurityAnswer(params.securityAnswer),
+   862→  ]);
+   863→
+   864→  // Generate backup codes if enrolling in 2FA
+   865→  let backupCodesHash: string | null = null;
+   866→  let backupCodesPlaintext: string[] | null = null;
+   867→  if (enrollTotp) {
+   868→    const { plaintext, hashes } = await generateBackupCodes();
+   869→    backupCodesHash = JSON.stringify(hashes);
+   870→    backupCodesPlaintext = plaintext;
+   871→  }
+   872→
+   873→  // Create the founder — role HARDCODED to SUPER_ADMIN, not from client.
+   874→  // This is the ONE place SUPER_ADMIN is set; everywhere else uses USER_ROLE.
+   875→  const founder = await db.user.create({
+   876→    data: {
+   877→      email,
+   878→      name: params.name.trim(),
+   879→      passwordHash,
+   880→      role: SUPER_ADMIN_ROLE, // <-- hardcoded, the only SUPER_ADMIN creation path
+   881→      securityQuestion: params.securityQuestion.trim(),
+   882→      securityAnswerHash,
+   883→      emailVerified: new Date(),
+   884→      lastLoginAt: new Date(),
+   885→      twoFactorSecret: params.totpSecret ?? null,
+   886→      twoFactorEnabled: enrollTotp,
+   887→      twoFactorEnrolledAt: enrollTotp ? new Date() : null,
+   888→      twoFactorBackupCodesHash: backupCodesHash,
+   889→    },
+   890→  });
+   891→
+   892→  // Mark system as initialized — superAdminUserId is AUTHORITATIVE.
+   893→  // superAdminEmail is metadata only (mirror of User.email at setup time).
+   894→  await db.systemSettings.upsert({
+   895→    where: { id: "singleton" },
+   896→    update: {
+   897→      isInitialized: true,
+   898→      superAdminUserId: founder.id, // <-- AUTHORITATIVE
+   899→      superAdminEmail: founder.email, // <-- metadata only
+   900→      setupCompletedAt: new Date(),
+   901→    },
+   902→    create: {
+   903→      id: "singleton",
+   904→      isInitialized: true,
+   905→      superAdminUserId: founder.id,
+   906→      superAdminEmail: founder.email,
+   907→      setupCompletedAt: new Date(),
+   908→    },
+   909→  });
+   910→
+   911→  // Issue session
+   912→  const token = await signSession({
+   913→    sub: founder.id,
+   914→    email: founder.email,
+   915→    role: founder.role,
+   916→  });
+   917→  await setSessionCookie(token);
+   918→
+   919→  await auditLog({
+   920→    userId: founder.id,
+   921→    action: "FOUNDER_SETUP_COMPLETED",
+   922→    entityType: "system",
+   923→    entityId: "singleton",
+   924→    after: {
+   925→      email: founder.email,
+   926→      name: founder.name,
+   927→      userId: founder.id, // log the authoritative ID
+   928→      twoFactorEnabled: enrollTotp,
+   929→    },
+   930→    ipAddress: params.ipAddress,
+   931→    userAgent: params.userAgent,
+   932→    success: true,
+   933→  });
+   934→
+   935→  return {
+   936→    ok: true,
+   937→    user: {
+   938→      id: founder.id,
+   939→      email: founder.email,
+   940→      role: founder.role,
+   941→      name: founder.name,
+   942→      twoFactorEnabled: enrollTotp,
+   943→    },
+   944→  };
+   945→}
+   946→
+   947→// ---- 2FA enrollment (for existing users via /admin/security) ---------------
+   948→
+   949→export interface Enroll2FAResult {
+   950→  ok: boolean;
+   951→  error?: string;
+   952→  backupCodes?: string[]; // plaintext — shown once, never stored
+   953→}
+   954→
+   955→export async function enroll2FA(params: {
+   956→  userId: string;
+   957→  currentPassword: string;
+   958→  totpSecret: string;       // pre-generated by generateTOTPSecret
+   959→  totpVerificationCode: string;
+   960→  ipAddress?: string;
+   961→  userAgent?: string;
+   962→}): Promise<Enroll2FAResult> {
+   963→  try {
+   964→    const user = await db.user.findUnique({
+   965→      where: { id: params.userId, deletedAt: null },
+   966→    });
+   967→    if (!user || !user.passwordHash) {
+   968→      return { ok: false, error: "User not found" };
+   969→    }
+   970→
+   971→    const passwordOk = await verifyPassword(params.currentPassword, user.passwordHash);
+   972→    if (!passwordOk) {
+   973→      await auditLog({
+   974→        userId: params.userId,
+   975→        action: "2FA_ENROLL_WRONG_PASSWORD",
+   976→        entityType: "user",
+   977→        entityId: params.userId,
+   978→        ipAddress: params.ipAddress,
+   979→        userAgent: params.userAgent,
+   980→        success: false,
+   981→      });
+   982→      return { ok: false, error: "Current password is incorrect" };
+   983→    }
+   984→
+   985→    if (!verifyTOTP(params.totpVerificationCode, params.totpSecret)) {
+   986→      return { ok: false, error: "Invalid 2FA verification code" };
+   987→    }
+   988→
+   989→    const { plaintext, hashes } = await generateBackupCodes();
+   990→
+   991→    await db.user.update({
+   992→      where: { id: params.userId },
+   993→      data: {
+   994→        twoFactorSecret: params.totpSecret,
+   995→        twoFactorEnabled: true,
+   996→        twoFactorEnrolledAt: new Date(),
+   997→        twoFactorBackupCodesHash: JSON.stringify(hashes),
+   998→      },
+   999→    });
+  1000→
+  1001→    await auditLog({
+  1002→      userId: params.userId,
+  1003→      action: "2FA_ENROLLED",
+  1004→      entityType: "user",
+  1005→      entityId: params.userId,
+  1006→      ipAddress: params.ipAddress,
+  1007→      userAgent: params.userAgent,
+  1008→      success: true,
+  1009→    });
+  1010→
+  1011→    return { ok: true, backupCodes: plaintext };
+  1012→  } catch (err) {
+  1013→    logger.error("2FA enrollment error", { err });
+  1014→    return { ok: false, error: "Enrollment failed" };
+  1015→  }
+  1016→}
+  1017→
+  1018→// ---- Change password (founder-initiated reset) -----------------------------
+  1019→// The founder can change their own password from /admin/security. Requires:
+  1020→//   - current password (proves identity)
+  1021→//   - new password (must pass password policy)
+  1022→//   - 2FA code (if 2FA is enabled — defense in depth)
+  1023→//
+  1024→// CRITICAL: this NEVER changes the user ID. The founder account remains
+  1025→// bound to the same user ID forever — only the passwordHash field updates.
+  1026→
+  1027→export async function changePassword(params: {
+  1028→  userId: string;
+  1029→  currentPassword: string;
+  1030→  newPassword: string;
+  1031→  totpCode?: string;
+  1032→  ipAddress?: string;
+  1033→  userAgent?: string;
+  1034→}): Promise<{ ok: boolean; error?: string }> {
+  1035→  try {
+  1036→    const user = await db.user.findUnique({
+  1037→      where: { id: params.userId, deletedAt: null },
+  1038→    });
+  1039→    if (!user || !user.passwordHash) {
+  1040→      return { ok: false, error: "Account not found" };
+  1041→    }
+  1042→
+  1043→    // Verify current password
+  1044→    const passwordOk = await verifyPassword(params.currentPassword, user.passwordHash);
+  1045→    if (!passwordOk) {
+  1046→      await auditLog({
+  1047→        userId: params.userId,
+  1048→        action: "PASSWORD_CHANGE_WRONG_PASSWORD",
+  1049→        entityType: "user",
+  1050→        entityId: params.userId,
+  1051→        ipAddress: params.ipAddress,
+  1052→        userAgent: params.userAgent,
+  1053→        success: false,
+  1054→      });
+  1055→      return { ok: false, error: "Current password is incorrect" };
+  1056→    }
+  1057→
+  1058→    // If 2FA enabled, require TOTP code
+  1059→    if (user.twoFactorEnabled && user.twoFactorSecret) {
+  1060→      if (!params.totpCode) {
+  1061→        return { ok: false, error: "2FA code is required to change password" };
+  1062→      }
+  1063→      let twoFactorOk = verifyTOTP(params.totpCode, user.twoFactorSecret);
+  1064→      if (!twoFactorOk && user.twoFactorBackupCodesHash) {
+  1065→        const idx = await verifyBackupCode(params.totpCode, user.twoFactorBackupCodesHash);
+  1066→        if (idx !== null) {
+  1067→          twoFactorOk = true;
+  1068→          const hashes: string[] = JSON.parse(user.twoFactorBackupCodesHash);
+  1069→          hashes.splice(idx, 1);
+  1070→          await db.user.update({
+  1071→            where: { id: params.userId },
+  1072→            data: { twoFactorBackupCodesHash: JSON.stringify(hashes) },
+  1073→          });
+  1074→        }
+  1075→      }
+  1076→      if (!twoFactorOk) {
+  1077→        await auditLog({
+  1078→          userId: params.userId,
+  1079→          action: "PASSWORD_CHANGE_2FA_FAILED",
+  1080→          entityType: "user",
+  1081→          entityId: params.userId,
+  1082→          ipAddress: params.ipAddress,
+  1083→          userAgent: params.userAgent,
+  1084→          success: false,
+  1085→        });
+  1086→        return { ok: false, error: "Invalid 2FA code" };
+  1087→      }
+  1088→    }
+  1089→
+  1090→    // Validate new password against policy
+  1091→    const policyCheck = validatePasswordPolicy(params.newPassword);
+  1092→    if (!policyCheck.ok) {
+  1093→      return { ok: false, error: policyCheck.error };
+  1094→    }
+  1095→
+  1096→    // Refuse if new password equals current password
+  1097→    if (params.newPassword === params.currentPassword) {
+  1098→      return { ok: false, error: "New password must be different from current password" };
+  1099→    }
+  1100→
+  1101→    // Apply — NOTE: only passwordHash updates. User ID, email, role, 2FA
+  1102→    // enrollment, and all other identity fields are untouched.
+  1103→    const newHash = await hashPassword(params.newPassword);
+  1104→    await db.user.update({
+  1105→      where: { id: params.userId },
+  1106→      data: { passwordHash: newHash },
+  1107→    });
+  1108→
+  1109→    await auditLog({
+  1110→      userId: params.userId,
+  1111→      action: "PASSWORD_CHANGED",
+  1112→      entityType: "user",
+  1113→      entityId: params.userId,
+  1114→      ipAddress: params.ipAddress,
+  1115→      userAgent: params.userAgent,
+  1116→      success: true,
+  1117→      // Don't log passwords — even hashed. Just confirm the action.
+  1118→      after: { policy: "12+ chars, upper+lower+digit", userIdPreserved: params.userId },
+  1119→    });
+  1120→
+  1121→    return { ok: true };
+  1122→  } catch (err) {
+  1123→    logger.error("Change password error", { err });
+  1124→    return { ok: false, error: "Failed to change password" };
+  1125→  }
+  1126→}
+  1127→
+  1128→// ---- Disable 2FA -----------------------------------------------------------
+  1129→
+  1130→export async function disable2FA(params: {
+  1131→  userId: string;
+  1132→  currentPassword: string;
+  1133→  totpCode: string;
+  1134→  ipAddress?: string;
+  1135→  userAgent?: string;
+  1136→}): Promise<{ ok: boolean; error?: string }> {
+  1137→  try {
+  1138→    const user = await db.user.findUnique({
+  1139→      where: { id: params.userId, deletedAt: null },
+  1140→    });
+  1141→    if (!user || !user.passwordHash) {
+  1142→      return { ok: false, error: "User not found" };
+  1143→    }
+  1144→
+  1145→    const passwordOk = await verifyPassword(params.currentPassword, user.passwordHash);
+  1146→    if (!passwordOk) {
+  1147→      return { ok: false, error: "Current password is incorrect" };
+  1148→    }
+  1149→
+  1150→    // Require a valid TOTP code (or backup code) to disable — prevents
+  1151→    // someone with just the password from turning off 2FA.
+  1152→    if (!user.twoFactorSecret) {
+  1153→      return { ok: false, error: "2FA is not enabled" };
+  1154→    }
+  1155→
+  1156→    let verified = verifyTOTP(params.totpCode, user.twoFactorSecret);
+  1157→    if (!verified && user.twoFactorBackupCodesHash) {
+  1158→      const idx = await verifyBackupCode(params.totpCode, user.twoFactorBackupCodesHash);
+  1159→      verified = idx !== null;
+  1160→    }
+  1161→    if (!verified) {
+  1162→      return { ok: false, error: "Invalid 2FA code" };
+  1163→    }
+  1164→
+  1165→    await db.user.update({
+  1166→      where: { id: params.userId },
+  1167→      data: {
+  1168→        twoFactorSecret: null,
+  1169→        twoFactorEnabled: false,
+  1170→        twoFactorEnrolledAt: null,
+  1171→        twoFactorBackupCodesHash: null,
+  1172→      },
+  1173→    });
+  1174→
+  1175→    await auditLog({
+  1176→      userId: params.userId,
+  1177→      action: "2FA_DISABLED",
+  1178→      entityType: "user",
+  1179→      entityId: params.userId,
+  1180→      ipAddress: params.ipAddress,
+  1181→      userAgent: params.userAgent,
+  1182→      success: true,
+  1183→    });
+  1184→
+  1185→    return { ok: true };
+  1186→  } catch (err) {
+  1187→    logger.error("2FA disable error", { err });
+  1188→    return { ok: false, error: "Failed to disable 2FA" };
+  1189→  }
+  1190→}
+  1191→

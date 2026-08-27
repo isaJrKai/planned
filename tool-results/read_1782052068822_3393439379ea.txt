@@ -1,0 +1,884 @@
+     1→"use client";
+     2→
+     3→// SecuritySettingsForm — change admin email + security Q&A + 2FA management
+     4→// ============================================================================
+     5→// Sections:
+     6→//   1. Identity confirmation (current password — always required)
+     7→//   2. Email change (if 2FA enabled, requires TOTP code)
+     8→//   3. Security Q&A change (if 2FA enabled, requires TOTP code)
+     9→//   4. 2FA enrollment / disable / backup code viewing
+    10→//
+    11→// If 2FA is enabled, the form includes a TOTP code field that is required
+    12→// for any email or Q&A change.
+    13→// ============================================================================
+    14→
+    15→import { useState, FormEvent } from "react";
+    16→import { useRouter } from "next/navigation";
+    17→import {
+    18→  Mail, ShieldQuestion, Lock, Eye, EyeOff, Check, ArrowRight,
+    19→  Smartphone, KeyRound, Download, AlertTriangle, RefreshCw, Key,
+    20→} from "lucide-react";
+    21→
+    22→interface Props {
+    23→  currentEmail: string;
+    24→  twoFactorEnabled: boolean;
+    25→  backupCodesRemaining: number;
+    26→}
+    27→
+    28→const SUGGESTED_QUESTIONS = [
+    29→  "What is the full name of your first childhood best friend?",
+    30→  "What was the model of your first car?",
+    31→  "What is the middle name of your oldest sibling?",
+    32→  "What was the name of the street you grew up on?",
+    33→  "What was the name of your favorite teacher in primary school?",
+    34→  "What is the title of the first book you remember loving?",
+    35→];
+    36→
+    37→export function SecuritySettingsForm({
+    38→  currentEmail,
+    39→  twoFactorEnabled: initialTwoFactorEnabled,
+    40→  backupCodesRemaining: initialBackupCodesRemaining,
+    41→}: Props) {
+    42→  const router = useRouter();
+    43→
+    44→  const [currentPassword, setCurrentPassword] = useState("");
+    45→  const [showCurrent, setShowCurrent] = useState(false);
+    46→
+    47→  // Email change
+    48→  const [wantEmailChange, setWantEmailChange] = useState(false);
+    49→  const [newEmail, setNewEmail] = useState("");
+    50→
+    51→  // Security Q&A change
+    52→  const [wantQChange, setWantQChange] = useState(false);
+    53→  const [newQuestion, setNewQuestion] = useState(SUGGESTED_QUESTIONS[0]);
+    54→  const [newAnswer, setNewAnswer] = useState("");
+    55→
+    56→  // TOTP code (required for any change if 2FA enabled)
+    57→  const [totpCode, setTotpCode] = useState("");
+    58→
+    59→  // Form state
+    60→  const [submitting, setSubmitting] = useState(false);
+    61→  const [error, setError] = useState<string | null>(null);
+    62→  const [success, setSuccess] = useState<string | null>(null);
+    63→
+    64→  // 2FA management state
+    65→  const [twoFactorEnabled, setTwoFactorEnabled] = useState(initialTwoFactorEnabled);
+    66→  const [backupCodesRemaining, setBackupCodesRemaining] = useState(initialBackupCodesRemaining);
+    67→
+    68→  // 2FA enrollment flow
+    69→  const [enrollmentStep, setEnrollmentStep] = useState<"idle" | "qr" | "verify" | "backup">("idle");
+    70→  const [totpSecret, setTotpSecret] = useState<string | null>(null);
+    71→  const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null);
+    72→  const [enrollTotpCode, setEnrollTotpCode] = useState("");
+    73→  const [enrollPassword, setEnrollPassword] = useState("");
+    74→  const [backupCodes, setBackupCodes] = useState<string[] | null>(null);
+    75→
+    76→  // 2FA disable flow
+    77→  const [disableTotpCode, setDisableTotpCode] = useState("");
+    78→  const [disablePassword, setDisablePassword] = useState("");
+    79→  const [showDisableForm, setShowDisableForm] = useState(false);
+    80→
+    81→  // Password change flow
+    82→  const [wantPasswordChange, setWantPasswordChange] = useState(false);
+    83→  const [newPassword, setNewPassword] = useState("");
+    84→  const [newPasswordConfirm, setNewPasswordConfirm] = useState("");
+    85→  const [showNewPassword, setShowNewPassword] = useState(false);
+    86→  const [passwordTotpCode, setPasswordTotpCode] = useState("");
+    87→
+    88→  const wantsChange = wantEmailChange || wantQChange;
+    89→  const canSubmit =
+    90→    wantsChange &&
+    91→    currentPassword.length > 0 &&
+    92→    (!wantEmailChange || (newEmail.includes("@") && newEmail.toLowerCase() !== currentEmail)) &&
+    93→    (!wantQChange || (newQuestion.trim().length >= 10 && newAnswer.trim().length >= 2)) &&
+    94→    (!twoFactorEnabled || totpCode.length >= 6); // 2FA gate
+    95→
+    96→  async function handleSubmit(e: FormEvent) {
+    97→    e.preventDefault();
+    98→    setError(null);
+    99→    setSuccess(null);
+   100→    setSubmitting(true);
+   101→
+   102→    try {
+   103→      const body: Record<string, string> = { currentPassword };
+   104→      if (wantEmailChange) body.newEmail = newEmail;
+   105→      if (wantQChange) {
+   106→        body.newSecurityQuestion = newQuestion;
+   107→        body.newSecurityAnswer = newAnswer;
+   108→      }
+   109→      if (twoFactorEnabled) body.totpCode = totpCode;
+   110→
+   111→      const res = await fetch("/api/admin/security", {
+   112→        method: "POST",
+   113→        headers: { "Content-Type": "application/json" },
+   114→        body: JSON.stringify(body),
+   115→      });
+   116→      const data = await res.json();
+   117→
+   118→      if (!res.ok || !data.ok) {
+   119→        setError(data.error ?? "Update failed");
+   120→        setSubmitting(false);
+   121→        return;
+   122→      }
+   123→
+   124→      const parts: string[] = [];
+   125→      if (data.changed?.includes("email")) parts.push("Email updated");
+   126→      if (data.changed?.includes("security_question")) parts.push("Security question updated");
+   127→      setSuccess(parts.join(" · ") + ". Your session has been refreshed.");
+   128→
+   129→      // Reset form
+   130→      setCurrentPassword("");
+   131→      setTotpCode("");
+   132→      setWantEmailChange(false);
+   133→      setWantQChange(false);
+   134→      setNewEmail("");
+   135→      setNewAnswer("");
+   136→      setSubmitting(false);
+   137→
+   138→      setTimeout(() => router.refresh(), 1500);
+   139→    } catch (err) {
+   140→      setError("Network error. Please try again.");
+   141→      setSubmitting(false);
+   142→    }
+   143→  }
+   144→
+   145→  // ---- 2FA enrollment handlers ----
+   146→
+   147→  async function startEnrollment() {
+   148→    setError(null);
+   149→    setEnrollmentStep("qr");
+   150→    try {
+   151→      const res = await fetch("/api/admin/2fa/enroll");
+   152→      const data = await res.json();
+   153→      if (!res.ok || !data.ok) {
+   154→        setError(data.error ?? "Failed to generate QR code");
+   155→        setEnrollmentStep("idle");
+   156→        return;
+   157→      }
+   158→      setTotpSecret(data.totpSecret);
+   159→      setQrCodeDataUrl(data.qrCodeDataUrl);
+   160→      setEnrollmentStep("verify");
+   161→    } catch {
+   162→      setError("Failed to load QR code");
+   163→      setEnrollmentStep("idle");
+   164→    }
+   165→  }
+   166→
+   167→  async function completeEnrollment() {
+   168→    setError(null);
+   169→    setSubmitting(true);
+   170→    try {
+   171→      const res = await fetch("/api/admin/2fa/enroll", {
+   172→        method: "POST",
+   173→        headers: { "Content-Type": "application/json" },
+   174→        body: JSON.stringify({
+   175→          currentPassword: enrollPassword,
+   176→          totpSecret,
+   177→          totpVerificationCode: enrollTotpCode,
+   178→        }),
+   179→      });
+   180→      const data = await res.json();
+   181→      if (!res.ok || !data.ok) {
+   182→        setError(data.error ?? "Enrollment failed");
+   183→        setSubmitting(false);
+   184→        return;
+   185→      }
+   186→      setBackupCodes(data.backupCodes ?? []);
+   187→      setTwoFactorEnabled(true);
+   188→      setBackupCodesRemaining(data.backupCodes?.length ?? 0);
+   189→      setEnrollmentStep("backup");
+   190→      setSubmitting(false);
+   191→    } catch {
+   192→      setError("Network error during enrollment");
+   193→      setSubmitting(false);
+   194→    }
+   195→  }
+   196→
+   197→  async function disableTwoFactor() {
+   198→    setError(null);
+   199→    setSubmitting(true);
+   200→    try {
+   201→      const res = await fetch("/api/admin/2fa/disable", {
+   202→        method: "POST",
+   203→        headers: { "Content-Type": "application/json" },
+   204→        body: JSON.stringify({
+   205→          currentPassword: disablePassword,
+   206→          totpCode: disableTotpCode,
+   207→        }),
+   208→      });
+   209→      const data = await res.json();
+   210→      if (!res.ok || !data.ok) {
+   211→        setError(data.error ?? "Failed to disable 2FA");
+   212→        setSubmitting(false);
+   213→        return;
+   214→      }
+   215→      setTwoFactorEnabled(false);
+   216→      setBackupCodesRemaining(0);
+   217→      setDisableTotpCode("");
+   218→      setDisablePassword("");
+   219→      setShowDisableForm(false);
+   220→      setSuccess("2FA disabled. Your account is now less secure — consider re-enabling.");
+   221→      setSubmitting(false);
+   222→    } catch {
+   223→      setError("Network error");
+   224→      setSubmitting(false);
+   225→    }
+   226→  }
+   227→
+   228→  // ---- Password change handler ----
+   229→
+   230→  async function handlePasswordChange() {
+   231→    setError(null);
+   232→    setSuccess(null);
+   233→
+   234→    if (newPassword !== newPasswordConfirm) {
+   235→      setError("New password and confirmation do not match");
+   236→      return;
+   237→    }
+   238→    if (newPassword === currentPassword) {
+   239→      setError("New password must be different from current password");
+   240→      return;
+   241→    }
+   242→
+   243→    setSubmitting(true);
+   244→    try {
+   245→      const body: Record<string, string> = {
+   246→        currentPassword,
+   247→        newPassword,
+   248→      };
+   249→      if (twoFactorEnabled) body.totpCode = passwordTotpCode;
+   250→
+   251→      const res = await fetch("/api/admin/password", {
+   252→        method: "POST",
+   253→        headers: { "Content-Type": "application/json" },
+   254→        body: JSON.stringify(body),
+   255→      });
+   256→      const data = await res.json();
+   257→      if (!res.ok || !data.ok) {
+   258→        setError(data.error ?? "Password change failed");
+   259→        setSubmitting(false);
+   260→        return;
+   261→      }
+   262→      setSuccess("Password changed. Your user ID and all other identity fields are unchanged.");
+   263→      setWantPasswordChange(false);
+   264→      setNewPassword("");
+   265→      setNewPasswordConfirm("");
+   266→      setPasswordTotpCode("");
+   267→      setCurrentPassword("");
+   268→      setSubmitting(false);
+   269→    } catch {
+   270→      setError("Network error");
+   271→      setSubmitting(false);
+   272→    }
+   273→  }
+   274→
+   275→  function downloadBackupCodes() {
+   276→    if (!backupCodes) return;
+   277→    const text = `Planned — 2FA Backup Codes\nGenerated: ${new Date().toISOString()}\n\n${backupCodes.join("\n")}\n\nEach code can be used once. Store these securely.`;
+   278→    const blob = new Blob([text], { type: "text/plain" });
+   279→    const url = URL.createObjectURL(blob);
+   280→    const a = document.createElement("a");
+   281→    a.href = url;
+   282→    a.download = `planned-backup-codes-${new Date().toISOString().split("T")[0]}.txt`;
+   283→    a.click();
+   284→    URL.revokeObjectURL(url);
+   285→  }
+   286→
+   287→  return (
+   288→    <div className="space-y-6">
+   289→      {/* Section: Identity confirmation */}
+   290→      <form onSubmit={handleSubmit} className="surface-wood-strong rounded-lg p-6 md:p-8 space-y-6">
+   291→        <section>
+   292→          <div className="flex items-center gap-2 mb-3">
+   293→            <Lock className="h-3.5 w-3.5" style={{ color: "var(--primary)" }} />
+   294→            <h2 className="font-editorial text-sm text-foreground tracking-wide">
+   295→              Confirm your identity
+   296→            </h2>
+   297→          </div>
+   298→          <p className="text-[11px] text-foreground/50 mb-3 leading-relaxed">
+   299→            Enter your current password to authorize any changes below.
+   300→            {twoFactorEnabled && (
+   301→              <span className="mt-1 block" style={{ color: "var(--primary)" }}>
+   302→                2FA is enabled — you will also need a TOTP code from your authenticator app.
+   303→              </span>
+   304→            )}
+   305→          </p>
+   306→          <div className="relative">
+   307→            <input
+   308→              type={showCurrent ? "text" : "password"}
+   309→              required
+   310→              value={currentPassword}
+   311→              onChange={(e) => setCurrentPassword(e.target.value)}
+   312→              placeholder="Current password"
+   313→              className="input-editorial pr-10"
+   314→              autoComplete="current-password"
+   315→            />
+   316→            <button
+   317→              type="button"
+   318→              onClick={() => setShowCurrent(!showCurrent)}
+   319→              className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded text-foreground/40 hover:text-foreground"
+   320→              aria-label={showCurrent ? "Hide" : "Show"}
+   321→            >
+   322→              {showCurrent ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+   323→            </button>
+   324→          </div>
+   325→
+   326→          {/* 2FA code required for changes */}
+   327→          {twoFactorEnabled && (
+   328→            <div className="mt-3">
+   329→              <label className="block text-[10px] tracking-wider uppercase text-foreground/60 mb-1.5">
+   330→                <Smartphone className="inline h-3 w-3 mr-1" /> 2FA Code (required for changes)
+   331→              </label>
+   332→              <input
+   333→                type="text"
+   334→                value={totpCode}
+   335→                onChange={(e) => setTotpCode(e.target.value)}
+   336→                className="input-editorial text-center text-base tracking-[0.3em] font-mono"
+   337→                placeholder="000000"
+   338→                maxLength={6}
+   339→                autoComplete="one-time-code"
+   340→                inputMode="numeric"
+   341→                disabled={!wantsChange}
+   342→              />
+   343→            </div>
+   344→          )}
+   345→        </section>
+   346→
+   347→        <div className="divider-gold" />
+   348→
+   349→        {/* Section: Email change */}
+   350→        <section>
+   351→          <label className="flex items-center gap-2 cursor-pointer mb-3">
+   352→            <input
+   353→              type="checkbox"
+   354→              checked={wantEmailChange}
+   355→              onChange={(e) => setWantEmailChange(e.target.checked)}
+   356→              className="h-3.5 w-3.5"
+   357→            />
+   358→            <Mail className="h-3.5 w-3.5" style={{ color: "var(--primary)" }} />
+   359→            <span className="font-editorial text-sm text-foreground tracking-wide">
+   360→              Change founder email
+   361→            </span>
+   362→          </label>
+   363→          {wantEmailChange && (
+   364→            <div className="pl-6 border-l border-[var(--hairline-strong)]">
+   365→              <p className="text-[11px] text-foreground/50 mb-2">
+   366→                Current: <span className="font-mono text-foreground/70">{currentEmail}</span>
+   367→              </p>
+   368→              <input
+   369→                type="email"
+   370→                value={newEmail}
+   371→                onChange={(e) => setNewEmail(e.target.value)}
+   372→                placeholder="new-email@example.com"
+   373→                className="input-editorial"
+   374→                autoComplete="email"
+   375→              />
+   376→              <p className="text-[10px] text-foreground/40 mt-2">
+   377→                Your session token will be re-issued with the new email.
+   378→                {twoFactorEnabled && " A valid 2FA code is required above."}
+   379→              </p>
+   380→            </div>
+   381→          )}
+   382→        </section>
+   383→
+   384→        <div className="divider-gold" />
+   385→
+   386→        {/* Section: Security Q&A change */}
+   387→        <section>
+   388→          <label className="flex items-center gap-2 cursor-pointer mb-3">
+   389→            <input
+   390→              type="checkbox"
+   391→              checked={wantQChange}
+   392→              onChange={(e) => setWantQChange(e.target.checked)}
+   393→              className="h-3.5 w-3.5"
+   394→            />
+   395→            <ShieldQuestion className="h-3.5 w-3.5" style={{ color: "var(--primary)" }} />
+   396→            <span className="font-editorial text-sm text-foreground tracking-wide">
+   397→              Change security question
+   398→            </span>
+   399→          </label>
+   400→          {wantQChange && (
+   401→            <div className="pl-6 border-l border-[var(--hairline-strong)] space-y-3">
+   402→              <div>
+   403→                <label className="block text-[10px] tracking-wider uppercase text-foreground/60 mb-1.5">
+   404→                  New question
+   405→                </label>
+   406→                <input
+   407→                  type="text"
+   408→                  value={newQuestion}
+   409→                  onChange={(e) => setNewQuestion(e.target.value)}
+   410→                  className="input-editorial"
+   411→                  list="suggested-questions-security"
+   412→                />
+   413→                <datalist id="suggested-questions-security">
+   414→                  {SUGGESTED_QUESTIONS.map((q) => (
+   415→                    <option key={q} value={q} />
+   416→                  ))}
+   417→                </datalist>
+   418→              </div>
+   419→              <div>
+   420→                <label className="block text-[10px] tracking-wider uppercase text-foreground/60 mb-1.5">
+   421→                  New answer
+   422→                </label>
+   423→                <input
+   424→                  type="text"
+   425→                  value={newAnswer}
+   426→                  onChange={(e) => setNewAnswer(e.target.value)}
+   427→                  className="input-editorial"
+   428→                  autoComplete="off"
+   429→                />
+   430→              </div>
+   431→            </div>
+   432→          )}
+   433→        </section>
+   434→
+   435→        {error && (
+   436→          <div className="p-3 rounded text-xs" style={{
+   437→            background: "color-mix(in srgb, var(--chart-3) 10%, transparent)",
+   438→            border: "1px solid color-mix(in srgb, var(--chart-3) 40%, transparent)",
+   439→            color: "var(--chart-3)",
+   440→          }}>
+   441→            {error}
+   442→          </div>
+   443→        )}
+   444→        {success && (
+   445→          <div className="p-3 rounded text-xs" style={{
+   446→            background: "color-mix(in srgb, var(--chart-2) 10%, transparent)",
+   447→            border: "1px solid color-mix(in srgb, var(--chart-2) 40%, transparent)",
+   448→            color: "var(--chart-2)",
+   449→          }}>
+   450→            <Check className="inline h-3 w-3 mr-1" />
+   451→            {success}
+   452→          </div>
+   453→        )}
+   454→
+   455→        <button
+   456→          type="submit"
+   457→          disabled={!canSubmit || submitting}
+   458→          className="btn-gold w-full px-6 py-3 rounded text-sm tracking-wider flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+   459→        >
+   460→          {submitting ? "Updating…" : <>Save Changes <ArrowRight className="h-4 w-4" /></>}
+   461→        </button>
+   462→      </form>
+   463→
+   464→      {/* Section: 2FA Management (separate card) */}
+   465→      <div className="surface-wood-strong rounded-lg p-6 md:p-8">
+   466→        <div className="flex items-center gap-2 mb-4">
+   467→          <Smartphone className="h-4 w-4" style={{ color: "var(--primary)" }} />
+   468→          <h2 className="font-editorial text-sm text-foreground tracking-wide">
+   469→            Two-Factor Authentication
+   470→          </h2>
+   471→          <span
+   472→            className="ml-auto px-2 py-0.5 rounded text-[9px] tracking-wider uppercase"
+   473→            style={{
+   474→              background: twoFactorEnabled
+   475→                ? "color-mix(in srgb, var(--chart-2) 15%, transparent)"
+   476→                : "color-mix(in srgb, var(--chart-3) 15%, transparent)",
+   477→              color: twoFactorEnabled ? "var(--chart-2)" : "var(--chart-3)",
+   478→            }}
+   479→          >
+   480→            {twoFactorEnabled ? "Enabled" : "Not enabled"}
+   481→          </span>
+   482→        </div>
+   483→
+   484→        {twoFactorEnabled ? (
+   485→          <div>
+   486→            <p className="text-[11px] text-foreground/55 leading-relaxed mb-4">
+   487→              2FA is active. Login requires both your password and a 6-digit code
+   488→              from your authenticator app. You have <strong>{backupCodesRemaining}</strong> backup
+   489→              codes remaining.
+   490→            </p>
+   491→
+   492→            {backupCodes && backupCodes.length > 0 && (
+   493→              <div className="mb-4 p-4 rounded" style={{
+   494→                background: "color-mix(in srgb, var(--chart-3) 8%, transparent)",
+   495→                border: "1px solid color-mix(in srgb, var(--chart-3) 30%, transparent)",
+   496→              }}>
+   497→                <div className="flex items-center gap-2 mb-2">
+   498→                  <AlertTriangle className="h-3.5 w-3.5" style={{ color: "var(--chart-3)" }} />
+   499→                  <span className="text-[11px] font-medium" style={{ color: "var(--chart-3)" }}>
+   500→                    Save these backup codes now — they won&apos;t be shown again
+   501→                  </span>
+   502→                </div>
+   503→                <div className="grid grid-cols-2 gap-1 font-mono text-[10px]">
+   504→                  {backupCodes.map((code, i) => (
+   505→                    <div key={i} className="text-foreground/80">{code}</div>
+   506→                  ))}
+   507→                </div>
+   508→                <button
+   509→                  onClick={downloadBackupCodes}
+   510→                  className="btn-ghost mt-3 px-3 py-1.5 rounded text-[10px] tracking-wider flex items-center gap-1.5"
+   511→                >
+   512→                  <Download className="h-3 w-3" /> Download as .txt
+   513→                </button>
+   514→              </div>
+   515→            )}
+   516→
+   517→            {showDisableForm ? (
+   518→              <div className="p-4 rounded" style={{
+   519→                background: "color-mix(in srgb, var(--chart-3) 5%, transparent)",
+   520→                border: "1px solid var(--hairline-strong)",
+   521→              }}>
+   522→                <p className="text-[11px] text-foreground/60 mb-3">
+   523→                  To disable 2FA, confirm your password and enter a current TOTP or backup code.
+   524→                </p>
+   525→                <input
+   526→                  type="password"
+   527→                  value={disablePassword}
+   528→                  onChange={(e) => setDisablePassword(e.target.value)}
+   529→                  className="input-editorial mb-2"
+   530→                  placeholder="Current password"
+   531→                  autoComplete="current-password"
+   532→                />
+   533→                <input
+   534→                  type="text"
+   535→                  value={disableTotpCode}
+   536→                  onChange={(e) => setDisableTotpCode(e.target.value)}
+   537→                  className="input-editorial text-center tracking-[0.3em] font-mono mb-3"
+   538→                  placeholder="TOTP or backup code"
+   539→                  autoComplete="one-time-code"
+   540→                />
+   541→                <div className="flex gap-2">
+   542→                  <button
+   543→                    onClick={disableTwoFactor}
+   544→                    disabled={submitting || !disablePassword || !disableTotpCode}
+   545→                    className="btn-gold flex-1 px-3 py-2 rounded text-[11px] tracking-wider disabled:opacity-40"
+   546→                    style={{ background: "var(--chart-3)" }}
+   547→                  >
+   548→                    {submitting ? "Disabling…" : "Confirm Disable 2FA"}
+   549→                  </button>
+   550→                  <button
+   551→                    onClick={() => {
+   552→                      setShowDisableForm(false);
+   553→                      setDisableTotpCode("");
+   554→                      setDisablePassword("");
+   555→                    }}
+   556→                    className="btn-ghost px-3 py-2 rounded text-[11px] tracking-wider"
+   557→                  >
+   558→                    Cancel
+   559→                  </button>
+   560→                </div>
+   561→              </div>
+   562→            ) : (
+   563→              <button
+   564→                onClick={() => setShowDisableForm(true)}
+   565→                className="btn-ghost px-3 py-2 rounded text-[11px] tracking-wider"
+   566→                style={{ color: "var(--chart-3)" }}
+   567→              >
+   568→                Disable 2FA
+   569→              </button>
+   570→            )}
+   571→          </div>
+   572→        ) : (
+   573→          <div>
+   574→            <p className="text-[11px] text-foreground/55 leading-relaxed mb-4">
+   575→              Without 2FA, a stolen password is enough to take over your account.
+   576→              Enroll now to require a 6-digit code from your authenticator app
+   577→              on every login.
+   578→            </p>
+   579→
+   580→            {enrollmentStep === "idle" && (
+   581→              <button
+   582→                onClick={startEnrollment}
+   583→                className="btn-gold px-4 py-2 rounded text-[11px] tracking-wider flex items-center gap-2"
+   584→              >
+   585→                <Smartphone className="h-3.5 w-3.5" /> Enroll in 2FA
+   586→              </button>
+   587→            )}
+   588→
+   589→            {enrollmentStep === "verify" && qrCodeDataUrl && (
+   590→              <div>
+   591→                <p className="text-[11px] text-foreground/60 mb-3">
+   592→                  <strong>Step 1.</strong> Scan this QR code with your authenticator app.
+   593→                </p>
+   594→                <div className="flex justify-center mb-4">
+   595→                  {/* eslint-disable-next-line @next/next/no-img-element */}
+   596→                  <img src={qrCodeDataUrl} alt="2FA QR code" width={200} height={200} style={{ borderRadius: 8 }} />
+   597→                </div>
+   598→                <details className="mb-4">
+   599→                  <summary className="text-[10px] text-foreground/40 cursor-pointer">
+   600→                    Can&apos;t scan? Show manual entry key
+   601→                  </summary>
+   602→                  <code className="block mt-2 p-2 rounded text-[10px] font-mono break-all" style={{
+   603→                    background: "var(--background)",
+   604→                    color: "var(--foreground)",
+   605→                  }}>
+   606→                    {totpSecret}
+   607→                  </code>
+   608→                </details>
+   609→
+   610→                <p className="text-[11px] text-foreground/60 mb-2">
+   611→                  <strong>Step 2.</strong> Enter your current password and the 6-digit code from your app:
+   612→                </p>
+   613→                <input
+   614→                  type="password"
+   615→                  value={enrollPassword}
+   616→                  onChange={(e) => setEnrollPassword(e.target.value)}
+   617→                  className="input-editorial mb-2"
+   618→                  placeholder="Current password"
+   619→                  autoComplete="current-password"
+   620→                />
+   621→                <input
+   622→                  type="text"
+   623→                  value={enrollTotpCode}
+   624→                  onChange={(e) => setEnrollTotpCode(e.target.value)}
+   625→                  className="input-editorial text-center tracking-[0.3em] font-mono mb-3"
+   626→                  placeholder="000000"
+   627→                  maxLength={6}
+   628→                  autoComplete="one-time-code"
+   629→                  inputMode="numeric"
+   630→                />
+   631→                <div className="flex gap-2">
+   632→                  <button
+   633→                    onClick={completeEnrollment}
+   634→                    disabled={submitting || !enrollPassword || enrollTotpCode.length < 6}
+   635→                    className="btn-gold flex-1 px-3 py-2 rounded text-[11px] tracking-wider disabled:opacity-40"
+   636→                  >
+   637→                    {submitting ? "Activating…" : "Activate 2FA"}
+   638→                  </button>
+   639→                  <button
+   640→                    onClick={() => {
+   641→                      setEnrollmentStep("idle");
+   642→                      setTotpSecret(null);
+   643→                      setQrCodeDataUrl(null);
+   644→                      setEnrollTotpCode("");
+   645→                      setEnrollPassword("");
+   646→                    }}
+   647→                    className="btn-ghost px-3 py-2 rounded text-[11px] tracking-wider"
+   648→                  >
+   649→                    Cancel
+   650→                  </button>
+   651→                </div>
+   652→              </div>
+   653→            )}
+   654→
+   655→            {enrollmentStep === "backup" && backupCodes && (
+   656→              <div className="p-4 rounded" style={{
+   657→                background: "color-mix(in srgb, var(--chart-2) 8%, transparent)",
+   658→                border: "1px solid color-mix(in srgb, var(--chart-2) 30%, transparent)",
+   659→              }}>
+   660→                <div className="flex items-center gap-2 mb-3">
+   661→                  <Check className="h-4 w-4" style={{ color: "var(--chart-2)" }} />
+   662→                  <span className="text-xs font-medium" style={{ color: "var(--chart-2)" }}>
+   663→                    2FA is now active
+   664→                  </span>
+   665→                </div>
+   666→                <p className="text-[11px] text-foreground/60 mb-3">
+   667→                  Save these backup codes. Each can be used once if you lose your device.
+   668→                </p>
+   669→                <div className="grid grid-cols-2 gap-1 font-mono text-[10px] mb-3">
+   670→                  {backupCodes.map((code, i) => (
+   671→                    <div key={i} className="text-foreground/80">{code}</div>
+   672→                  ))}
+   673→                </div>
+   674→                <button
+   675→                  onClick={downloadBackupCodes}
+   676→                  className="btn-ghost px-3 py-1.5 rounded text-[10px] tracking-wider flex items-center gap-1.5"
+   677→                >
+   678→                  <Download className="h-3 w-3" /> Download as .txt
+   679→                </button>
+   680→                <button
+   681→                  onClick={() => {
+   682→                    setEnrollmentStep("idle");
+   683→                    setBackupCodes(null);
+   684→                    router.refresh();
+   685→                  }}
+   686→                  className="btn-ghost ml-2 px-3 py-1.5 rounded text-[10px] tracking-wider flex items-center gap-1.5"
+   687→                >
+   688→                  <RefreshCw className="h-3 w-3" /> Done
+   689→                </button>
+   690→              </div>
+   691→            )}
+   692→          </div>
+   693→        )}
+   694→      </div>
+   695→
+   696→      {/* Section: Password change (separate card) */}
+   697→      <div className="surface-wood-strong rounded-lg p-6 md:p-8">
+   698→        <div className="flex items-center gap-2 mb-4">
+   699→          <Key className="h-4 w-4" style={{ color: "var(--primary)" }} />
+   700→          <h2 className="font-editorial text-sm text-foreground tracking-wide">
+   701→            Change Password
+   702→          </h2>
+   703→        </div>
+   704→
+   705→        <p className="text-[11px] text-foreground/55 leading-relaxed mb-4">
+   706→          Change your founder password. Requires your current password
+   707→          {twoFactorEnabled && " plus a valid 2FA code"}.
+   708→          <strong> Your user ID and all other identity fields remain unchanged.</strong>
+   709→        </p>
+   710→
+   711→        {!wantPasswordChange ? (
+   712→          <button
+   713→            onClick={() => setWantPasswordChange(true)}
+   714→            className="btn-ghost px-4 py-2 rounded text-[11px] tracking-wider flex items-center gap-2"
+   715→          >
+   716→            <Key className="h-3.5 w-3.5" /> Change password
+   717→          </button>
+   718→        ) : (
+   719→          <div className="space-y-3">
+   720→            <div>
+   721→              <label className="block text-[10px] tracking-wider uppercase text-foreground/60 mb-1.5">
+   722→                Current password
+   723→              </label>
+   724→              <div className="relative">
+   725→                <input
+   726→                  type={showNewPassword ? "text" : "password"}
+   727→                  value={currentPassword}
+   728→                  onChange={(e) => setCurrentPassword(e.target.value)}
+   729→                  className="input-editorial pr-10"
+   730→                  placeholder="Current password"
+   731→                  autoComplete="current-password"
+   732→                />
+   733→                <button
+   734→                  type="button"
+   735→                  onClick={() => setShowNewPassword(!showNewPassword)}
+   736→                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded text-foreground/40 hover:text-foreground"
+   737→                  aria-label={showNewPassword ? "Hide" : "Show"}
+   738→                >
+   739→                  {showNewPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+   740→                </button>
+   741→              </div>
+   742→            </div>
+   743→
+   744→            {twoFactorEnabled && (
+   745→              <div>
+   746→                <label className="block text-[10px] tracking-wider uppercase text-foreground/60 mb-1.5">
+   747→                  <Smartphone className="inline h-3 w-3 mr-1" /> 2FA code
+   748→                </label>
+   749→                <input
+   750→                  type="text"
+   751→                  value={passwordTotpCode}
+   752→                  onChange={(e) => setPasswordTotpCode(e.target.value)}
+   753→                  className="input-editorial text-center tracking-[0.3em] font-mono"
+   754→                  placeholder="000000"
+   755→                  maxLength={6}
+   756→                  autoComplete="one-time-code"
+   757→                  inputMode="numeric"
+   758→                />
+   759→              </div>
+   760→            )}
+   761→
+   762→            <div>
+   763→              <label className="block text-[10px] tracking-wider uppercase text-foreground/60 mb-1.5">
+   764→                New password
+   765→              </label>
+   766→              <input
+   767→                type={showNewPassword ? "text" : "password"}
+   768→                value={newPassword}
+   769→                onChange={(e) => setNewPassword(e.target.value)}
+   770→                className="input-editorial"
+   771→                placeholder="Min 12 chars, upper + lower + digit"
+   772→                autoComplete="new-password"
+   773→              />
+   774→              {newPassword.length > 0 && (
+   775→                <div className="mt-2 flex items-center gap-3">
+   776→                  <div className="flex-1 flex gap-1">
+   777→                    {[
+   778→                      newPassword.length >= 12,
+   779→                      /[A-Z]/.test(newPassword),
+   780→                      /[a-z]/.test(newPassword),
+   781→                      /[0-9]/.test(newPassword),
+   782→                    ].map((ok, i) => (
+   783→                      <div
+   784→                        key={i}
+   785→                        className="h-1 flex-1 rounded-full transition-colors"
+   786→                        style={{
+   787→                          background: ok ? "var(--chart-2)" : "var(--hairline-strong)",
+   788→                        }}
+   789→                      />
+   790→                    ))}
+   791→                  </div>
+   792→                  <span className="text-[10px] text-foreground/40 w-16 text-right">
+   793→                    {[
+   794→                      newPassword.length >= 12,
+   795→                      /[A-Z]/.test(newPassword),
+   796→                      /[a-z]/.test(newPassword),
+   797→                      /[0-9]/.test(newPassword),
+   798→                    ].filter(Boolean).length}/4
+   799→                  </span>
+   800→                </div>
+   801→              )}
+   802→            </div>
+   803→
+   804→            <div>
+   805→              <label className="block text-[10px] tracking-wider uppercase text-foreground/60 mb-1.5">
+   806→                Confirm new password
+   807→              </label>
+   808→              <input
+   809→                type={showNewPassword ? "text" : "password"}
+   810→                value={newPasswordConfirm}
+   811→                onChange={(e) => setNewPasswordConfirm(e.target.value)}
+   812→                className="input-editorial"
+   813→                placeholder="Re-enter new password"
+   814→                autoComplete="new-password"
+   815→              />
+   816→              {newPasswordConfirm.length > 0 && newPassword !== newPasswordConfirm && (
+   817→                <p className="text-[10px] mt-1.5" style={{ color: "var(--chart-3)" }}>
+   818→                  Passwords do not match
+   819→                </p>
+   820→              )}
+   821→            </div>
+   822→
+   823→            <div className="flex gap-2 pt-2">
+   824→              <button
+   825→                onClick={handlePasswordChange}
+   826→                disabled={
+   827→                  submitting ||
+   828→                  !currentPassword ||
+   829→                  !newPassword ||
+   830→                  newPassword !== newPasswordConfirm ||
+   831→                  newPassword === currentPassword ||
+   832→                  (twoFactorEnabled && passwordTotpCode.length < 6)
+   833→                }
+   834→                className="btn-gold flex-1 px-4 py-2 rounded text-[11px] tracking-wider flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+   835→              >
+   836→                {submitting ? "Changing…" : (<><Key className="h-3.5 w-3.5" /> Change Password</>)}
+   837→              </button>
+   838→              <button
+   839→                onClick={() => {
+   840→                  setWantPasswordChange(false);
+   841→                  setNewPassword("");
+   842→                  setNewPasswordConfirm("");
+   843→                  setPasswordTotpCode("");
+   844→                }}
+   845→                className="btn-ghost px-4 py-2 rounded text-[11px] tracking-wider"
+   846→              >
+   847→                Cancel
+   848→              </button>
+   849→            </div>
+   850→
+   851→            <p className="text-[10px] text-foreground/40 leading-relaxed pt-1">
+   852→              <strong>Identity preservation:</strong> Only your passwordHash field
+   853→              updates. Your user ID, email, role, 2FA enrollment, and all other
+   854→              account data remain unchanged.
+   855→            </p>
+   856→          </div>
+   857→        )}
+   858→      </div>
+   859→
+   860→      <style jsx>{`
+   861→        :global(.input-editorial) {
+   862→          width: 100%;
+   863→          background: var(--surface-flat);
+   864→          border: 1px solid var(--hairline-strong);
+   865→          color: var(--foreground);
+   866→          padding: 0.625rem 0.875rem;
+   867→          border-radius: 0.375rem;
+   868→          font-size: 0.875rem;
+   869→          outline: none;
+   870→          transition: border-color 0.2s;
+   871→        }
+   872→        :global(.input-editorial:focus) {
+   873→          border-color: var(--primary);
+   874→          box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 15%, transparent);
+   875→        }
+   876→        :global(.input-editorial:disabled) {
+   877→          opacity: 0.5;
+   878→          cursor: not-allowed;
+   879→        }
+   880→      `}</style>
+   881→    </div>
+   882→  );
+   883→}
+   884→

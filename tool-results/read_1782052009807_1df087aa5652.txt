@@ -1,0 +1,1245 @@
+     1→@import "tailwindcss";
+     2→@import "tw-animate-css";
+     3→
+     4→@custom-variant dark (&:is(.dark *));
+     5→
+     6→/* ===========================================================================
+     7→   EDITORIAL JAPANDI-LUXE THEME — Planned Kids Savings
+     8→   ===========================================================================
+     9→   Canvas: deep green-black #090C0A (aged mahogany at dusk)
+    10→   Gold foil: #C9A84C -> #E8D5A0 -> #D4AF37 (animated shimmer)
+    11→   Green-wood tones: #1A332A, #2A4A3A (depth, never rough)
+    12→   Typography: Playfair Display (serif headings/amounts) + Inter (sans body)
+    13→   Tenebrism: cards emerge from near-black with ethereal glow
+    14→   =========================================================================== */
+    15→
+    16→@theme inline {
+    17→  --color-background: var(--background);
+    18→  --color-foreground: var(--foreground);
+    19→  --font-sans: var(--font-inter);
+    20→  --font-editorial: var(--font-playfair);
+    21→  --font-mono: var(--font-mono-stack);
+    22→
+    23→  --color-sidebar-ring: var(--sidebar-ring);
+    24→  --color-sidebar-border: var(--sidebar-border);
+    25→  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    26→  --color-sidebar-accent: var(--sidebar-accent);
+    27→  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    28→  --color-sidebar-primary: var(--sidebar-primary);
+    29→  --color-sidebar-foreground: var(--sidebar-foreground);
+    30→  --color-sidebar: var(--sidebar);
+    31→
+    32→  --color-chart-5: var(--chart-5);
+    33→  --color-chart-4: var(--chart-4);
+    34→  --color-chart-3: var(--chart-3);
+    35→  --color-chart-2: var(--chart-2);
+    36→  --color-chart-1: var(--chart-1);
+    37→  --color-ring: var(--ring);
+    38→  --color-input: var(--input);
+    39→  --color-border: var(--border);
+    40→  --color-destructive: var(--destructive);
+    41→  --color-accent-foreground: var(--accent-foreground);
+    42→  --color-accent: var(--accent);
+    43→  --color-muted-foreground: var(--muted-foreground);
+    44→  --color-muted: var(--muted);
+    45→  --color-secondary-foreground: var(--secondary-foreground);
+    46→  --color-secondary: var(--secondary);
+    47→  --color-primary-foreground: var(--primary-foreground);
+    48→  --color-primary: var(--primary);
+    49→  --color-popover-foreground: var(--popover-foreground);
+    50→  --color-popover: var(--popover);
+    51→  --color-card-foreground: var(--card-foreground);
+    52→  --color-card: var(--card);
+    53→
+    54→  --radius-sm: calc(var(--radius) - 4px);
+    55→  --radius-md: calc(var(--radius) - 2px);
+    56→  --radius-lg: var(--radius);
+    57→  --radius-xl: calc(var(--radius) + 4px);
+    58→}
+    59→
+    60→/* ===========================================================================
+    61→   THEME SYSTEM — 4 editorial themes via [data-theme] on <html>
+    62→   ===========================================================================
+    63→   dark  : Green-black + gold         (private bank at dusk)
+    64→   light : Warm ivory + gold          (private bank lobby in daylight)
+    65→   pink  : Blush pink + gold          (fashion editorial, Vogue-like)
+    66→   red   : Deep oxblood + gold        (regal, royal chamber)
+    67→   =========================================================================== */
+    68→
+    69→:root,
+    70→[data-theme="dark"] {
+    71→  --radius: 0.5rem;
+    72→
+    73→  --background: #090C0A;
+    74→  --foreground: #E8E4D8;
+    75→  --card: #0E1310;
+    76→  --card-foreground: #E8E4D8;
+    77→  --popover: #0E1310;
+    78→  --popover-foreground: #E8E4D8;
+    79→  --primary: #C9A84C;
+    80→  --primary-foreground: #090C0A;
+    81→  --secondary: #1A332A;
+    82→  --secondary-foreground: #E8E4D8;
+    83→  --muted: #141A16;
+    84→  --muted-foreground: #8A8676;
+    85→  --accent: #2A4A3A;
+    86→  --accent-foreground: #E8E4D8;
+    87→  --destructive: #C45A4A;
+    88→  --border: rgba(201, 168, 76, 0.14);
+    89→  --input: rgba(201, 168, 76, 0.18);
+    90→  --ring: #C9A84C;
+    91→
+    92→  --chart-1: #C9A84C;
+    93→  --chart-2: #6BBF8A;
+    94→  --chart-3: #D4943A;
+    95→  --chart-4: #8A9B82;
+    96→  --chart-5: #E8D5A0;
+    97→
+    98→  --sidebar: #0B0F0D;
+    99→  --sidebar-foreground: #E8E4D8;
+   100→  --sidebar-primary: #C9A84C;
+   101→  --sidebar-primary-foreground: #090C0A;
+   102→  --sidebar-accent: #141A16;
+   103→  --sidebar-accent-foreground: #E8E4D8;
+   104→  --sidebar-border: rgba(201, 168, 76, 0.10);
+   105→  --sidebar-ring: #C9A84C;
+   106→
+   107→  /* Theme-specific helper tokens used by surface-wood, halos, etc. */
+   108→  --surface-wood-bg: linear-gradient(160deg, rgba(26, 51, 42, 0.42) 0%, rgba(14, 19, 16, 0.85) 100%);
+   109→  --surface-wood-strong-bg: linear-gradient(180deg, rgba(26, 51, 42, 0.55) 0%, rgba(11, 15, 13, 0.95) 100%);
+   110→  --surface-flat-bg: rgba(14, 19, 16, 0.6);
+   111→  --surface-wood-glow: rgba(201, 168, 76, 0.04);
+   112→  --surface-wood-strong-glow: rgba(201, 168, 76, 0.07);
+   113→  --hairline: rgba(201, 168, 76, 0.12);
+   114→  --hairline-strong: rgba(201, 168, 76, 0.18);
+   115→  --hairline-soft: rgba(201, 168, 76, 0.06);
+   116→  --micro-label: rgba(232, 228, 216, 0.55);
+   117→  --text-soft: rgba(232, 228, 216, 0.85);
+   118→  --text-softer: rgba(232, 228, 216, 0.60);
+   119→  --text-faint: rgba(232, 228, 216, 0.45);
+   120→  --grain-opacity: 0.015;
+   121→  --topbar-bg: rgba(9, 12, 10, 0.80);
+   122→
+   123→  /* Theme-specific gold foil — bright gold shimmer for dark canvas */
+   124→  --gold-foil-1: #C9A84C;
+   125→  --gold-foil-2: #E8D5A0;
+   126→  --gold-foil-3: #D4AF37;
+   127→  --gold-foil-static-1: #E8D5A0;
+   128→  --gold-foil-static-2: #C9A84C;
+   129→  --gold-foil-static-3: #D4AF37;
+   130→
+   131→  /* Card shadows — dark theme uses deep black + gold glow */
+   132→  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.5);
+   133→  --card-shadow-hover: 0 2px 4px rgba(0, 0, 0, 0.5), 0 16px 40px rgba(201, 168, 76, 0.18);
+   134→
+   135→  --font-mono-stack: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+   136→}
+   137→
+   138→/* ---- LIGHT / IVORY + GOLD — "Hermès Private Bank" ------------------------ */
+   139→/* Warm ivory paper, deep ink, antique gold. Should feel like a leather-bound
+   140→   ledger in a private bank lobby — never flat, never clinical. */
+   141→[data-theme="light"] {
+   142→  --background: #F5EFE0;            /* warm aged-paper ivory */
+   143→  --foreground: #1A1610;            /* deep ink, almost black */
+   144→  --card: #FFFCF3;                  /* warm white card */
+   145→  --card-foreground: #1A1610;
+   146→  --popover: #FFFCF3;
+   147→  --popover-foreground: #1A1610;
+   148→  --primary: #9A7B1F;               /* rich antique gold (darker for contrast) */
+   149→  --primary-foreground: #FFFCF3;
+   150→  --secondary: #EDE3C8;             /* warm cream secondary */
+   151→  --secondary-foreground: #1A1610;
+   152→  --muted: #F0E8D2;
+   153→  --muted-foreground: #6B6353;      /* warm gray-brown */
+   154→  --accent: #C9A84C;                /* lighter gold accent */
+   155→  --accent-foreground: #1A1610;
+   156→  --destructive: #A0381F;
+   157→  --border: rgba(154, 123, 31, 0.22);
+   158→  --input: rgba(154, 123, 31, 0.18);
+   159→  --ring: #9A7B1F;
+   160→
+   161→  --chart-1: #9A7B1F;               /* antique gold */
+   162→  --chart-2: #6B7A3F;               /* olive */
+   163→  --chart-3: #B8651F;               /* burnt amber */
+   164→  --chart-4: #8A6E3F;               /* bronze */
+   165→  --chart-5: #D4AF37;               /* light gold */
+   166→
+   167→  --sidebar: #EDE3C8;
+   168→  --sidebar-foreground: #1A1610;
+   169→  --sidebar-primary: #9A7B1F;
+   170→  --sidebar-primary-foreground: #FFFCF3;
+   171→  --sidebar-accent: #F0E8D2;
+   172→  --sidebar-accent-foreground: #1A1610;
+   173→  --sidebar-border: rgba(154, 123, 31, 0.18);
+   174→  --sidebar-ring: #9A7B1F;
+   175→
+   176→  /* Surfaces — soft warm shadow + cream gradient, like fine paper */
+   177→  --surface-wood-bg: linear-gradient(160deg, #FFFCF3 0%, #F5EFE0 100%);
+   178→  --surface-wood-strong-bg: linear-gradient(180deg, #FFFCF3 0%, #EDE3C8 100%);
+   179→  --surface-flat-bg: rgba(255, 252, 243, 0.85);
+   180→  --surface-wood-glow: rgba(154, 123, 31, 0.06);
+   181→  --surface-wood-strong-glow: rgba(201, 168, 76, 0.10);
+   182→  --hairline: rgba(154, 123, 31, 0.22);
+   183→  --hairline-strong: rgba(154, 123, 31, 0.35);
+   184→  --hairline-soft: rgba(154, 123, 31, 0.10);
+   185→  --micro-label: rgba(26, 22, 16, 0.55);
+   186→  --text-soft: rgba(26, 22, 16, 0.85);
+   187→  --text-softer: rgba(26, 22, 16, 0.60);
+   188→  --text-faint: rgba(26, 22, 16, 0.42);
+   189→  --grain-opacity: 0.04;
+   190→  --topbar-bg: rgba(245, 239, 224, 0.88);
+   191→
+   192→  /* Theme-specific gold foil — darker stops so text shows on ivory */
+   193→  --gold-foil-1: #9A7B1F;
+   194→  --gold-foil-2: #C9A84C;
+   195→  --gold-foil-3: #B8941F;
+   196→  --gold-foil-static-1: #B8941F;
+   197→  --gold-foil-static-2: #9A7B1F;
+   198→  --gold-foil-static-3: #D4AF37;
+   199→
+   200→  /* Soft shadow for cards (only on light themes) */
+   201→  --card-shadow: 0 1px 2px rgba(154, 123, 31, 0.04), 0 8px 24px rgba(154, 123, 31, 0.06);
+   202→  --card-shadow-hover: 0 2px 4px rgba(154, 123, 31, 0.06), 0 16px 40px rgba(154, 123, 31, 0.12);
+   203→
+   204→  --font-mono-stack: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+   205→}
+   206→
+   207→/* ---- PINK + GOLD — "Chanel Boutique / Vogue Editorial" ------------------- */
+   208→/* Blush ivory with deep wine text and ROSE GOLD accents. Should feel like a
+   209→   fashion magazine — high contrast typography, rose-gold shimmer, dusty rose
+   210→   surfaces. Never bubblegum, always sophisticated. */
+   211→[data-theme="pink"] {
+   212→  --background: #FCEBE4;            /* warmer blush, more saturated */
+   213→  --foreground: #3D1521;            /* deep wine text */
+   214→  --card: #FFF8F4;                  /* warm white card */
+   215→  --card-foreground: #3D1521;
+   216→  --popover: #FFF8F4;
+   217→  --popover-foreground: #3D1521;
+   218→  --primary: #B76E79;               /* rose gold */
+   219→  --primary-foreground: #FFF8F4;
+   220→  --secondary: #F5DDD8;             /* dusty rose */
+   221→  --secondary-foreground: #3D1521;
+   222→  --muted: #FAE5DE;
+   223→  --muted-foreground: #7A4858;      /* mauve */
+   224→  --accent: #8B3A4A;                /* deep wine accent */
+   225→  --accent-foreground: #FFF8F4;
+   226→  --destructive: #A0381F;
+   227→  --border: rgba(183, 110, 121, 0.26);
+   228→  --input: rgba(183, 110, 121, 0.20);
+   229→  --ring: #B76E79;
+   230→
+   231→  --chart-1: #B76E79;               /* rose gold */
+   232→  --chart-2: #8B3A4A;               /* deep wine */
+   233→  --chart-3: #C9A84C;               /* warm gold for contrast */
+   234→  --chart-4: #D4869A;               /* light rose */
+   235→  --chart-5: #E8B4A0;               /* peach rose */
+   236→
+   237→  --sidebar: #F5DDD8;
+   238→  --sidebar-foreground: #3D1521;
+   239→  --sidebar-primary: #B76E79;
+   240→  --sidebar-primary-foreground: #FFF8F4;
+   241→  --sidebar-accent: #FAE5DE;
+   242→  --sidebar-accent-foreground: #3D1521;
+   243→  --sidebar-border: rgba(183, 110, 121, 0.20);
+   244→  --sidebar-ring: #B76E79;
+   245→
+   246→  /* Surfaces — blush gradient with rose-gold glow */
+   247→  --surface-wood-bg: linear-gradient(160deg, #FFF8F4 0%, #FCEBE4 100%);
+   248→  --surface-wood-strong-bg: linear-gradient(180deg, #FFF8F4 0%, #F5DDD8 100%);
+   249→  --surface-flat-bg: rgba(255, 248, 244, 0.85);
+   250→  --surface-wood-glow: rgba(183, 110, 121, 0.08);
+   251→  --surface-wood-strong-glow: rgba(183, 110, 121, 0.14);
+   252→  --hairline: rgba(183, 110, 121, 0.26);
+   253→  --hairline-strong: rgba(183, 110, 121, 0.40);
+   254→  --hairline-soft: rgba(183, 110, 121, 0.12);
+   255→  --micro-label: rgba(61, 21, 33, 0.55);
+   256→  --text-soft: rgba(61, 21, 33, 0.85);
+   257→  --text-softer: rgba(61, 21, 33, 0.60);
+   258→  --text-faint: rgba(61, 21, 33, 0.42);
+   259→  --grain-opacity: 0.035;
+   260→  --topbar-bg: rgba(252, 235, 228, 0.88);
+   261→
+   262→  /* Rose gold foil — wine → rose-gold → wine */
+   263→  --gold-foil-1: #8B3A4A;
+   264→  --gold-foil-2: #B76E79;
+   265→  --gold-foil-3: #C9A84C;
+   266→  --gold-foil-static-1: #B76E79;
+   267→  --gold-foil-static-2: #8B3A4A;
+   268→  --gold-foil-static-3: #E8B4A0;
+   269→
+   270→  --card-shadow: 0 1px 2px rgba(183, 110, 121, 0.05), 0 8px 24px rgba(139, 58, 74, 0.08);
+   271→  --card-shadow-hover: 0 2px 4px rgba(183, 110, 121, 0.08), 0 16px 40px rgba(139, 58, 74, 0.16);
+   272→
+   273→  --font-mono-stack: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+   274→}
+   275→
+   276→/* ---- RED + GOLD — "Venetian Royal Chamber" ------------------------------- */
+   277→/* Deep oxblood velvet with cream text and ANTIQUE gold. Should feel like a
+   278→   Venetian palazzo library — opulent, regal, candlelit. Never bright red,
+   279→   always oxblood/burgundy depth. */
+   280→[data-theme="red"] {
+   281→  --background: #170404;            /* deeper oxblood, near-black with red undertone */
+   282→  --foreground: #F0DDB5;            /* warm cream/parchment */
+   283→  --card: #210606;                  /* slightly lifted oxblood */
+   284→  --card-foreground: #F0DDB5;
+   285→  --popover: #210606;
+   286→  --popover-foreground: #F0DDB5;
+   287→  --primary: #D4AF37;               /* antique gold */
+   288→  --primary-foreground: #170404;
+   289→  --secondary: #340A0A;             /* lifted oxblood */
+   290→  --secondary-foreground: #F0DDB5;
+   291→  --muted: #2A0707;
+   292→  --muted-foreground: #B89A78;      /* warm beige */
+   293→  --accent: #B8860B;                /* dark goldenrod for variation */
+   294→  --accent-foreground: #170404;
+   295→  --destructive: #E8584A;
+   296→  --border: rgba(212, 175, 55, 0.22);
+   297→  --input: rgba(212, 175, 55, 0.22);
+   298→  --ring: #D4AF37;
+   299→
+   300→  --chart-1: #D4AF37;               /* antique gold */
+   301→  --chart-2: #B8860B;               /* dark goldenrod */
+   302→  --chart-3: #C45A4A;               /* warm terracotta */
+   303→  --chart-4: #8B2635;               /* deep red */
+   304→  --chart-5: #F0DDB5;               /* cream */
+   305→
+   306→  --sidebar: #110303;
+   307→  --sidebar-foreground: #F0DDB5;
+   308→  --sidebar-primary: #D4AF37;
+   309→  --sidebar-primary-foreground: #170404;
+   310→  --sidebar-accent: #2A0707;
+   311→  --sidebar-accent-foreground: #F0DDB5;
+   312→  --sidebar-border: rgba(212, 175, 55, 0.14);
+   313→  --sidebar-ring: #D4AF37;
+   314→
+   315→  /* Surfaces — velvet oxblood with antique gold glow */
+   316→  --surface-wood-bg: linear-gradient(160deg, rgba(52, 10, 10, 0.65) 0%, rgba(33, 6, 6, 0.95) 100%);
+   317→  --surface-wood-strong-bg: linear-gradient(180deg, rgba(52, 10, 10, 0.80) 0%, rgba(23, 4, 4, 0.98) 100%);
+   318→  --surface-flat-bg: rgba(33, 6, 6, 0.75);
+   319→  --surface-wood-glow: rgba(212, 175, 55, 0.08);
+   320→  --surface-wood-strong-glow: rgba(212, 175, 55, 0.14);
+   321→  --hairline: rgba(212, 175, 55, 0.20);
+   322→  --hairline-strong: rgba(212, 175, 55, 0.32);
+   323→  --hairline-soft: rgba(212, 175, 55, 0.10);
+   324→  --micro-label: rgba(240, 221, 181, 0.55);
+   325→  --text-soft: rgba(240, 221, 181, 0.85);
+   326→  --text-softer: rgba(240, 221, 181, 0.60);
+   327→  --text-faint: rgba(240, 221, 181, 0.42);
+   328→  --grain-opacity: 0.025;
+   329→  --topbar-bg: rgba(23, 4, 4, 0.85);
+   330→
+   331→  /* Antique gold foil — deep gold → bright gold → deep gold */
+   332→  --gold-foil-1: #D4AF37;
+   333→  --gold-foil-2: #FFD700;
+   334→  --gold-foil-3: #B8860B;
+   335→  --gold-foil-static-1: #FFD700;
+   336→  --gold-foil-static-2: #D4AF37;
+   337→  --gold-foil-static-3: #B8860B;
+   338→
+   339→  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.30), 0 8px 24px rgba(0, 0, 0, 0.40);
+   340→  --card-shadow-hover: 0 2px 4px rgba(0, 0, 0, 0.40), 0 16px 40px rgba(212, 175, 55, 0.18);
+   341→
+   342→  --font-mono-stack: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+   343→}
+   344→
+   345→.dark {
+   346→  /* Mirror of [data-theme="dark"] for shadcn compatibility */
+   347→  --background: #090C0A;
+   348→  --foreground: #E8E4D8;
+   349→  --card: #0E1310;
+   350→  --card-foreground: #E8E4D8;
+   351→  --popover: #0E1310;
+   352→  --popover-foreground: #E8E4D8;
+   353→  --primary: #C9A84C;
+   354→  --primary-foreground: #090C0A;
+   355→  --secondary: #1A332A;
+   356→  --secondary-foreground: #E8E4D8;
+   357→  --muted: #141A16;
+   358→  --muted-foreground: #8A8676;
+   359→  --accent: #2A4A3A;
+   360→  --accent-foreground: #E8E4D8;
+   361→  --destructive: #C45A4A;
+   362→  --border: rgba(201, 168, 76, 0.14);
+   363→  --input: rgba(201, 168, 76, 0.18);
+   364→  --ring: #C9A84C;
+   365→}
+   366→
+   367→@layer base {
+   368→  * {
+   369→    @apply border-border outline-ring/50;
+   370→  }
+   371→  html, body {
+   372→    @apply bg-background text-foreground;
+   373→    font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+   374→    -webkit-font-smoothing: antialiased;
+   375→    -moz-osx-font-smoothing: grayscale;
+   376→  }
+   377→
+   378→  /* Tabular nums everywhere numbers appear so columns align like a ledger */
+   379→  .tabular-nums,
+   380→  table,
+   381→  input[type="number"] {
+   382→    font-variant-numeric: tabular-nums;
+   383→    font-feature-settings: "tnum" 1;
+   384→  }
+   385→
+   386→  /* Custom scrollbar — slim, gold-tinted */
+   387→  ::-webkit-scrollbar {
+   388→    width: 8px;
+   389→    height: 8px;
+   390→  }
+   391→  ::-webkit-scrollbar-track {
+   392→    background: transparent;
+   393→  }
+   394→  ::-webkit-scrollbar-thumb {
+   395→    background: var(--hairline-strong);
+   396→  }
+   397→  ::-webkit-scrollbar-thumb:hover {
+   398→    background: var(--primary);
+   399→  }
+   400→}
+   401→
+   402→/* ===========================================================================
+   403→   EDITORIAL TYPOGRAPHY — Playfair Display serif for headings + amounts
+   404→   =========================================================================== */
+   405→
+   406→.font-editorial {
+   407→  font-family: var(--font-playfair), "Playfair Display", Georgia, "Times New Roman", serif;
+   408→  font-feature-settings: "liga" 1, "dlig" 1, "kern" 1;
+   409→}
+   410→
+   411→.tracking-editorial {
+   412→  letter-spacing: 0.12em;
+   413→}
+   414→.tracking-wider-editorial {
+   415→  letter-spacing: 0.20em;
+   416→}
+   417→.tracking-widest-editorial {
+   418→  letter-spacing: 0.28em;
+   419→}
+   420→
+   421→/* Micro-labels — uppercase, tiny, high tracking. Editorial section headers. */
+   422→.micro-label {
+   423→  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+   424→  font-size: 9px;
+   425→  letter-spacing: 0.22em;
+   426→  text-transform: uppercase;
+   427→  color: var(--micro-label);
+   428→  font-weight: 500;
+   429→}
+   430→
+   431→.micro-label-gold {
+   432→  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+   433→  font-size: 9px;
+   434→  letter-spacing: 0.22em;
+   435→  text-transform: uppercase;
+   436→  color: var(--primary);
+   437→  font-weight: 500;
+   438→}
+   439→
+   440→/* ===========================================================================
+   441→   GOLD FOIL — animated shimmer text for key financial figures
+   442→   Each theme defines its own --gold-foil-* tokens so the foil always
+   443→   contrasts correctly with the background (e.g. dark stops on ivory,
+   444→   rose-gold stops on pink, antique gold on oxblood).
+   445→   =========================================================================== */
+   446→
+   447→.text-gold-foil {
+   448→  background: linear-gradient(
+   449→    100deg,
+   450→    var(--gold-foil-1) 0%,
+   451→    var(--gold-foil-2) 25%,
+   452→    var(--gold-foil-3) 50%,
+   453→    var(--gold-foil-2) 75%,
+   454→    var(--gold-foil-1) 100%
+   455→  );
+   456→  background-size: 200% auto;
+   457→  -webkit-background-clip: text;
+   458→  background-clip: text;
+   459→  -webkit-text-fill-color: transparent;
+   460→  color: transparent;
+   461→  animation: gold-shimmer 6s linear infinite;
+   462→}
+   463→
+   464→.text-gold-foil-static {
+   465→  background: linear-gradient(
+   466→    180deg,
+   467→    var(--gold-foil-static-1) 0%,
+   468→    var(--gold-foil-static-2) 50%,
+   469→    var(--gold-foil-static-3) 100%
+   470→  );
+   471→  -webkit-background-clip: text;
+   472→  background-clip: text;
+   473→  -webkit-text-fill-color: transparent;
+   474→  color: transparent;
+   475→}
+   476→
+   477→@keyframes gold-shimmer {
+   478→  0%   { background-position: 0% center; }
+   479→  100% { background-position: 200% center; }
+   480→}
+   481→
+   482→/* ===========================================================================
+   483→   TENEBRIST SURFACES — cards with theme-aware depth + shadow + hover lift
+   484→   =========================================================================== */
+   485→
+   486→.surface-wood {
+   487→  background:
+   488→    radial-gradient(120% 100% at 0% 0%, var(--surface-wood-glow) 0%, transparent 50%),
+   489→    var(--surface-wood-bg);
+   490→  border: 1px solid var(--hairline);
+   491→  backdrop-filter: blur(8px);
+   492→  -webkit-backdrop-filter: blur(8px);
+   493→  box-shadow: var(--card-shadow);
+   494→  transition: box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+   495→              transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+   496→              border-color 0.35s ease;
+   497→}
+   498→
+   499→.surface-wood-strong {
+   500→  background:
+   501→    radial-gradient(140% 120% at 50% 0%, var(--surface-wood-strong-glow) 0%, transparent 55%),
+   502→    var(--surface-wood-strong-bg);
+   503→  border: 1px solid var(--hairline-strong);
+   504→  backdrop-filter: blur(10px);
+   505→  -webkit-backdrop-filter: blur(10px);
+   506→  box-shadow: var(--card-shadow);
+   507→  transition: box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+   508→              transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+   509→              border-color 0.35s ease;
+   510→}
+   511→
+   512→.surface-flat {
+   513→  background: var(--surface-flat-bg);
+   514→  border: 1px solid var(--hairline-soft);
+   515→  transition: border-color 0.3s ease;
+   516→}
+   517→
+   518→/* Hover lift effect — only on interactive cards (add .card-hover) */
+   519→.card-hover {
+   520→  cursor: pointer;
+   521→}
+   522→.card-hover:hover {
+   523→  box-shadow: var(--card-shadow-hover);
+   524→  transform: translateY(-2px);
+   525→  border-color: var(--hairline-strong);
+   526→}
+   527→
+   528→/* Subtle hover for non-interactive cards inside tables/lists */
+   529→.row-hover:hover {
+   530→  background: color-mix(in srgb, var(--primary) 3%, transparent);
+   531→}
+   532→
+   533→/* Ethereal halo glow behind child avatars */
+   534→.halo-glow {
+   535→  position: relative;
+   536→}
+   537→.halo-glow::before {
+   538→  content: "";
+   539→  position: absolute;
+   540→  inset: -8px;
+   541→  border-radius: 50%;
+   542→  background: var(--halo-color, #C9A84C);
+   543→  opacity: 0.18;
+   544→  filter: blur(12px);
+   545→  z-index: 0;
+   546→}
+   547→
+   548→/* Hairline gold gradient dividers — theme-aware via primary color */
+   549→.divider-gold {
+   550→  height: 1px;
+   551→  background: linear-gradient(
+   552→    90deg,
+   553→    transparent 0%,
+   554→    color-mix(in srgb, var(--primary) 35%, transparent) 15%,
+   555→    color-mix(in srgb, var(--primary) 15%, transparent) 85%,
+   556→    transparent 100%
+   557→  );
+   558→}
+   559→
+   560→.divider-gold-vertical {
+   561→  width: 1px;
+   562→  background: linear-gradient(
+   563→    180deg,
+   564→    transparent 0%,
+   565→    color-mix(in srgb, var(--primary) 35%, transparent) 15%,
+   566→    color-mix(in srgb, var(--primary) 15%, transparent) 85%,
+   567→    transparent 100%
+   568→  );
+   569→}
+   570→
+   571→/* Ultra-fine noise grain for organic warmth */
+   572→.grain-overlay {
+   573→  position: fixed;
+   574→  inset: 0;
+   575→  pointer-events: none;
+   576→  z-index: 9999;
+   577→  opacity: var(--grain-opacity);
+   578→  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+   579→}
+   580→
+   581→/* Ambient backdrop — very slow drifting radial glow, sets the mood.
+   582→   Sits behind everything (z-0), uses primary color at low opacity. */
+   583→.ambient-backdrop {
+   584→  position: fixed;
+   585→  inset: 0;
+   586→  pointer-events: none;
+   587→  z-index: 0;
+   588→  overflow: hidden;
+   589→}
+   590→.ambient-backdrop::before,
+   591→.ambient-backdrop::after {
+   592→  content: "";
+   593→  position: absolute;
+   594→  border-radius: 50%;
+   595→  filter: blur(80px);
+   596→  opacity: 0.5;
+   597→}
+   598→.ambient-backdrop::before {
+   599→  width: 60vw;
+   600→  height: 60vw;
+   601→  top: -20vw;
+   602→  right: -10vw;
+   603→  background: radial-gradient(circle, var(--surface-wood-strong-glow) 0%, transparent 70%);
+   604→  animation: ambient-drift-1 32s ease-in-out infinite;
+   605→}
+   606→.ambient-backdrop::after {
+   607→  width: 50vw;
+   608→  height: 50vw;
+   609→  bottom: -15vw;
+   610→  left: -10vw;
+   611→  background: radial-gradient(circle, var(--surface-wood-glow) 0%, transparent 70%);
+   612→  animation: ambient-drift-2 40s ease-in-out infinite;
+   613→}
+   614→
+   615→@keyframes ambient-drift-1 {
+   616→  0%, 100% { transform: translate(0, 0) scale(1); }
+   617→  50%      { transform: translate(-30px, 40px) scale(1.1); }
+   618→}
+   619→@keyframes ambient-drift-2 {
+   620→  0%, 100% { transform: translate(0, 0) scale(1); }
+   621→  50%      { transform: translate(40px, -30px) scale(1.15); }
+   622→}
+   623→
+   624→/* Progress bars — thin, editorial, with subtle shimmer */
+   625→.progress-thin {
+   626→  height: 3px;
+   627→  background: var(--hairline-soft);
+   628→  border-radius: 2px;
+   629→  overflow: hidden;
+   630→  position: relative;
+   631→}
+   632→.progress-thin > div {
+   633→  height: 100%;
+   634→  background: linear-gradient(90deg, var(--primary) 0%, var(--chart-5) 100%);
+   635→  transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+   636→  position: relative;
+   637→  overflow: hidden;
+   638→}
+   639→/* Subtle shimmer sweep on progress fill */
+   640→.progress-thin > div::after {
+   641→  content: "";
+   642→  position: absolute;
+   643→  inset: 0;
+   644→  background: linear-gradient(
+   645→    90deg,
+   646→    transparent 0%,
+   647→    rgba(255, 255, 255, 0.25) 50%,
+   648→    transparent 100%
+   649→  );
+   650→  transform: translateX(-100%);
+   651→  animation: progress-shimmer 3s ease-in-out infinite;
+   652→}
+   653→@keyframes progress-shimmer {
+   654→  0%   { transform: translateX(-100%); }
+   655→  60%  { transform: translateX(100%); }
+   656→  100% { transform: translateX(100%); }
+   657→}
+   658→
+   659→/* Status pills — muted, never loud */
+   660→.pill {
+   661→  display: inline-flex;
+   662→  align-items: center;
+   663→  gap: 6px;
+   664→  padding: 3px 10px;
+   665→  border-radius: 999px;
+   666→  font-size: 10px;
+   667→  letter-spacing: 0.10em;
+   668→  text-transform: uppercase;
+   669→  font-weight: 500;
+   670→  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+   671→}
+   672→.pill-gold {
+   673→  background: color-mix(in srgb, var(--primary) 12%, transparent);
+   674→  color: var(--primary);
+   675→  border: 1px solid color-mix(in srgb, var(--primary) 35%, transparent);
+   676→}
+   677→.pill-green {
+   678→  background: color-mix(in srgb, var(--chart-2) 12%, transparent);
+   679→  color: var(--chart-2);
+   680→  border: 1px solid color-mix(in srgb, var(--chart-2) 35%, transparent);
+   681→}
+   682→.pill-amber {
+   683→  background: color-mix(in srgb, var(--chart-3) 12%, transparent);
+   684→  color: var(--chart-3);
+   685→  border: 1px solid color-mix(in srgb, var(--chart-3) 35%, transparent);
+   686→}
+   687→.pill-muted {
+   688→  background: color-mix(in srgb, var(--foreground) 6%, transparent);
+   689→  color: var(--micro-label);
+   690→  border: 1px solid color-mix(in srgb, var(--foreground) 10%, transparent);
+   691→}
+   692→
+   693→/* Gold primary button — refined with active press feedback */
+   694→.btn-gold {
+   695→  background: linear-gradient(180deg, var(--chart-5) 0%, var(--primary) 100%);
+   696→  color: var(--primary-foreground);
+   697→  font-weight: 600;
+   698→  letter-spacing: 0.04em;
+   699→  border: 1px solid var(--primary);
+   700→  transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+   701→}
+   702→.btn-gold:hover:not(:disabled) {
+   703→  background: linear-gradient(180deg, var(--chart-5) 0%, var(--chart-3) 100%);
+   704→  box-shadow: 0 4px 16px color-mix(in srgb, var(--primary) 30%, transparent),
+   705→              0 0 0 1px var(--primary);
+   706→  transform: translateY(-1px);
+   707→}
+   708→.btn-gold:active:not(:disabled) {
+   709→  transform: translateY(0);
+   710→  box-shadow: 0 1px 4px color-mix(in srgb, var(--primary) 20%, transparent);
+   711→}
+   712→.btn-gold:disabled {
+   713→  opacity: 0.4;
+   714→  cursor: not-allowed;
+   715→}
+   716→
+   717→.btn-outline {
+   718→  background: transparent;
+   719→  color: var(--primary);
+   720→  border: 1px solid color-mix(in srgb, var(--primary) 35%, transparent);
+   721→  transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+   722→}
+   723→.btn-outline:hover:not(:disabled) {
+   724→  background: color-mix(in srgb, var(--primary) 8%, transparent);
+   725→  border-color: color-mix(in srgb, var(--primary) 55%, transparent);
+   726→  transform: translateY(-1px);
+   727→}
+   728→.btn-outline:active:not(:disabled) {
+   729→  transform: translateY(0);
+   730→}
+   731→
+   732→.btn-ghost {
+   733→  background: transparent;
+   734→  color: var(--text-softer);
+   735→  border: 1px solid transparent;
+   736→  transition: all 0.2s ease;
+   737→}
+   738→.btn-ghost:hover {
+   739→  color: var(--chart-5);
+   740→  background: color-mix(in srgb, var(--primary) 6%, transparent);
+   741→}
+   742→
+   743→/* Input fields — theme-aware with gold focus ring */
+   744→.input-editorial {
+   745→  background: var(--surface-flat-bg);
+   746→  border: 1px solid var(--hairline-strong);
+   747→  color: var(--foreground);
+   748→  border-radius: 4px;
+   749→  transition: all 0.2s ease;
+   750→  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+   751→}
+   752→.input-editorial:focus {
+   753→  outline: none;
+   754→  border-color: color-mix(in srgb, var(--primary) 55%, transparent);
+   755→  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 10%, transparent);
+   756→}
+   757→.input-editorial::placeholder {
+   758→  color: var(--text-faint);
+   759→}
+   760→
+   761→/* Sidebar nav item */
+   762→.nav-item {
+   763→  position: relative;
+   764→  display: flex;
+   765→  align-items: center;
+   766→  gap: 12px;
+   767→  padding: 10px 14px;
+   768→  color: var(--micro-label);
+   769→  font-size: 13px;
+   770→  letter-spacing: 0.04em;
+   771→  border-radius: 4px;
+   772→  cursor: pointer;
+   773→  transition: all 0.2s ease;
+   774→}
+   775→.nav-item:hover {
+   776→  color: var(--foreground);
+   777→  background: color-mix(in srgb, var(--primary) 4%, transparent);
+   778→}
+   779→.nav-item.active {
+   780→  color: var(--chart-5);
+   781→  background: color-mix(in srgb, var(--primary) 8%, transparent);
+   782→}
+   783→.nav-item.active::before {
+   784→  content: "";
+   785→  position: absolute;
+   786→  left: -1px;
+   787→  top: 8px;
+   788→  bottom: 8px;
+   789→  width: 2px;
+   790→  background: linear-gradient(180deg, var(--primary) 0%, var(--chart-5) 100%);
+   791→  border-radius: 1px;
+   792→}
+   793→
+   794→/* Table styling — editorial ledger look */
+   795→.ledger-table {
+   796→  width: 100%;
+   797→  border-collapse: separate;
+   798→  border-spacing: 0;
+   799→  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+   800→  font-size: 13px;
+   801→}
+   802→.ledger-table th {
+   803→  text-align: left;
+   804→  padding: 14px 16px;
+   805→  font-size: 9px;
+   806→  letter-spacing: 0.22em;
+   807→  text-transform: uppercase;
+   808→  font-weight: 500;
+   809→  color: var(--text-faint);
+   810→  border-bottom: 1px solid var(--hairline-strong);
+   811→  background: transparent;
+   812→  position: sticky;
+   813→  top: 0;
+   814→  z-index: 1;
+   815→}
+   816→.ledger-table td {
+   817→  padding: 14px 16px;
+   818→  color: var(--text-soft);
+   819→  border-bottom: 1px solid var(--hairline-soft);
+   820→  vertical-align: middle;
+   821→  transition: background 0.2s ease;
+   822→}
+   823→.ledger-table tbody tr {
+   824→  transition: background 0.2s ease;
+   825→}
+   826→.ledger-table tbody tr:hover td {
+   827→  background: color-mix(in srgb, var(--primary) 4%, transparent);
+   828→}
+   829→.ledger-table tbody tr:last-child td {
+   830→  border-bottom: none;
+   831→}
+   832→
+   833→/* Animations */
+   834→@keyframes fade-up {
+   835→  from { opacity: 0; transform: translateY(8px); }
+   836→  to   { opacity: 1; transform: translateY(0); }
+   837→}
+   838→.animate-fade-up {
+   839→  animation: fade-up 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+   840→}
+   841→
+   842→/* Staggered entrance — add .stagger to parent, children animate in sequence */
+   843→.stagger > * {
+   844→  animation: fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+   845→}
+   846→.stagger > *:nth-child(1) { animation-delay: 0.02s; }
+   847→.stagger > *:nth-child(2) { animation-delay: 0.06s; }
+   848→.stagger > *:nth-child(3) { animation-delay: 0.10s; }
+   849→.stagger > *:nth-child(4) { animation-delay: 0.14s; }
+   850→.stagger > *:nth-child(5) { animation-delay: 0.18s; }
+   851→.stagger > *:nth-child(6) { animation-delay: 0.22s; }
+   852→.stagger > *:nth-child(7) { animation-delay: 0.26s; }
+   853→.stagger > *:nth-child(8) { animation-delay: 0.30s; }
+   854→
+   855→
+   856→@keyframes breathe {
+   857→  0%, 100% { opacity: 0.5; }
+   858→  50%      { opacity: 0.9; }
+   859→}
+   860→.animate-breathe {
+   861→  animation: breathe 4s ease-in-out infinite;
+   862→}
+   863→
+   864→/* Responsive utilities */
+   865→@media (max-width: 768px) {
+   866→  .hide-mobile { display: none !important; }
+   867→}
+   868→@media (min-width: 769px) {
+   869→  .hide-desktop { display: none !important; }
+   870→}
+   871→
+   872→/* ===========================================================================
+   873→   DESIGN SYSTEM TOKENS — spacing scale, elevation, motion, grid
+   874→   =========================================================================== */
+   875→
+   876→:root {
+   877→  /* Spacing scale — 4px base, geometric progression */
+   878→  --space-1: 4px;
+   879→  --space-2: 8px;
+   880→  --space-3: 12px;
+   881→  --space-4: 16px;
+   882→  --space-5: 20px;
+   883→  --space-6: 24px;
+   884→  --space-8: 32px;
+   885→  --space-10: 40px;
+   886→  --space-12: 48px;
+   887→  --space-16: 64px;
+   888→  --space-20: 80px;
+   889→
+   890→  /* Elevation system — 5 levels */
+   891→  --elevation-1: 0 1px 2px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+   892→  --elevation-2: 0 2px 4px rgba(0,0,0,0.08), 0 4px 8px rgba(0,0,0,0.06);
+   893→  --elevation-3: 0 4px 8px rgba(0,0,0,0.10), 0 8px 16px rgba(0,0,0,0.08);
+   894→  --elevation-4: 0 8px 16px rgba(0,0,0,0.12), 0 16px 32px rgba(0,0,0,0.10);
+   895→  --elevation-5: 0 16px 32px rgba(0,0,0,0.16), 0 32px 64px rgba(0,0,0,0.12);
+   896→
+   897→  /* Motion tokens — calm, intentional, never bouncy */
+   898→  --motion-fast: 150ms cubic-bezier(0.22, 1, 0.36, 1);
+   899→  --motion-normal: 250ms cubic-bezier(0.22, 1, 0.36, 1);
+   900→  --motion-slow: 400ms cubic-bezier(0.22, 1, 0.36, 1);
+   901→  --motion-spring: 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
+   902→
+   903→  /* Grid system */
+   904→  --grid-cols: 12;
+   905→  --grid-gutter: var(--space-4);
+   906→  --grid-margin: var(--space-6);
+   907→  --content-max: 1280px;
+   908→
+   909→  /* Focus ring — accessible, visible, theme-aware */
+   910→  --focus-ring: 0 0 0 3px color-mix(in srgb, var(--primary) 30%, transparent);
+   911→
+   912→  /* Z-index scale */
+   913→  --z-base: 0;
+   914→  --z-dropdown: 30;
+   915→  --z-sticky: 40;
+   916→  --z-overlay: 50;
+   917→  --z-modal: 60;
+   918→  --z-toast: 70;
+   919→  --z-tooltip: 80;
+   920→}
+   921→
+   922→/* ===========================================================================
+   923→   ACCESSIBILITY — focus management, reduced motion, screen reader
+   924→   =========================================================================== */
+   925→
+   926→/* Visible focus ring on keyboard navigation (not on mouse click) */
+   927→:focus-visible {
+   928→  outline: none;
+   929→  box-shadow: var(--focus-ring);
+   930→  border-radius: 2px;
+   931→}
+   932→
+   933→/* Remove focus ring on mouse click */
+   934→:focus:not(:focus-visible) {
+   935→  outline: none;
+   936→  box-shadow: none;
+   937→}
+   938→
+   939→/* Skip to content link — for keyboard users */
+   940→.skip-link {
+   941→  position: absolute;
+   942→  top: -100px;
+   943→  left: 0;
+   944→  padding: var(--space-2) var(--space-4);
+   945→  background: var(--primary);
+   946→  color: var(--primary-foreground);
+   947→  font-size: 12px;
+   948→  z-index: var(--z-tooltip);
+   949→  transition: top var(--motion-fast);
+   950→  border-radius: 0 0 4px 0;
+   951→}
+   952→.skip-link:focus {
+   953→  top: 0;
+   954→}
+   955→
+   956→/* Screen reader only — visually hidden but accessible */
+   957→.sr-only {
+   958→  position: absolute;
+   959→  width: 1px;
+   960→  height: 1px;
+   961→  padding: 0;
+   962→  margin: -1px;
+   963→  overflow: hidden;
+   964→  clip: rect(0, 0, 0, 0);
+   965→  white-space: nowrap;
+   966→  border: 0;
+   967→}
+   968→
+   969→/* Reduced motion — respect user's preference */
+   970→@media (prefers-reduced-motion: reduce) {
+   971→  *,
+   972→  *::before,
+   973→  *::after {
+   974→    animation-duration: 0.01ms !important;
+   975→    animation-iteration-count: 1 !important;
+   976→    transition-duration: 0.01ms !important;
+   977→    scroll-behavior: auto !important;
+   978→  }
+   979→  .text-gold-foil { animation: none !important; }
+   980→  .animate-breathe { animation: none !important; opacity: 0.7; }
+   981→  .stagger > * { animation: none !important; opacity: 1; }
+   982→  .progress-thin > div::after { animation: none !important; }
+   983→}
+   984→
+   985→/* ===========================================================================
+   986→   MOBILE BOTTOM NAVIGATION — thumb-friendly tab bar
+   987→   =========================================================================== */
+   988→
+   989→.mobile-bottom-nav {
+   990→  position: fixed;
+   991→  bottom: 0;
+   992→  left: 0;
+   993→  right: 0;
+   994→  z-index: var(--z-sticky);
+   995→  display: flex;
+   996→  justify-content: space-around;
+   997→  align-items: center;
+   998→  padding: var(--space-1) var(--space-2);
+   999→  background: var(--topbar-bg);
+  1000→  backdrop-filter: blur(12px);
+  1001→  -webkit-backdrop-filter: blur(12px);
+  1002→  border-top: 1px solid var(--hairline);
+  1003→  min-height: 56px;
+  1004→  padding-bottom: env(safe-area-inset-bottom, 0px);
+  1005→}
+  1006→
+  1007→.mobile-bottom-nav-item {
+  1008→  display: flex;
+  1009→  flex-direction: column;
+  1010→  align-items: center;
+  1011→  gap: 2px;
+  1012→  padding: var(--space-1) var(--space-2);
+  1013→  color: var(--micro-label);
+  1014→  font-size: 9px;
+  1015→  letter-spacing: 0.04em;
+  1016→  text-transform: uppercase;
+  1017→  border-radius: 6px;
+  1018→  transition: color var(--motion-fast);
+  1019→  cursor: pointer;
+  1020→  flex: 1;
+  1021→  max-width: 72px;
+  1022→}
+  1023→.mobile-bottom-nav-item.active {
+  1024→  color: var(--primary);
+  1025→}
+  1026→.mobile-bottom-nav-item:active {
+  1027→  transform: scale(0.95);
+  1028→}
+  1029→
+  1030→/* ===========================================================================
+  1031→   SKELETON LOADING — perceived performance
+  1032→   =========================================================================== */
+  1033→
+  1034→@keyframes skeleton-shimmer {
+  1035→  0% { background-position: -200% 0; }
+  1036→  100% { background-position: 200% 0; }
+  1037→}
+  1038→
+  1039→.skeleton {
+  1040→  background: linear-gradient(
+  1041→    90deg,
+  1042→    var(--surface-flat-bg) 0%,
+  1043→    color-mix(in srgb, var(--primary) 6%, var(--surface-flat-bg)) 50%,
+  1044→    var(--surface-flat-bg) 100%
+  1045→  );
+  1046→  background-size: 200% 100%;
+  1047→  animation: skeleton-shimmer 2s ease-in-out infinite;
+  1048→  border-radius: 4px;
+  1049→}
+  1050→
+  1051→.skeleton-text { height: 12px; margin-bottom: 4px; }
+  1052→.skeleton-title { height: 20px; width: 60%; margin-bottom: 8px; }
+  1053→.skeleton-card {
+  1054→  height: 100px;
+  1055→  border-radius: var(--space-2);
+  1056→  border: 1px solid var(--hairline);
+  1057→}
+  1058→
+  1059→/* ===========================================================================
+  1060→   TOAST NOTIFICATIONS — action feedback
+  1061→   =========================================================================== */
+  1062→
+  1063→.toast-container {
+  1064→  position: fixed;
+  1065→  bottom: var(--space-6);
+  1066→  left: 50%;
+  1067→  transform: translateX(-50%);
+  1068→  z-index: var(--z-toast);
+  1069→  display: flex;
+  1070→  flex-direction: column;
+  1071→  gap: var(--space-2);
+  1072→  pointer-events: none;
+  1073→  max-width: 90vw;
+  1074→}
+  1075→
+  1076→.toast {
+  1077→  display: flex;
+  1078→  align-items: center;
+  1079→  gap: var(--space-3);
+  1080→  padding: var(--space-3) var(--space-5);
+  1081→  border-radius: var(--space-2);
+  1082→  background: var(--card);
+  1083→  border: 1px solid var(--hairline-strong);
+  1084→  box-shadow: var(--elevation-3);
+  1085→  pointer-events: auto;
+  1086→  animation: toast-in var(--motion-spring) both;
+  1087→  min-width: 280px;
+  1088→}
+  1089→.toast.removing {
+  1090→  animation: toast-out var(--motion-normal) both;
+  1091→}
+  1092→.toast-success { border-left: 3px solid var(--chart-2); }
+  1093→.toast-error { border-left: 3px solid var(--destructive); }
+  1094→.toast-info { border-left: 3px solid var(--primary); }
+  1095→
+  1096→@keyframes toast-in {
+  1097→  from { opacity: 0; transform: translateY(20px) scale(0.95); }
+  1098→  to { opacity: 1; transform: translateY(0) scale(1); }
+  1099→}
+  1100→@keyframes toast-out {
+  1101→  from { opacity: 1; transform: translateY(0) scale(1); }
+  1102→  to { opacity: 0; transform: translateY(10px) scale(0.95); }
+  1103→}
+  1104→
+  1105→/* ===========================================================================
+  1106→   EMPTY STATES — graceful "nothing here yet"
+  1107→   =========================================================================== */
+  1108→
+  1109→.empty-state {
+  1110→  display: flex;
+  1111→  flex-direction: column;
+  1112→  align-items: center;
+  1113→  justify-content: center;
+  1114→  padding: var(--space-12) var(--space-6);
+  1115→  text-align: center;
+  1116→}
+  1117→.empty-state-icon {
+  1118→  width: 48px;
+  1119→  height: 48px;
+  1120→  border-radius: 50%;
+  1121→  display: flex;
+  1122→  align-items: center;
+  1123→  justify-content: center;
+  1124→  margin-bottom: var(--space-4);
+  1125→  background: color-mix(in srgb, var(--primary) 8%, transparent);
+  1126→  border: 1px solid var(--hairline);
+  1127→}
+  1128→.empty-state-title {
+  1129→  font-family: var(--font-editorial);
+  1130→  font-size: 16px;
+  1131→  color: var(--foreground);
+  1132→  margin-bottom: var(--space-2);
+  1133→  letter-spacing: 0.02em;
+  1134→}
+  1135→.empty-state-body {
+  1136→  font-size: 13px;
+  1137→  color: var(--text-softer);
+  1138→  max-width: 320px;
+  1139→  line-height: 1.5;
+  1140→}
+  1141→
+  1142→/* ===========================================================================
+  1143→   MOTION UTILITIES — elegant, quiet micro-interactions
+  1144→   =========================================================================== */
+  1145→
+  1146→/* Fade in on scroll (add .reveal to elements) */
+  1147→.reveal {
+  1148→  opacity: 0;
+  1149→  transform: translateY(12px);
+  1150→  transition: opacity var(--motion-slow), transform var(--motion-slow);
+  1151→}
+  1152→.reveal.visible {
+  1153→  opacity: 1;
+  1154→  transform: translateY(0);
+  1155→}
+  1156→
+  1157→/* Number count-up animation */
+  1158→.count-up {
+  1159→  font-variant-numeric: tabular-nums;
+  1160→}
+  1161→
+  1162→/* Gentle pulse for live/active indicators */
+  1163→@keyframes gentle-pulse {
+  1164→  0%, 100% { opacity: 1; }
+  1165→  50% { opacity: 0.6; }
+  1166→}
+  1167→.pulse-gentle {
+  1168→  animation: gentle-pulse 2s ease-in-out infinite;
+  1169→}
+  1170→
+  1171→/* ===========================================================================
+  1172→   FAMILY THEME BANNER — annual theme + monthly quote footer for child view
+  1173→   =========================================================================== */
+  1174→.family-banner {
+  1175→  position: relative;
+  1176→  overflow: hidden;
+  1177→}
+  1178→.family-banner::before {
+  1179→  /* Subtle gold corner flourish — top left */
+  1180→  content: "";
+  1181→  position: absolute;
+  1182→  top: 0;
+  1183→  left: 0;
+  1184→  width: 80px;
+  1185→  height: 80px;
+  1186→  background:
+  1187→    linear-gradient(135deg, color-mix(in srgb, var(--primary) 30%, transparent) 0%, transparent 60%);
+  1188→  pointer-events: none;
+  1189→  opacity: 0.6;
+  1190→}
+  1191→.family-banner::after {
+  1192→  /* Subtle gold corner flourish — bottom right */
+  1193→  content: "";
+  1194→  position: absolute;
+  1195→  bottom: 0;
+  1196→  right: 0;
+  1197→  width: 80px;
+  1198→  height: 80px;
+  1199→  background:
+  1200→    linear-gradient(315deg, color-mix(in srgb, var(--primary) 30%, transparent) 0%, transparent 60%);
+  1201→  pointer-events: none;
+  1202→  opacity: 0.6;
+  1203→}
+  1204→
+  1205→/* Ornamental rule with center diamond */
+  1206→.ornamental-rule {
+  1207→  display: flex;
+  1208→  align-items: center;
+  1209→  gap: 12px;
+  1210→}
+  1211→.ornamental-rule::before,
+  1212→.ornamental-rule::after {
+  1213→  content: "";
+  1214→  flex: 1;
+  1215→  height: 1px;
+  1216→  background: linear-gradient(
+  1217→    90deg,
+  1218→    transparent 0%,
+  1219→    color-mix(in srgb, var(--primary) 35%, transparent) 50%,
+  1220→    transparent 100%
+  1221→  );
+  1222→}
+  1223→.ornamental-rule::before {
+  1224→  background: linear-gradient(
+  1225→    90deg,
+  1226→    transparent 0%,
+  1227→    color-mix(in srgb, var(--primary) 35%, transparent) 100%
+  1228→  );
+  1229→}
+  1230→.ornamental-rule::after {
+  1231→  background: linear-gradient(
+  1232→    90deg,
+  1233→    color-mix(in srgb, var(--primary) 35%, transparent) 0%,
+  1234→    transparent 100%
+  1235→  );
+  1236→}
+  1237→.ornamental-diamond {
+  1238→  width: 6px;
+  1239→  height: 6px;
+  1240→  background: var(--primary);
+  1241→  transform: rotate(45deg);
+  1242→  flex-shrink: 0;
+  1243→  opacity: 0.7;
+  1244→}
+  1245→

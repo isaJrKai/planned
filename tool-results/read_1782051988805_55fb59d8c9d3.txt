@@ -1,0 +1,1462 @@
+     1→"use client";
+     2→
+     3→// ============================================================================
+     4→// PARENT DASHBOARD — Planned Kids Savings (client component)
+     5→// ============================================================================
+     6→// Rendered by app/page.tsx (server component) AFTER auth checks pass.
+     7→// This file is a client component so it can use Zustand, useState, useEffect.
+     8→// ============================================================================
+     9→
+    10→import { useEffect, useMemo, useState } from "react";
+    11→import {
+    12→  LayoutDashboard,
+    13→  Users,
+    14→  ArrowLeftRight,
+    15→  TrendingUp,
+    16→  Sparkles,
+    17→  Settings,
+    18→  ChevronRight,
+    19→  Plus,
+    20→  ArrowDownRight,
+    21→  ArrowUpRight,
+    22→  Search,
+    23→  Bell,
+    24→  PiggyBank,
+    25→  Target,
+    26→  Trophy,
+    27→  Calendar,
+    28→  Wallet,
+    29→  Database,
+    30→} from "lucide-react";
+    31→import {
+    32→  useStore,
+    33→  familyTotalSavings,
+    34→  familyTotalInvested,
+    35→  familyThisMonthSaved,
+    36→  familyTotalGoals,
+    37→  parentTokenBalance,
+    38→  parentTokensGiven,
+    39→  parentTokensRedeemed,
+    40→  txTypeLabel,
+    41→} from "@/lib/store";
+    42→import {
+    43→  TOKEN_BUY_RATE,
+    44→  TOKEN_REDEEM_RATE,
+    45→  formatUGX,
+    46→  formatUGXPlain,
+    47→  timeAgo,
+    48→} from "@/lib/phrases";
+    49→import { ChildDashboard } from "@/components/child-dashboard";
+    50→import { GiveTokensModal, AddSpendingModal } from "@/components/modals";
+    51→import type { SpendingOwner } from "@/components/modals";
+    52→import { ThemeSwitcher } from "@/components/theme-switcher";
+    53→import {
+    54→  SearchOverlay,
+    55→  NotificationsButton,
+    56→  LogSpendFab,
+    57→} from "@/components/parent-actions";
+    58→import { ParentQuoteEditor } from "@/components/parent-quote-editor";
+    59→import { GoalsTab } from "@/components/goals";
+    60→import { Avatar } from "@/components/avatar";
+    61→import {
+    62→  setParentPhoto as persistSetParentPhoto,
+    63→  setParentName as persistSetParentName,
+    64→  setChildPhoto as persistSetChildPhoto,
+    65→  setChildName as persistSetChildName,
+    66→} from "@/lib/mutations";
+    67→import { useHydratedState } from "@/lib/store-hydration";
+    68→import { RecommendationsPanel } from "@/components/recommendations-panel";
+    69→import { ParentInsightsPanel } from "@/components/parent-insights-panel";
+    70→import { AdminPanel } from "@/components/admin-panel";
+    71→import { VisionTrustPanel } from "@/components/vision-trust-panel";
+    72→import { FamilyCharterEditor } from "@/components/family-charter";
+    73→import { WhatsNewPanel } from "@/components/whats-new-panel";
+    74→import { FamilyHealthDashboard } from "@/components/family-health-dashboard";
+    75→import { DeveloperPanel } from "@/components/developer-panel";
+    76→import { PrivacyControlCenter } from "@/components/privacy-control-center";
+    77→import { ConstitutionPanel } from "@/components/constitution-panel";
+    78→import { RoadmapPanel } from "@/components/roadmap-panel";
+    79→import { ManifestoPanel } from "@/components/manifesto-panel";
+    80→import { OnboardingFlow, useOnboardingCheck } from "@/components/onboarding-flow";
+    81→import { PWAInstallPrompt, IOSInstallHint } from "@/components/pwa-install-prompt";
+    82→import { MobileBottomNav, useToast } from "@/components/ui-primitives";
+    83→import {
+    84→  SavingsTrendChart,
+    85→  DistributionDonut,
+    86→  CashFlowBars,
+    87→  GoalRadials,
+    88→} from "@/components/charts";
+    89→import type { Child } from "@/lib/types";
+    90→import { useShallow } from "zustand/react/shallow";
+    91→
+    92→type Tab = "overview" | "children" | "transactions" | "investments" | "tokens" | "goals" | "settings" | "admin";
+    93→
+    94→interface DashboardClientProps {
+    95→  /** When true, the Admin tab is shown in the sidebar. False for USER role. */
+    96→  isAdmin?: boolean;
+    97→  /** Logged-in user's email, shown in the sidebar footer. */
+    98→  userEmail?: string | null;
+    99→}
+   100→
+   101→export default function DashboardClient({ isAdmin = false, userEmail }: DashboardClientProps = {}) {
+   102→  const [tab, setTab] = useState<Tab>("overview");
+   103→  // Store only IDs — never the whole child object. Otherwise the saved
+   104→  // reference goes stale whenever the store updates the child's balance.
+   105→  const [activeChildId, setActiveChildId] = useState<string | null>(null);
+   106→  const [giveToChildId, setGiveToChildId] = useState<string | null>(null);
+   107→  const [spendOwner, setSpendOwner] = useState<SpendingOwner | null>(null);
+   108→  const [searchOpen, setSearchOpen] = useState(false);
+   109→  const [sidebarOpen, setSidebarOpen] = useState(false);
+   110→
+   111→  // Hydrate from /api/state on first mount — loads real DB data.
+   112→  useHydratedState();
+   113→
+   114→  // First-run onboarding check (must be before conditional return)
+   115→  const { needsOnboarding, checked } = useOnboardingCheck();
+   116→
+   117→  // Cmd+K / Ctrl+K keyboard shortcut to open search.
+   118→  useEffect(() => {
+   119→    const onKey = (e: KeyboardEvent) => {
+   120→      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+   121→        e.preventDefault();
+   122→        setSearchOpen(true);
+   123→      }
+   124→    };
+   125→    window.addEventListener("keydown", onKey);
+   126→    return () => window.removeEventListener("keydown", onKey);
+   127→  }, []);
+   128→
+   129→  const childList = useStore((s) => s.children);
+   130→  const parents = useStore((s) => s.parents);
+   131→  const sidebarTokenBalance = useStore(parentTokenBalance);
+   132→
+   133→  // Always look the child up from the live store so balance updates propagate.
+   134→  const activeChild = activeChildId
+   135→    ? childList.find((c) => c.id === activeChildId) ?? null
+   136→    : null;
+   137→  const giveToChild = giveToChildId
+   138→    ? childList.find((c) => c.id === giveToChildId) ?? null
+   139→    : null;
+   140→
+   141→  // If a child is selected, render the child dashboard instead.
+   142→  if (activeChild) {
+   143→    return (
+   144→      <ChildDashboard
+   145→        child={activeChild}
+   146→        onBack={() => setActiveChildId(null)}
+   147→      />
+   148→    );
+   149→  }
+   150→
+   151→  const children = childList;
+   152→
+   153→  // Show onboarding if first visit (after all hooks)
+   154→  if (checked && needsOnboarding) {
+   155→    return <OnboardingFlow />;
+   156→  }
+   157→
+   158→  const allNavItems: { id: Tab; label: string; icon: any }[] = [
+   159→    { id: "overview", label: "Overview", icon: LayoutDashboard },
+   160→    { id: "children", label: "Children", icon: Users },
+   161→    { id: "transactions", label: "Transactions", icon: ArrowLeftRight },
+   162→    { id: "investments", label: "Investments", icon: TrendingUp },
+   163→    { id: "tokens", label: "Tokens", icon: Sparkles },
+   164→    { id: "goals", label: "Goals", icon: Target },
+   165→    { id: "settings", label: "Settings", icon: Settings },
+   166→    { id: "admin", label: "Admin", icon: Database },
+   167→  ];
+   168→
+   169→  // Hide admin tab for non-super-admin users. The /admin route is also
+   170→  // protected server-side via middleware + layout — this is just UI cleanup.
+   171→  const navItems = isAdmin
+   172→    ? allNavItems
+   173→    : allNavItems.filter((item) => item.id !== "admin");
+   174→
+   175→  return (
+   176→    <div className="min-h-screen bg-background flex">
+   177→      {/* Mobile sidebar toggle */}
+   178→      <button
+   179→        onClick={() => setSidebarOpen(!sidebarOpen)}
+   180→        className="hide-desktop fixed top-4 left-4 z-50 btn-outline p-2 rounded"
+   181→        aria-label="Toggle navigation"
+   182→      >
+   183→        <ChevronRight
+   184→          className={`h-4 w-4 transition-transform ${sidebarOpen ? "rotate-90" : ""}`}
+   185→        />
+   186→      </button>
+   187→
+   188→      {/* Sidebar */}
+   189→      {sidebarOpen && (
+   190→        <div
+   191→          className="hide-desktop fixed inset-0 z-30 bg-black/60"
+   192→          onClick={() => setSidebarOpen(false)}
+   193→        />
+   194→      )}
+   195→
+   196→      <aside
+   197→        className={`
+   198→          fixed md:static z-40 w-64 shrink-0 border-r bg-sidebar text-sidebar-foreground
+   199→          ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
+   200→          transition-transform duration-300 min-h-screen flex flex-col
+   201→        `}
+   202→        style={{ borderColor: "var(--sidebar-border)" }}
+   203→      >
+   204→        {/* Brand */}
+   205→        <div className="px-7 pt-8 pb-6">
+   206→          <div className="micro-label-gold mb-2">PLANNED</div>
+   207→          <div className="font-editorial text-xl text-foreground tracking-editorial leading-tight">
+   208→            Family Wealth
+   209→          </div>
+   210→          <div className="font-editorial italic text-sm text-foreground/40 tracking-wide mt-1">
+   211→            est. 2026
+   212→          </div>
+   213→        </div>
+   214→
+   215→        <div className="divider-gold mx-7" />
+   216→
+   217→        {/* Nav */}
+   218→        <nav className="px-4 py-5 flex-1">
+   219→          {navItems.map((item) => (
+   220→            <button
+   221→              key={item.id}
+   222→              onClick={() => {
+   223→                if (item.id === "admin") {
+   224→                  // Admin lives at /admin route (middleware + server-guarded)
+   225→                  window.location.href = "/admin";
+   226→                  return;
+   227→                }
+   228→                setTab(item.id);
+   229→                setSidebarOpen(false);
+   230→              }}
+   231→              className={`nav-item w-full mb-1 ${tab === item.id ? "active" : ""}`}
+   232→            >
+   233→              <item.icon className="h-3.5 w-3.5" />
+   234→              <span className="flex-1 text-left">{item.label}</span>
+   235→              {tab === item.id && <ChevronRight className="h-3 w-3 opacity-60" />}
+   236→            </button>
+   237→          ))}
+   238→        </nav>
+   239→
+   240→        <div className="divider-gold mx-7" />
+   241→
+   242→        {/* Footer mini-stats */}
+   243→        <div className="px-7 py-6">
+   244→          <div className="micro-label mb-2">Circulating Tokens</div>
+   245→          <div className="font-editorial text-2xl text-gold-foil-static tabular-nums">
+   246→            {sidebarTokenBalance} ◈
+   247→          </div>
+   248→          <div className="micro-label mt-1">
+   249→            ≈ UGX {formatUGXPlain(sidebarTokenBalance * TOKEN_BUY_RATE)} cost basis
+   250→          </div>
+   251→        </div>
+   252→      </aside>
+   253→
+   254→      {/* Main */}
+   255→      <main className="flex-1 min-w-0" id="main-content">
+   256→        {/* Topbar */}
+   257→        <header className="border-b border-[rgba(201,168,76,0.10)] sticky top-0 z-20 bg-background/80 backdrop-blur-md">
+   258→          <div className="px-6 md:px-10 py-5 flex items-center justify-between gap-4">
+   259→            <div>
+   260→              <div className="micro-label-gold mb-1">
+   261→                {new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+   262→              </div>
+   263→              <h1 className="font-editorial text-2xl md:text-3xl text-foreground tracking-editorial leading-tight">
+   264→                {tab === "overview" && "Family Overview"}
+   265→                {tab === "children" && "Children Accounts"}
+   266→                {tab === "transactions" && "Transaction Ledger"}
+   267→                {tab === "investments" && "Investment Portfolio"}
+   268→                {tab === "tokens" && "Token Economy"}
+   269→                {tab === "goals" && "Family Goals"}
+   270→                {tab === "settings" && "Settings"}
+   271→                {tab === "admin" && "Platform Admin"}
+   272→              </h1>
+   273→            </div>
+   274→            <div className="flex items-center gap-2">
+   275→              <button
+   276→                onClick={() => setSearchOpen(true)}
+   277→                className="btn-ghost p-2 rounded"
+   278→                aria-label="Search"
+   279→                title="Search (children, goals, transactions, spending)"
+   280→              >
+   281→                <Search className="h-4 w-4" />
+   282→              </button>
+   283→              <NotificationsButton childList={children} parents={parents} />
+   284→              <ThemeSwitcher />
+   285→              <Avatar
+   286→                name={parents[0]?.name ?? "M"}
+   287→                color={parents[0]?.avatarColor ?? "#C9A84C"}
+   288→                photo={parents[0]?.avatarPhoto}
+   289→                size={36}
+   290→                className="ml-1"
+   291→              />
+   292→            </div>
+   293→          </div>
+   294→        </header>
+   295→
+   296→        {/* Content */}
+   297→        <div className="px-6 md:px-10 py-8 max-w-7xl">
+   298→          {tab === "overview" && (
+   299→            <OverviewTab
+   300→              childList={children}
+   301→              parents={parents}
+   302→              onSelectChild={(c) => setActiveChildId(c.id)}
+   303→              onGiveTokens={(c) => setGiveToChildId(c.id)}
+   304→              onLogSpend={(owner) => setSpendOwner(owner)}
+   305→            />
+   306→          )}
+   307→          {tab === "children" && (
+   308→            <ChildrenTab
+   309→              childList={children}
+   310→              onSelectChild={(c) => setActiveChildId(c.id)}
+   311→              onGiveTokens={(c) => setGiveToChildId(c.id)}
+   312→            />
+   313→          )}
+   314→          {tab === "transactions" && <TransactionsTab />}
+   315→          {tab === "investments" && <InvestmentsTab />}
+   316→          {tab === "tokens" && <TokensTab childList={children} onGive={(c) => setGiveToChildId(c.id)} />}
+   317→          {tab === "goals" && <GoalsTab parents={parents} childList={children} />}
+   318→          {tab === "settings" && <SettingsTab />}
+   319→          {tab === "admin" && <AdminPanel />}
+   320→        </div>
+   321→      </main>
+   322→
+   323→      {/* Give Tokens modal */}
+   324→      {giveToChild && (
+   325→        <GiveTokensModal
+   326→          child={giveToChild}
+   327→          onClose={() => setGiveToChildId(null)}
+   328→        />
+   329→      )}
+   330→
+   331→      {/* Add Spending modal — supports parents AND children as owners */}
+   332→      {spendOwner && (
+   333→        <AddSpendingModal
+   334→          owner={spendOwner}
+   335→          onClose={() => setSpendOwner(null)}
+   336→        />
+   337→      )}
+   338→
+   339→      {/* Search overlay — Cmd+K or click search icon */}
+   340→      {searchOpen && (
+   341→        <SearchOverlay
+   342→          onClose={() => setSearchOpen(false)}
+   343→          onNavigateChild={(c) => setActiveChildId(c.id)}
+   344→        />
+   345→      )}
+   346→
+   347→      {/* Floating Log Spend button — always visible on parent dashboard */}
+   348→      <LogSpendFab childList={children} parents={parents} />
+   349→
+   350→      {/* PWA install prompts */}
+   351→      <PWAInstallPrompt />
+   352→      <IOSInstallHint />
+   353→
+   354→      {/* Mobile bottom navigation — thumb-friendly, replaces sidebar on small screens */}
+   355→      <MobileBottomNav
+   356→        items={[
+   357→          { id: "overview", label: "Home", icon: LayoutDashboard },
+   358→          { id: "children", label: "Kids", icon: Users },
+   359→          { id: "goals", label: "Goals", icon: Target },
+   360→          { id: "transactions", label: "Activity", icon: ArrowLeftRight },
+   361→          { id: "settings", label: "More", icon: Settings },
+   362→        ]}
+   363→        activeId={tab}
+   364→        onSelect={(id) => setTab(id as Tab)}
+   365→      />
+   366→    </div>
+   367→  );
+   368→}
+   369→
+   370→// ---- OVERVIEW TAB ----------------------------------------------------------
+   371→// QuickBooks-style: KPI cards row + Children table + Activity feed side panel.
+   372→
+   373→function OverviewTab({
+   374→  childList,
+   375→  parents,
+   376→  onSelectChild,
+   377→  onGiveTokens,
+   378→  onLogSpend,
+   379→}: {
+   380→  childList: Child[];
+   381→  parents: { id: string; name: string; role: string; avatarColor: string; avatarPhoto?: string }[];
+   382→  onSelectChild: (c: Child) => void;
+   383→  onGiveTokens: (c: Child) => void;
+   384→  onLogSpend: (owner: SpendingOwner) => void;
+   385→}) {
+   386→  const totalSavings = useStore(familyTotalSavings);
+   387→  const totalInvested = useStore(familyTotalInvested);
+   388→  const thisMonth = useStore(familyThisMonthSaved);
+   389→  const totalGoals = useStore(familyTotalGoals);
+   390→  const tokens = useStore(parentTokenBalance);
+   391→  // Raw spending state — derive breakdown via useMemo to avoid infinite re-renders
+   392→  // (familySpendingBreakdown selector returns a new array each call).
+   393→  const allSpending = useStore((s) => s.spending);
+   394→  const familySpending = useMemo(
+   395→    () =>
+   396→      allSpending
+   397→        .filter((e) => {
+   398→          const d = new Date(e.timestamp);
+   399→          const now = new Date();
+   400→          return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+   401→        })
+   402→        .reduce((sum, e) => sum + e.amount, 0),
+   403→    [allSpending]
+   404→  );
+   405→  const spendingBreakdown = useMemo(() => {
+   406→    const now = new Date();
+   407→    const map = new Map<string, { ownerKind: "parent" | "child"; ownerName: string; total: number }>();
+   408→    for (const e of allSpending) {
+   409→      const d = new Date(e.timestamp);
+   410→      if (d.getFullYear() !== now.getFullYear() || d.getMonth() !== now.getMonth()) continue;
+   411→      const existing = map.get(e.ownerId);
+   412→      if (existing) {
+   413→        existing.total += e.amount;
+   414→      } else {
+   415→        map.set(e.ownerId, { ownerKind: e.ownerKind, ownerName: e.ownerName, total: e.amount });
+   416→      }
+   417→    }
+   418→    return Array.from(map.entries())
+   419→      .map(([ownerId, v]) => ({ ownerId, ...v }))
+   420→      .sort((a, b) => b.total - a.total);
+   421→  }, [allSpending]);
+   422→  // Raw state, derive recent slice via useMemo.
+   423→  const allTransactions = useStore((s) => s.transactions);
+   424→  const transactions = useMemo(
+   425→    () => allTransactions.slice(0, 8),
+   426→    [allTransactions]
+   427→  );
+   428→  const children = childList;
+   429→
+   430→  const kpis = [
+   431→    {
+   432→      label: "Family Savings",
+   433→      value: formatUGX(totalSavings),
+   434→      sub: `of ${formatUGX(totalGoals)} goal`,
+   435→      pct: totalGoals > 0 ? (totalSavings / totalGoals) * 100 : 0,
+   436→      icon: PiggyBank,
+   437→      hero: true,
+   438→    },
+   439→    {
+   440→      label: "Investments",
+   441→      value: formatUGX(totalInvested),
+   442→      sub: "active portfolio",
+   443→      icon: TrendingUp,
+   444→    },
+   445→    {
+   446→      label: "This Month Saved",
+   447→      value: formatUGX(thisMonth),
+   448→      sub: "credits this period",
+   449→      icon: Calendar,
+   450→    },
+   451→    {
+   452→      label: "Tokens in Circulation",
+   453→      value: `${tokens} ◈`,
+   454→      sub: `cost UGX ${formatUGXPlain(tokens * TOKEN_BUY_RATE)}`,
+   455→      icon: Sparkles,
+   456→    },
+   457→  ];
+   458→
+   459→  return (
+   460→    <div className="space-y-8 animate-fade-up">
+   461→      {/* KPI grid */}
+   462→      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 stagger">
+   463→        {kpis.map((k) => (
+   464→          <div
+   465→            key={k.label}
+   466→            className={`rounded-lg p-6 ${k.hero ? "surface-wood-strong" : "surface-wood card-hover"}`}
+   467→          >
+   468→            <div className="flex items-center justify-between mb-4">
+   469→              <div className="micro-label">{k.label}</div>
+   470→              <k.icon className="h-3.5 w-3.5" style={{ color: "var(--primary)" }} />
+   471→            </div>
+   472→            <div
+   473→              className={`font-editorial tabular-nums leading-none ${
+   474→                k.hero ? "text-3xl text-gold-foil" : "text-2xl text-foreground"
+   475→              }`}
+   476→            >
+   477→              {k.value}
+   478→            </div>
+   479→            <div className="text-[10px] text-foreground/45 mt-2">{k.sub}</div>
+   480→            {k.pct !== undefined && (
+   481→              <div className="progress-thin mt-3">
+   482→                <div style={{ width: `${Math.min(100, k.pct)}%` }} />
+   483→              </div>
+   484→            )}
+   485→          </div>
+   486→        ))}
+   487→      </div>
+   488→
+   489→      {/* Visualizations section — editorial SVG charts.
+   490→          Parents understand graphs better than ledger tables. */}
+   491→      <div className="space-y-3 mb-2">
+   492→        <div className="flex items-center justify-between px-1">
+   493→          <div>
+   494→            <div className="micro-label-gold mb-1">Visualizations</div>
+   495→            <h2 className="font-editorial text-lg text-foreground tracking-wide">
+   496→              Family Insights
+   497→            </h2>
+   498→          </div>
+   499→          <span className="micro-label">last 6 months</span>
+   500→        </div>
+   501→      </div>
+   502→
+   503→      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-8 stagger">
+   504→        <SavingsTrendChart />
+   505→        <DistributionDonut childList={children} />
+   506→        <CashFlowBars />
+   507→        <GoalRadials childList={children} />
+   508→      </div>
+   509→
+   510→      {/* Smart recommendations for the parent */}
+   511→      <div className="mb-6">
+   512→        <RecommendationsPanel familyId="singleton" variant="parent" />
+   513→      </div>
+   514→
+   515→      {/* AI Insights — intelligent summaries with explainability */}
+   516→      <div className="mb-6">
+   517→        <ParentInsightsPanel />
+   518→      </div>
+   519→
+   520→      {/* What's New — platform transparency feed */}
+   521→      <div className="mb-6">
+   522→        <WhatsNewPanel />
+   523→      </div>
+   524→
+   525→      {/* Family Health Dashboard — participation, learning, goals, habits */}
+   526→      <div className="mb-6">
+   527→        <FamilyHealthDashboard />
+   528→      </div>
+   529→
+   530→      {/* Main grid: children table + activity feed */}
+   531→      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+   532→        {/* Children table — 2/3 width on desktop */}
+   533→        <div className="lg:col-span-2 surface-wood rounded-lg overflow-hidden">
+   534→          <div className="px-6 py-5 flex items-center justify-between border-b border-[rgba(201,168,76,0.10)]">
+   535→            <div>
+   536→              <div className="micro-label-gold mb-1">Family Accounts</div>
+   537→              <h2 className="font-editorial text-lg text-foreground tracking-wide">
+   538→                Children Portfolios
+   539→              </h2>
+   540→            </div>
+   541→            <span className="micro-label">{children.length} active</span>
+   542→          </div>
+   543→
+   544→          <table className="ledger-table">
+   545→            <thead>
+   546→              <tr>
+   547→                <th>Child</th>
+   548→                <th className="text-right">Saved</th>
+   549→                <th className="text-right">Goal</th>
+   550→                <th>Progress</th>
+   551→                <th></th>
+   552→              </tr>
+   553→            </thead>
+   554→            <tbody>
+   555→              {children.map((c) => {
+   556→                const pct = (c.currentAmount / c.goalAmount) * 100;
+   557→                return (
+   558→                  <tr
+   559→                    key={c.id}
+   560→                    onClick={() => onSelectChild(c)}
+   561→                    className="cursor-pointer"
+   562→                  >
+   563→                    <td>
+   564→                      <div className="flex items-center gap-3">
+   565→                        <Avatar
+   566→                          name={c.name}
+   567→                          color={c.avatarColor}
+   568→                          photo={c.avatarPhoto}
+   569→                          size={32}
+   570→                        />
+   571→                        <div>
+   572→                          <div className="font-editorial text-sm tracking-wide text-foreground">
+   573→                            {c.name}
+   574→                          </div>
+   575→                          <div className="micro-label mt-0.5">Age {c.age} · {c.goalName}</div>
+   576→                        </div>
+   577→                      </div>
+   578→                    </td>
+   579→                    <td className="text-right tabular-nums text-foreground font-editorial">
+   580→                      {formatUGXPlain(c.currentAmount)}
+   581→                    </td>
+   582→                    <td className="text-right tabular-nums text-foreground/60">
+   583→                      {formatUGXPlain(c.goalAmount)}
+   584→                    </td>
+   585→                    <td>
+   586→                      <div className="flex items-center gap-3">
+   587→                        <div className="progress-thin flex-1 min-w-[80px]">
+   588→                          <div style={{ width: `${Math.min(100, pct)}%` }} />
+   589→                        </div>
+   590→                        <span className="text-xs tabular-nums text-foreground/60 w-10 text-right">
+   591→                          {pct.toFixed(0)}%
+   592→                        </span>
+   593→                      </div>
+   594→                    </td>
+   595→                    <td className="text-right">
+   596→                      <ChevronRight className="h-3.5 w-3.5 text-foreground/30 ml-auto" />
+   597→                    </td>
+   598→                  </tr>
+   599→                );
+   600→              })}
+   601→            </tbody>
+   602→          </table>
+   603→
+   604→          <div className="px-6 py-4 border-t border-[rgba(201,168,76,0.06)] flex flex-wrap gap-2 justify-between items-center">
+   605→            <span className="micro-label">Click a row to open the child dashboard</span>
+   606→            <div className="flex gap-2">
+   607→              <button
+   608→                onClick={() => {
+   609→                  const p = parents[0];
+   610→                  if (p) {
+   611→                    onLogSpend({ id: p.id, kind: "parent", name: p.name });
+   612→                  }
+   613→                }}
+   614→                className="btn-outline px-3 py-1.5 rounded text-xs tracking-wider flex items-center gap-2"
+   615→                title="Log spending for any family member"
+   616→              >
+   617→                <Wallet className="h-3 w-3" /> Log Spend
+   618→              </button>
+   619→              <button
+   620→                onClick={() => onGiveTokens(children[0])}
+   621→                className="btn-outline px-3 py-1.5 rounded text-xs tracking-wider flex items-center gap-2"
+   622→              >
+   623→                <Plus className="h-3 w-3" /> Award Tokens
+   624→              </button>
+   625→            </div>
+   626→          </div>
+   627→        </div>
+   628→
+   629→        {/* Activity feed — 1/3 width */}
+   630→        <div className="surface-wood rounded-lg overflow-hidden">
+   631→          <div className="px-6 py-5 border-b border-[rgba(201,168,76,0.10)]">
+   632→            <div className="micro-label-gold mb-1">Latest Activity</div>
+   633→            <h2 className="font-editorial text-lg text-foreground tracking-wide">
+   634→              Recent Transactions
+   635→            </h2>
+   636→          </div>
+   637→          <div className="max-h-[480px] overflow-y-auto">
+   638→            {transactions.map((t, i) => {
+   639→              const child = children.find((c) => c.id === t.childId);
+   640→              const credit =
+   641→                t.type === "save" || t.type === "redeem" || t.type === "parent_give";
+   642→              return (
+   643→                <div
+   644→                  key={t.id}
+   645→                  className={`px-6 py-4 ${i > 0 ? "border-t border-[rgba(201,168,76,0.04)]" : ""}`}
+   646→                >
+   647→                  <div className="flex items-start gap-3">
+   648→                    <div
+   649→                      className="h-7 w-7 rounded-full flex items-center justify-center shrink-0 mt-0.5"
+   650→                      style={{
+   651→                        background: credit
+   652→                          ? "color-mix(in srgb, var(--chart-2) 12%, transparent)"
+   653→                          : "color-mix(in srgb, var(--chart-3) 12%, transparent)",
+   654→                      }}
+   655→                    >
+   656→                      {credit ? (
+   657→                        <ArrowDownRight className="h-3 w-3" style={{ color: "var(--chart-2)" }} />
+   658→                      ) : (
+   659→                        <ArrowUpRight className="h-3 w-3" style={{ color: "var(--chart-3)" }} />
+   660→                      )}
+   661→                    </div>
+   662→                    <div className="flex-1 min-w-0">
+   663→                      <div className="text-sm text-foreground truncate">{t.note}</div>
+   664→                      <div className="micro-label mt-0.5 truncate">
+   665→                        {child?.name.split(" ")[0]} · {txTypeLabel[t.type]} · {timeAgo(t.timestamp)}
+   666→                      </div>
+   667→                    </div>
+   668→                    <div className="text-right shrink-0">
+   669→                      {t.amount > 0 && (
+   670→                        <div
+   671→                          className="font-editorial tabular-nums text-sm"
+   672→                          style={{ color: credit ? "#6BBF8A" : "#D4943A" }}
+   673→                        >
+   674→                          {credit ? "+" : "−"}
+   675→                          {formatUGXPlain(t.amount)}
+   676→                        </div>
+   677→                      )}
+   678→                      {t.tokenDelta > 0 && (
+   679→                        <div className="font-editorial tabular-nums text-sm" style={{ color: "var(--chart-5)" }}>
+   680→                          +{t.tokenDelta} ◈
+   681→                        </div>
+   682→                      )}
+   683→                    </div>
+   684→                  </div>
+   685→                </div>
+   686→              );
+   687→            })}
+   688→          </div>
+   689→        </div>
+   690→      </div>
+   691→
+   692→      {/* Family Spending This Month — per-person breakdown */}
+   693→      <div className="surface-wood rounded-lg p-6 mt-6">
+   694→        <div className="flex items-center justify-between mb-4">
+   695→          <div>
+   696→            <div className="micro-label-gold mb-1">Family Spending · This Month</div>
+   697→            <h3 className="font-editorial text-lg text-foreground tracking-wide">
+   698→              Who Spent What
+   699→            </h3>
+   700→          </div>
+   701→          <div className="text-right">
+   702→            <div className="font-editorial text-2xl text-gold-foil-static tabular-nums">
+   703→              {formatUGX(familySpending)}
+   704→            </div>
+   705→            <div className="micro-label mt-1">total this month</div>
+   706→          </div>
+   707→        </div>
+   708→        <div className="divider-gold mb-5" />
+   709→
+   710→        {spendingBreakdown.length === 0 ? (
+   711→          <div className="text-center py-6 text-foreground/40 text-sm">
+   712→            No spending logged this month yet.
+   713→          </div>
+   714→        ) : (
+   715→          <div className="space-y-3">
+   716→            {spendingBreakdown.map((row) => {
+   717→              // Look up avatar info from parents or children.
+   718→              const parent = parents.find((p) => p.id === row.ownerId);
+   719→              const child = children.find((c) => c.id === row.ownerId);
+   720→              const name = row.ownerName;
+   721→              const color = parent?.avatarColor ?? child?.avatarColor ?? "#C9A84C";
+   722→              const photo = parent?.avatarPhoto ?? child?.avatarPhoto;
+   723→              const pct = familySpending > 0 ? (row.total / familySpending) * 100 : 0;
+   724→              return (
+   725→                <div key={row.ownerId} className="flex items-center gap-4">
+   726→                  <Avatar name={name} color={color} photo={photo} size={32} />
+   727→                  <div className="flex-1 min-w-0">
+   728→                    <div className="flex justify-between items-baseline mb-1.5">
+   729→                      <div className="text-sm text-foreground tracking-wide">
+   730→                        {name}
+   731→                        <span
+   732→                          className="ml-2 pill pill-muted"
+   733→                          style={{ fontSize: 9, padding: "1px 6px" }}
+   734→                        >
+   735→                          {row.ownerKind}
+   736→                        </span>
+   737→                      </div>
+   738→                      <div className="text-xs tabular-nums text-foreground/70">
+   739→                        {formatUGXPlain(row.total)}
+   740→                      </div>
+   741→                    </div>
+   742→                    <div className="progress-thin">
+   743→                      <div style={{ width: `${pct}%` }} />
+   744→                    </div>
+   745→                  </div>
+   746→                  <div
+   747→                    className="font-editorial text-sm tabular-nums w-12 text-right"
+   748→                    style={{ color: "var(--chart-3)" }}
+   749→                  >
+   750→                    {pct.toFixed(0)}%
+   751→                  </div>
+   752→                </div>
+   753→              );
+   754→            })}
+   755→          </div>
+   756→        )}
+   757→
+   758→        <div className="divider-gold my-4" />
+   759→        <div className="flex justify-between items-center">
+   760→          <span className="micro-label">
+   761→            Log spending for any family member — parents included.
+   762→          </span>
+   763→          <button
+   764→            onClick={() => {
+   765→              const p = parents[0];
+   766→              if (p) {
+   767→                onLogSpend({ id: p.id, kind: "parent", name: p.name });
+   768→              }
+   769→            }}
+   770→            className="btn-gold px-3 py-1.5 rounded text-xs tracking-wider flex items-center gap-2"
+   771→          >
+   772→            <Wallet className="h-3 w-3" /> Log Spend
+   773→          </button>
+   774→        </div>
+   775→      </div>
+   776→    </div>
+   777→  );
+   778→}
+   779→
+   780→// ---- CHILDREN TAB ----------------------------------------------------------
+   781→
+   782→function ChildrenTab({
+   783→  childList,
+   784→  onSelectChild,
+   785→  onGiveTokens,
+   786→}: {
+   787→  childList: Child[];
+   788→  onSelectChild: (c: Child) => void;
+   789→  onGiveTokens: (c: Child) => void;
+   790→}) {
+   791→  const children = childList;
+   792→  return (
+   793→    <div className="space-y-6 animate-fade-up">
+   794→      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 stagger">
+   795→        {children.map((c) => {
+   796→          const pct = (c.currentAmount / c.goalAmount) * 100;
+   797→          return (
+   798→            <div
+   799→              key={c.id}
+   800→              className="surface-wood rounded-lg p-6 card-hover"
+   801→              onClick={() => onSelectChild(c)}
+   802→            >
+   803→              <div className="flex items-start justify-between mb-5">
+   804→                <div className="flex items-center gap-3">
+   805→                  <Avatar
+   806→                    name={c.name}
+   807→                    color={c.avatarColor}
+   808→                    photo={c.avatarPhoto}
+   809→                    size={48}
+   810→                  />
+   811→                  <div>
+   812→                    <div className="font-editorial text-base text-foreground tracking-wide">
+   813→                      {c.name}
+   814→                    </div>
+   815→                    <div className="micro-label mt-1">Age {c.age}</div>
+   816→                  </div>
+   817→                </div>
+   818→                <button
+   819→                  onClick={(e) => {
+   820→                    e.stopPropagation();
+   821→                    onGiveTokens(c);
+   822→                  }}
+   823→                  className="btn-outline px-2 py-1 rounded text-[10px] tracking-wider flex items-center gap-1"
+   824→                >
+   825→                  <Trophy className="h-2.5 w-2.5" /> Award
+   826→                </button>
+   827→              </div>
+   828→
+   829→              <div className="micro-label mb-2">Current Savings</div>
+   830→              <div className="font-editorial text-2xl text-gold-foil-static tabular-nums">
+   831→                {formatUGX(c.currentAmount)}
+   832→              </div>
+   833→
+   834→              <div className="mt-4">
+   835→                <div className="flex justify-between text-xs mb-2">
+   836→                  <span className="micro-label">{c.goalName}</span>
+   837→                  <span className="tabular-nums text-foreground/50">{pct.toFixed(0)}%</span>
+   838→                </div>
+   839→                <div className="progress-thin">
+   840→                  <div style={{ width: `${Math.min(100, pct)}%` }} />
+   841→                </div>
+   842→              </div>
+   843→
+   844→              <div className="divider-gold my-4" />
+   845→              <div className="flex justify-between items-center text-xs">
+   846→                <span className="micro-label">Goal</span>
+   847→                <span className="font-editorial tabular-nums text-foreground/70">
+   848→                  {formatUGX(c.goalAmount)}
+   849→                </span>
+   850→              </div>
+   851→            </div>
+   852→          );
+   853→        })}
+   854→      </div>
+   855→    </div>
+   856→  );
+   857→}
+   858→
+   859→// ---- TRANSACTIONS TAB ------------------------------------------------------
+   860→
+   861→function TransactionsTab() {
+   862→  const transactions = useStore((s) => s.transactions);
+   863→  const children = useStore((s) => s.children);
+   864→
+   865→  return (
+   866→    <div className="space-y-6 animate-fade-up">
+   867→      <div className="surface-wood rounded-lg overflow-hidden">
+   868→        <div className="px-6 py-5 border-b border-[rgba(201,168,76,0.10)] flex items-center justify-between">
+   869→          <div>
+   870→            <div className="micro-label-gold mb-1">Family Ledger</div>
+   871→            <h2 className="font-editorial text-lg text-foreground tracking-wide">
+   872→              All Transactions
+   873→            </h2>
+   874→          </div>
+   875→          <span className="micro-label">{transactions.length} entries</span>
+   876→        </div>
+   877→
+   878→        <div className="overflow-x-auto">
+   879→          <table className="ledger-table">
+   880→            <thead>
+   881→              <tr>
+   882→                <th>Date</th>
+   883→                <th>Child</th>
+   884→                <th>Type</th>
+   885→                <th>Note</th>
+   886→                <th className="text-right">Cash</th>
+   887→                <th className="text-right">Tokens</th>
+   888→              </tr>
+   889→            </thead>
+   890→            <tbody>
+   891→              {transactions.map((t) => {
+   892→                const child = children.find((c) => c.id === t.childId);
+   893→                const credit =
+   894→                  t.type === "save" || t.type === "redeem" || t.type === "parent_give";
+   895→                return (
+   896→                  <tr key={t.id}>
+   897→                    <td className="text-foreground/50 text-xs tabular-nums">
+   898→                      {new Date(t.timestamp).toLocaleDateString("en-GB", {
+   899→                        day: "2-digit",
+   900→                        month: "short",
+   901→                        year: "numeric",
+   902→                      })}
+   903→                    </td>
+   904→                    <td>
+   905→                      <div className="flex items-center gap-2">
+   906→                        <Avatar
+   907→                          name={child?.name ?? "?"}
+   908→                          color={child?.avatarColor ?? "#666"}
+   909→                          photo={child?.avatarPhoto}
+   910→                          size={20}
+   911→                        />
+   912→                        <span className="text-foreground/80 text-sm">
+   913→                          {child?.name.split(" ")[0]}
+   914→                        </span>
+   915→                      </div>
+   916→                    </td>
+   917→                    <td>
+   918→                      <span
+   919→                        className={`pill ${
+   920→                          credit ? "pill-green" : "pill-amber"
+   921→                        }`}
+   922→                      >
+   923→                        {txTypeLabel[t.type]}
+   924→                      </span>
+   925→                    </td>
+   926→                    <td className="text-foreground/70 text-sm">{t.note}</td>
+   927→                    <td
+   928→                      className="text-right tabular-nums font-editorial"
+   929→                      style={{ color: t.amount > 0 ? (credit ? "#6BBF8A" : "#D4943A") : "transparent" }}
+   930→                    >
+   931→                      {t.amount > 0
+   932→                        ? `${credit ? "+" : "−"}${formatUGXPlain(t.amount)}`
+   933→                        : "—"}
+   934→                    </td>
+   935→                    <td className="text-right tabular-nums" style={{ color: "var(--chart-5)" }}>
+   936→                      {t.tokenDelta > 0 ? `+${t.tokenDelta} ◈` : "—"}
+   937→                    </td>
+   938→                  </tr>
+   939→                );
+   940→              })}
+   941→            </tbody>
+   942→          </table>
+   943→        </div>
+   944→      </div>
+   945→    </div>
+   946→  );
+   947→}
+   948→
+   949→// ---- INVESTMENTS TAB -------------------------------------------------------
+   950→
+   951→function InvestmentsTab() {
+   952→  const investments = useStore((s) => s.investments);
+   953→  const children = useStore((s) => s.children);
+   954→
+   955→  const totalValue = investments
+   956→    .filter((i) => i.status === "active")
+   957→    .reduce((sum, i) => sum + i.currentValue, 0);
+   958→  const totalPrincipal = investments
+   959→    .filter((i) => i.status === "active")
+   960→    .reduce((sum, i) => sum + i.amountInvested, 0);
+   961→  const totalGain = totalValue - totalPrincipal;
+   962→  const gainPct = totalPrincipal > 0 ? (totalGain / totalPrincipal) * 100 : 0;
+   963→
+   964→  return (
+   965→    <div className="space-y-6 animate-fade-up">
+   966→      <div className="surface-wood-strong rounded-lg p-6">
+   967→        <div className="micro-label-gold mb-2">Total Portfolio</div>
+   968→        <div className="font-editorial text-4xl text-gold-foil tabular-nums">
+   969→          {formatUGX(totalValue)}
+   970→        </div>
+   971→        <div className="mt-3 flex items-center gap-3">
+   972→          <span
+   973→            className="text-sm tabular-nums"
+   974→            style={{ color: totalGain >= 0 ? "#6BBF8A" : "#D4943A" }}
+   975→          >
+   976→            {totalGain >= 0 ? "+" : "−"}
+   977→            {formatUGXPlain(Math.abs(totalGain))} ({gainPct.toFixed(2)}%)
+   978→          </span>
+   979→          <span className="micro-label">all-time gain on {formatUGXPlain(totalPrincipal)} principal</span>
+   980→        </div>
+   981→      </div>
+   982→
+   983→      <div className="surface-wood rounded-lg overflow-hidden">
+   984→        <div className="px-6 py-5 border-b border-[rgba(201,168,76,0.10)]">
+   985→          <div className="micro-label-gold mb-1">Open Positions</div>
+   986→          <h2 className="font-editorial text-lg text-foreground tracking-wide">
+   987→            Investment Holdings
+   988→          </h2>
+   989→        </div>
+   990→        <div className="overflow-x-auto">
+   991→          <table className="ledger-table">
+   992→            <thead>
+   993→              <tr>
+   994→                <th>Child</th>
+   995→                <th>Position</th>
+   996→                <th>Type</th>
+   997→                <th className="text-right">Principal</th>
+   998→                <th className="text-right">Value</th>
+   999→                <th className="text-right">Gain</th>
+  1000→                <th>Status</th>
+  1001→              </tr>
+  1002→            </thead>
+  1003→            <tbody>
+  1004→              {investments.map((inv) => {
+  1005→                const child = children.find((c) => c.id === inv.childId);
+  1006→                const g = inv.currentValue - inv.amountInvested;
+  1007→                const pct = inv.amountInvested > 0 ? (g / inv.amountInvested) * 100 : 0;
+  1008→                return (
+  1009→                  <tr key={inv.id}>
+  1010→                    <td>
+  1011→                      <span className="text-foreground/80 text-sm">
+  1012→                        {child?.name.split(" ")[0]}
+  1013→                      </span>
+  1014→                    </td>
+  1015→                    <td className="font-editorial text-foreground tracking-wide">
+  1016→                      {inv.name}
+  1017→                    </td>
+  1018→                    <td className="text-foreground/60 text-xs">{inv.type}</td>
+  1019→                    <td className="text-right tabular-nums text-foreground/70">
+  1020→                      {formatUGXPlain(inv.amountInvested)}
+  1021→                    </td>
+  1022→                    <td className="text-right tabular-nums text-foreground">
+  1023→                      {formatUGXPlain(inv.currentValue)}
+  1024→                    </td>
+  1025→                    <td
+  1026→                      className="text-right tabular-nums"
+  1027→                      style={{ color: g >= 0 ? "#6BBF8A" : "#D4943A" }}
+  1028→                    >
+  1029→                      {g >= 0 ? "+" : ""}
+  1030→                      {pct.toFixed(2)}%
+  1031→                    </td>
+  1032→                    <td>
+  1033→                      <span
+  1034→                        className={`pill ${inv.status === "active" ? "pill-green" : "pill-muted"}`}
+  1035→                      >
+  1036→                        {inv.status}
+  1037→                      </span>
+  1038→                    </td>
+  1039→                  </tr>
+  1040→                );
+  1041→              })}
+  1042→            </tbody>
+  1043→          </table>
+  1044→        </div>
+  1045→      </div>
+  1046→    </div>
+  1047→  );
+  1048→}
+  1049→
+  1050→// ---- TOKENS TAB ------------------------------------------------------------
+  1051→
+  1052→function TokensTab({
+  1053→  childList,
+  1054→  onGive,
+  1055→}: {
+  1056→  childList: Child[];
+  1057→  onGive: (c: Child) => void;
+  1058→}) {
+  1059→  const children = childList;
+  1060→  const tokensGiven = useStore(parentTokensGiven);
+  1061→  const tokensRedeemed = useStore(parentTokensRedeemed);
+  1062→  const balance = useStore(parentTokenBalance);
+  1063→  const costBasis = tokensGiven * TOKEN_BUY_RATE;
+  1064→  const redeemedValue = tokensRedeemed * TOKEN_REDEEM_RATE;
+  1065→  const allLedger = useStore((s) => s.tokenLedger);
+  1066→  const ledger = useMemo(
+  1067→    () => allLedger.slice().sort((a, b) => b.timestamp - a.timestamp),
+  1068→    [allLedger]
+  1069→  );
+  1070→
+  1071→  return (
+  1072→    <div className="space-y-6 animate-fade-up">
+  1073→      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+  1074→        <div className="surface-wood-strong rounded-lg p-6">
+  1075→          <div className="micro-label-gold mb-2">Tokens in Circulation</div>
+  1076→          <div className="font-editorial text-4xl text-gold-foil tabular-nums">
+  1077→            {balance} ◈
+  1078→          </div>
+  1079→          <div className="micro-label mt-2">
+  1080→            Cost basis: UGX {formatUGXPlain(costBasis)}
+  1081→          </div>
+  1082→        </div>
+  1083→        <div className="surface-wood rounded-lg p-6">
+  1084→          <div className="micro-label mb-2">Awarded (all-time)</div>
+  1085→          <div className="font-editorial text-3xl text-foreground tabular-nums">
+  1086→            {tokensGiven} ◈
+  1087→          </div>
+  1088→          <div className="micro-label mt-2">
+  1089→            UGX {formatUGXPlain(costBasis)} invested
+  1090→          </div>
+  1091→        </div>
+  1092→        <div className="surface-wood rounded-lg p-6">
+  1093→          <div className="micro-label mb-2">Redeemed (all-time)</div>
+  1094→          <div className="font-editorial text-3xl text-foreground tabular-nums">
+  1095→            {tokensRedeemed} ◈
+  1096→          </div>
+  1097→          <div className="micro-label mt-2">
+  1098→            UGX {formatUGXPlain(redeemedValue)} credited to savings
+  1099→          </div>
+  1100→        </div>
+  1101→      </div>
+  1102→
+  1103→      {/* Per-child balances */}
+  1104→      <div className="surface-wood rounded-lg overflow-hidden">
+  1105→        <div className="px-6 py-5 border-b border-[rgba(201,168,76,0.10)]">
+  1106→          <div className="micro-label-gold mb-1">Per Child</div>
+  1107→          <h2 className="font-editorial text-lg text-foreground tracking-wide">
+  1108→            Token Holdings by Child
+  1109→          </h2>
+  1110→        </div>
+  1111→        <table className="ledger-table">
+  1112→          <thead>
+  1113→            <tr>
+  1114→              <th>Child</th>
+  1115→              <th className="text-right">Awarded</th>
+  1116→              <th className="text-right">Redeemed</th>
+  1117→              <th className="text-right">Balance</th>
+  1118→              <th className="text-right">Redeem Value</th>
+  1119→              <th></th>
+  1120→            </tr>
+  1121→          </thead>
+  1122→          <tbody>
+  1123→            {children.map((c) => {
+  1124→              const given = ledger.filter((t) => t.childId === c.id && t.type === "parent_give").reduce((s, t) => s + t.tokens, 0);
+  1125→              const redeemed = ledger.filter((t) => t.childId === c.id && t.type === "redeem").reduce((s, t) => s + t.tokens, 0);
+  1126→              const bal = given - redeemed;
+  1127→              return (
+  1128→                <tr key={c.id}>
+  1129→                  <td>
+  1130→                    <div className="flex items-center gap-2">
+  1131→                      <Avatar
+  1132→                        name={c.name}
+  1133→                        color={c.avatarColor}
+  1134→                        photo={c.avatarPhoto}
+  1135→                        size={24}
+  1136→                      />
+  1137→                      <span className="text-foreground/80 text-sm">{c.name}</span>
+  1138→                    </div>
+  1139→                  </td>
+  1140→                  <td className="text-right tabular-nums text-foreground/70">{given}</td>
+  1141→                  <td className="text-right tabular-nums text-foreground/70">{redeemed}</td>
+  1142→                  <td className="text-right tabular-nums font-editorial" style={{ color: "var(--chart-5)" }}>
+  1143→                    {bal} ◈
+  1144→                  </td>
+  1145→                  <td className="text-right tabular-nums text-foreground/70">
+  1146→                    {formatUGXPlain(bal * TOKEN_REDEEM_RATE)}
+  1147→                  </td>
+  1148→                  <td className="text-right">
+  1149→                    <button
+  1150→                      onClick={() => onGive(c)}
+  1151→                      className="btn-outline px-2 py-1 rounded text-[10px] tracking-wider"
+  1152→                    >
+  1153→                      Award
+  1154→                    </button>
+  1155→                  </td>
+  1156→                </tr>
+  1157→              );
+  1158→            })}
+  1159→          </tbody>
+  1160→        </table>
+  1161→      </div>
+  1162→
+  1163→      {/* Full ledger */}
+  1164→      <div className="surface-wood rounded-lg overflow-hidden">
+  1165→        <div className="px-6 py-5 border-b border-[rgba(201,168,76,0.10)]">
+  1166→          <div className="micro-label-gold mb-1">Ledger</div>
+  1167→          <h2 className="font-editorial text-lg text-foreground tracking-wide">
+  1168→            Token Activity
+  1169→          </h2>
+  1170→        </div>
+  1171→        <table className="ledger-table">
+  1172→          <thead>
+  1173→            <tr>
+  1174→              <th>Date</th>
+  1175→              <th>Child</th>
+  1176→              <th>Type</th>
+  1177→              <th>Note</th>
+  1178→              <th className="text-right">Tokens</th>
+  1179→            </tr>
+  1180→          </thead>
+  1181→          <tbody>
+  1182→            {ledger.slice(0, 20).map((t) => {
+  1183→              const child = children.find((c) => c.id === t.childId);
+  1184→              return (
+  1185→                <tr key={t.id}>
+  1186→                  <td className="text-foreground/50 text-xs tabular-nums">
+  1187→                    {new Date(t.timestamp).toLocaleDateString("en-GB", {
+  1188→                      day: "2-digit",
+  1189→                      month: "short",
+  1190→                      year: "numeric",
+  1191→                    })}
+  1192→                  </td>
+  1193→                  <td className="text-foreground/80 text-sm">
+  1194→                    {child?.name.split(" ")[0]}
+  1195→                  </td>
+  1196→                  <td>
+  1197→                    <span
+  1198→                      className={`pill ${t.type === "parent_give" ? "pill-gold" : "pill-green"}`}
+  1199→                    >
+  1200→                      {t.type === "parent_give" ? "Awarded" : "Redeemed"}
+  1201→                    </span>
+  1202→                  </td>
+  1203→                  <td className="text-foreground/70 text-sm">{t.note}</td>
+  1204→                  <td
+  1205→                    className="text-right tabular-nums font-editorial"
+  1206→                    style={{
+  1207→                      color: t.type === "parent_give" ? "var(--chart-5)" : "var(--chart-2)",
+  1208→                    }}
+  1209→                  >
+  1210→                    {t.type === "parent_give" ? "+" : "−"}
+  1211→                    {t.tokens} ◈
+  1212→                  </td>
+  1213→                </tr>
+  1214→              );
+  1215→            })}
+  1216→          </tbody>
+  1217→        </table>
+  1218→      </div>
+  1219→    </div>
+  1220→  );
+  1221→}
+  1222→
+  1223→// ---- SETTINGS TAB ----------------------------------------------------------
+  1224→
+  1225→function SettingsTab() {
+  1226→  const balance = useStore(parentTokenBalance);
+  1227→  const totalSavings = useStore(familyTotalSavings);
+  1228→  const totalInvested = useStore(familyTotalInvested);
+  1229→  const netWorth = totalSavings + totalInvested;
+  1230→  const parents = useStore((s) => s.parents);
+  1231→  const children = useStore((s) => s.children);
+  1232→  // Profile mutations come from persisted mutations module
+  1233→
+  1234→  return (
+  1235→    <div className="space-y-6 animate-fade-up max-w-3xl">
+  1236→      {/* Vision & Trust — what Planned stands for */}
+  1237→      <VisionTrustPanel />
+  1238→
+  1239→      {/* Founding Manifesto — the soul of the institution */}
+  1240→      <ManifestoPanel />
+  1241→
+  1242→      {/* Institutional Constitution — the governing document */}
+  1243→      <ConstitutionPanel />
+  1244→
+  1245→      {/* 20-Year Roadmap — institutional timeline */}
+  1246→      <RoadmapPanel />
+  1247→
+  1248→      {/* Family Charter — define family financial values + house rules */}
+  1249→      <FamilyCharterEditor />
+  1250→
+  1251→      {/* Developer Platform — public API documentation */}
+  1252→      <DeveloperPanel />
+  1253→
+  1254→      {/* Privacy & Data Control Center — view, export, manage AI preferences */}
+  1255→      <PrivacyControlCenter />
+  1256→
+  1257→      {/* Family profiles — photos + names */}
+  1258→      <div className="surface-wood rounded-lg p-6">
+  1259→        <div className="micro-label-gold mb-1">Family Profiles</div>
+  1260→        <h2 className="font-editorial text-xl text-foreground tracking-wide mb-2">
+  1261→          Photos &amp; Names
+  1262→        </h2>
+  1263→        <p className="text-xs text-foreground/55 mb-5 leading-relaxed">
+  1264→          Click an avatar to upload a photo. Photos appear in the sidebar,
+  1265→          tables, and child dashboards.
+  1266→        </p>
+  1267→        <div className="divider-gold mb-5" />
+  1268→        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+  1269→          {parents.map((p) => (
+  1270→            <ProfileEditorCard
+  1271→              key={p.id}
+  1272→              name={p.name}
+  1273→              color={p.avatarColor}
+  1274→              photo={p.avatarPhoto}
+  1275→              roleLabel={p.role}
+  1276→              onUpload={(url) => persistSetParentPhoto(p.id, url)}
+  1277→              onRemove={() => persistSetParentPhoto(p.id, "")}
+  1278→              onNameChange={(n) => persistSetParentName(p.id, n)}
+  1279→            />
+  1280→          ))}
+  1281→          {children.map((c) => (
+  1282→            <ProfileEditorCard
+  1283→              key={c.id}
+  1284→              name={c.name}
+  1285→              color={c.avatarColor}
+  1286→              photo={c.avatarPhoto}
+  1287→              roleLabel={`Child · Age ${c.age}`}
+  1288→              onUpload={(url) => persistSetChildPhoto(c.id, url)}
+  1289→              onRemove={() => persistSetChildPhoto(c.id, "")}
+  1290→              onNameChange={(n) => persistSetChildName(c.id, n)}
+  1291→            />
+  1292→          ))}
+  1293→        </div>
+  1294→      </div>
+  1295→
+  1296→      {/* Family theme + monthly quote editor — parent sets what children see */}
+  1297→      <div>
+  1298→        <div className="mb-4">
+  1299→          <div className="micro-label-gold mb-1">Family Editorial</div>
+  1300→          <h2 className="font-editorial text-xl text-foreground tracking-wide">
+  1301→            Theme &amp; Quote for the Children
+  1302→          </h2>
+  1303→          <p className="text-xs text-foreground/55 mt-1 leading-relaxed max-w-xl">
+  1304→            Set an annual theme and a monthly quote. Both appear at the bottom
+  1305→            of every child dashboard — a quiet reminder of the family&apos;s
+  1306→            wealth-building intention.
+  1307→          </p>
+  1308→        </div>
+  1309→        <ParentQuoteEditor />
+  1310→      </div>
+  1311→
+  1312→      <div className="surface-wood rounded-lg p-6">
+  1313→        <div className="micro-label-gold mb-1">Token Economics</div>
+  1314→        <h2 className="font-editorial text-xl text-foreground tracking-wide mb-5">
+  1315→          Rate Configuration
+  1316→        </h2>
+  1317→        <div className="divider-gold mb-5" />
+  1318→        <div className="grid grid-cols-2 gap-6">
+  1319→          <div>
+  1320→            <div className="micro-label mb-2">Buy Rate (Parent)</div>
+  1321→            <div className="font-editorial text-2xl text-foreground tabular-nums">
+  1322→              UGX {TOKEN_BUY_RATE}<span className="text-sm text-foreground/50">/◈</span>
+  1323→            </div>
+  1324→            <div className="micro-label mt-1">Cost basis for awards</div>
+  1325→          </div>
+  1326→          <div>
+  1327→            <div className="micro-label mb-2">Redeem Rate (Child)</div>
+  1328→            <div className="font-editorial text-2xl text-gold-foil-static tabular-nums">
+  1329→              UGX {TOKEN_REDEEM_RATE}<span className="text-sm text-foreground/50">/◈</span>
+  1330→            </div>
+  1331→            <div className="micro-label mt-1">Credited to savings on redeem</div>
+  1332→          </div>
+  1333→        </div>
+  1334→        <div className="divider-gold my-5" />
+  1335→        <div className="flex justify-between items-center">
+  1336→          <span className="micro-label">Incentive Spread</span>
+  1337→          <span className="font-editorial text-lg tabular-nums" style={{ color: "var(--chart-2)" }}>
+  1338→            +{((TOKEN_REDEEM_RATE / TOKEN_BUY_RATE - 1) * 100).toFixed(0)}%
+  1339→          </span>
+  1340→        </div>
+  1341→        <p className="text-xs text-foreground/50 mt-3 leading-relaxed">
+  1342→          The child redeems at a 60% premium over the parent's buy rate — this is
+  1343→          the central incentive mechanic. Children earn more than the parent paid in,
+  1344→          rewarding consistent saving and good behaviour.
+  1345→        </p>
+  1346→      </div>
+  1347→
+  1348→      <div className="surface-wood rounded-lg p-6">
+  1349→        <div className="micro-label-gold mb-1">Family Net Worth</div>
+  1350→        <h2 className="font-editorial text-xl text-foreground tracking-wide mb-5">
+  1351→          Position Summary
+  1352→        </h2>
+  1353→        <div className="divider-gold mb-5" />
+  1354→        <div className="space-y-4">
+  1355→          <div className="flex justify-between items-center">
+  1356→            <span className="micro-label">Total Savings</span>
+  1357→            <span className="font-editorial text-lg tabular-nums text-foreground">
+  1358→              {formatUGX(totalSavings)}
+  1359→            </span>
+  1360→          </div>
+  1361→          <div className="flex justify-between items-center">
+  1362→            <span className="micro-label">Total Investments</span>
+  1363→            <span className="font-editorial text-lg tabular-nums text-foreground">
+  1364→              {formatUGX(totalInvested)}
+  1365→            </span>
+  1366→          </div>
+  1367→          <div className="flex justify-between items-center">
+  1368→            <span className="micro-label">Token Value (cost basis)</span>
+  1369→            {/* Bug #4 fix: balance already accounts for redemptions, so cost basis
+  1370→                of REMAINING tokens is balance * BUY_RATE (not inflated). */}
+  1371→            <span className="font-editorial text-lg tabular-nums text-foreground/70">
+  1372→              {formatUGX(balance * TOKEN_BUY_RATE)}
+  1373→            </span>
+  1374→          </div>
+  1375→          <div className="divider-gold my-2" />
+  1376→          <div className="flex justify-between items-center">
+  1377→            <span className="micro-label-gold">Family Net Worth</span>
+  1378→            <span className="font-editorial text-2xl text-gold-foil tabular-nums">
+  1379→              {formatUGX(netWorth)}
+  1380→            </span>
+  1381→          </div>
+  1382→        </div>
+  1383→      </div>
+  1384→
+  1385→      <div className="surface-flat rounded-lg p-5">
+  1386→        <div className="micro-label mb-2">About This Build</div>
+  1387→        <p className="text-xs text-foreground/50 leading-relaxed">
+  1388→          Planned is a quiet, editorial wealth-building canvas for families. All
+  1389→          data is currently mock (client-side Zustand store) — the Prisma schema
+  1390→          is ready for when you connect a real database. The 14-bug audit from
+  1391→          the previous session is fully resolved: balance updates, per-child
+  1392→          math, token economics, and module-level randomness are all corrected.
+  1393→        </p>
+  1394→      </div>
+  1395→    </div>
+  1396→  );
+  1397→}
+  1398→
+  1399→// ---- Profile Editor Card — used in SettingsTab for photo + name editing ----
+  1400→
+  1401→function ProfileEditorCard({
+  1402→  name,
+  1403→  color,
+  1404→  photo,
+  1405→  roleLabel,
+  1406→  onUpload,
+  1407→  onRemove,
+  1408→  onNameChange,
+  1409→}: {
+  1410→  name: string;
+  1411→  color: string;
+  1412→  photo?: string;
+  1413→  roleLabel: string;
+  1414→  onUpload: (dataUrl: string) => void;
+  1415→  onRemove: () => void;
+  1416→  onNameChange: (name: string) => void;
+  1417→}) {
+  1418→  const [draftName, setDraftName] = useState(name);
+  1419→  const [dirty, setDirty] = useState(false);
+  1420→
+  1421→  return (
+  1422→    <div className="surface-flat rounded-lg p-5 text-center">
+  1423→      <div className="flex justify-center mb-4">
+  1424→        <Avatar
+  1425→          name={name}
+  1426→          color={color}
+  1427→          photo={photo}
+  1428→          size={72}
+  1429→          showUploadButton
+  1430→          onUpload={onUpload}
+  1431→          onRemove={photo ? onRemove : undefined}
+  1432→        />
+  1433→      </div>
+  1434→      <input
+  1435→        type="text"
+  1436→        value={draftName}
+  1437→        onChange={(e) => {
+  1438→          setDraftName(e.target.value);
+  1439→          setDirty(e.target.value !== name);
+  1440→        }}
+  1441→        onBlur={() => {
+  1442→          if (dirty && draftName.trim()) {
+  1443→            onNameChange(draftName);
+  1444→            setDirty(false);
+  1445→          } else {
+  1446→            setDraftName(name);
+  1447→            setDirty(false);
+  1448→          }
+  1449→        }}
+  1450→        maxLength={40}
+  1451→        className="input-editorial w-full px-3 py-2 text-center font-editorial text-sm tracking-wide"
+  1452→      />
+  1453→      <div className="micro-label mt-2">{roleLabel}</div>
+  1454→      {dirty && (
+  1455→        <div className="micro-label mt-1" style={{ color: "var(--chart-3)" }}>
+  1456→          Press Tab/blur to save
+  1457→        </div>
+  1458→      )}
+  1459→    </div>
+  1460→  );
+  1461→}
+  1462→
