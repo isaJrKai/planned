@@ -278,6 +278,7 @@ export default function DashboardClient({ isFounder = false, userEmail }: Dashbo
               onSelectChild={(c) => setActiveChildId(c.id)}
               onGiveTokens={(c) => setGiveToChildId(c.id)}
               onLogSpend={(owner) => setSpendOwner(owner)}
+              onNavigate={(target) => setTab(target as Tab)}
             />
           )}
           {tab === "children" && (
@@ -335,12 +336,14 @@ function OverviewTab({
   onSelectChild,
   onGiveTokens,
   onLogSpend,
+  onNavigate,
 }: {
   childList: Child[];
   parents: { id: string; name: string; role: string; avatarColor: string; avatarPhoto?: string }[];
   onSelectChild: (c: Child) => void;
   onGiveTokens: (c: Child) => void;
   onLogSpend: (owner: SpendingOwner) => void;
+  onNavigate?: (target: string) => void;
 }) {
   const totalSavings = useStore(familyTotalSavings);
   const totalInvested = useStore(familyTotalInvested);
@@ -578,7 +581,7 @@ function OverviewTab({
 
         {/* Recommendations — full width */}
         <div className="bento-cell bento-full">
-          <RecommendationsPanel familyId="singleton" variant="parent" onNavigate={(target) => setTab(target as any)} />
+          <RecommendationsPanel familyId="singleton" variant="parent" onNavigate={onNavigate} />
         </div>
       </div>
 
