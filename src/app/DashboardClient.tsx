@@ -578,7 +578,7 @@ function OverviewTab({
 
         {/* Recommendations — full width */}
         <div className="bento-cell bento-full">
-          <RecommendationsPanel familyId="singleton" variant="parent" />
+          <RecommendationsPanel familyId="singleton" variant="parent" onNavigate={(target) => setTab(target as any)} />
         </div>
       </div>
 
@@ -786,15 +786,43 @@ function ChildrenTab({
                     <div className="micro-label mt-1">Age {c.age}</div>
                   </div>
                 </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onGiveTokens(c);
-                  }}
-                  className="btn-outline px-2 py-1 rounded text-[10px] tracking-wider flex items-center gap-1"
-                >
-                  <Trophy className="h-2.5 w-2.5" /> Award
-                </button>
+                <div className="flex gap-1">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onGiveTokens(c);
+                    }}
+                    className="btn-outline px-2 py-1 rounded text-[10px] tracking-wider flex items-center gap-1"
+                  >
+                    <Trophy className="h-2.5 w-2.5" /> Award
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const newName = prompt("Edit child name:", c.name);
+                      if (newName && newName.trim()) {
+                        import("@/lib/mutations").then(m => m.setChildName(c.id, newName.trim()));
+                      }
+                    }}
+                    className="btn-outline px-2 py-1 rounded text-[10px] tracking-wider"
+                    title="Edit name"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (confirm(`Delete ${c.name} and ALL their data? This cannot be undone.`)) {
+                        import("@/lib/mutations").then(m => m.deleteChild(c.id));
+                      }
+                    }}
+                    className="p-1 rounded"
+                    style={{ color: "var(--chart-3)", background: "color-mix(in srgb, var(--chart-3) 10%, transparent)" }}
+                    title="Delete child"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </div>
               </div>
 
               <div className="micro-label mb-2">Current Savings</div>

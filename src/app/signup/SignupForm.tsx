@@ -22,7 +22,8 @@ export function SignupForm({ style }: { style?: React.CSSProperties }) {
       const data = await res.json();
       if (!res.ok || !data.ok) { setError(data.error ?? "Registration failed"); setSubmitting(false); return; }
       setSuccess(true); setSubmitting(false);
-      setTimeout(() => { window.location.href = "/login"; }, 2000);
+      // If auto-logged in, go straight to dashboard; otherwise go to login
+      setTimeout(() => { window.location.href = data.autoLoggedIn ? "/" : "/login"; }, 1500);
     } catch { setError("Network error"); setSubmitting(false); }
   }
 

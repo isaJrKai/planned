@@ -38,10 +38,12 @@ export function RecommendationsPanel({
   childId,
   familyId,
   variant = "child",
+  onNavigate,
 }: {
   childId?: string;
   familyId?: string;
   variant?: "parent" | "child";
+  onNavigate?: (target: string) => void;
 }) {
   const [recs, setRecs] = useState<Recommendation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,8 +98,13 @@ export function RecommendationsPanel({
                 </div>
                 {rec.actionLabel && (
                   <button
+                    onClick={() => {
+                      if (onNavigate && rec.actionTarget) {
+                        onNavigate(rec.actionTarget);
+                      }
+                    }}
                     className="mt-2 text-[10px] tracking-wider uppercase flex items-center gap-1"
-                    style={{ color: "var(--primary)" }}
+                    style={{ color: "var(--primary)", cursor: "pointer" }}
                   >
                     {rec.actionLabel} <ChevronRight className="h-2.5 w-2.5" />
                   </button>
