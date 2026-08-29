@@ -23,7 +23,7 @@ export function SignupForm({ style }: { style?: React.CSSProperties }) {
       if (!res.ok || !data.ok) { setError(data.error ?? "Registration failed"); setSubmitting(false); return; }
       setSuccess(true); setSubmitting(false);
       // If auto-logged in, go straight to dashboard; otherwise go to login
-      setTimeout(() => { window.location.href = data.autoLoggedIn ? "/" : "/login"; }, 1500);
+      setTimeout(() => { window.location.href = data.autoLoggedIn ? "/" : "/login"; }, 800);
     } catch { setError("Network error"); setSubmitting(false); }
   }
 
@@ -31,7 +31,7 @@ export function SignupForm({ style }: { style?: React.CSSProperties }) {
     <div style={style} className="surface-wood-strong rounded-lg p-8 text-center">
       <Check className="h-8 w-8 mx-auto mb-3" style={{ color: "var(--chart-2)" }} />
       <h1 className="font-editorial text-xl text-foreground mb-2">Account Created!</h1>
-      <p className="text-xs text-foreground/55">Redirecting to login...</p>
+      <p className="text-xs text-foreground/55">Taking you to your dashboard...</p>
     </div>
   );
 

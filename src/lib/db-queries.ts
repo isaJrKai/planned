@@ -589,3 +589,50 @@ export async function resetFamilyData(familyId: string): Promise<void> {
     await tx.familySettings.deleteMany({ where: { familyId } });
   });
 }
+
+
+// Update child profile — name, age, goal
+export async function updateChild(familyId: string, childId: string, patch: {
+  name?: string;
+  age?: number;
+  goalName?: string;
+  goalAmount?: number;
+}): Promise<void> {
+  const child = await db.child.findFirst({ where: { id: childId, familyId } });
+  if (!child) throw new Error("Child not found or access denied");
+  const data: any = {};
+  if (patch.name !== undefined) data.name = patch.name.trim();
+  if (patch.age !== undefined) data.age = patch.age;
+  if (patch.goalName !== undefined) data.goalName = patch.goalName.trim();
+  if (patch.goalAmount !== undefined) data.goalAmount = patch.goalAmount;
+  await db.child.update({ where: { id: childId }, data });
+}
+
+// Update child login credentials — mascot, nickname, PIN
+export async function updateChildCredentials(familyId: string, childId: string, patch: {
+  nickname?: string;
+  mascot?: string;
+  pin?: string;
+}): Promise<void> {
+  const child = await db.child.findFirst({ where: { id: childId, familyId } });
+  if (!child) throw new Error("Child not found or access denied");
+  
+  const profile = await db.childProfile.findFirst({ where: { childId } });
+  if (!profile) throw new Error("Child profile not found");
+  
+  const profileData: any = {};
+  if (patch.nickname !== undefined) profileData.nickname = patch.nickname.trim();
+  if (patch.mascot !== undefined) profileData.animalCompanion = patch.mascot;
+  if (Object.keys(profileData).length > 0) {
+    await db.childProfile.update({ where: { id: profile.id }, data: profileData });
+  }
+  
+  if (patch.pin && patch.pin.length === 4) {
+    const bcrypt = require("bcryptjs"); // eslint-disable-line @typescript-eslint/no-require-imports
+    const pinHash = await bcrypt.hash(patch.pin, 12);
+    const user = await db.user.findFirst({ where: { childId } });
+    if (user) {
+      await db.user.update({ where: { id: user.id }, data: { pinHash } });
+    }
+  }
+}

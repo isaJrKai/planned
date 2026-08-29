@@ -153,3 +153,12 @@ export function deleteChild(childId: string) { persistMutation("deleteChild", { 
 export function deleteParent(parentId: string) { persistMutation("deleteParent", { parentId }).catch(() => {}); }
 export function deleteSpendingCategory(id: string) { persistMutation("deleteSpendingCategory", { id }).catch(() => {}); }
 export function resetFamilyData() { persistMutation("resetFamilyData", {}).catch(() => {}); }
+
+
+export function updateChild(childId: string, patch: { name?: string; age?: number; goalName?: string; goalAmount?: number }) {
+  persistMutation("updateChild", { childId, patch }).catch(() => {});
+}
+
+export function updateChildCredentials(childId: string, patch: { nickname?: string; mascot?: string; pin?: string }) {
+  persistMutation("updateChildCredentials", { childId, patch }).catch(() => {});
+}

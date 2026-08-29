@@ -278,7 +278,7 @@ export default function DashboardClient({ isFounder = false, userEmail }: Dashbo
               onSelectChild={(c) => setActiveChildId(c.id)}
               onGiveTokens={(c) => setGiveToChildId(c.id)}
               onLogSpend={(owner) => setSpendOwner(owner)}
-              onNavigate={(target) => setTab(target as Tab)}
+              onNavigate={(target) => { const map: Record<string, Tab> = { goals: "goals", tokens: "tokens", learn: "children", spend: "transactions", savings: "overview" }; setTab(map[target] || "overview"); }}
             />
           )}
           {tab === "children" && (
@@ -581,7 +581,7 @@ function OverviewTab({
 
         {/* Recommendations — full width */}
         <div className="bento-cell bento-full">
-          <RecommendationsPanel familyId="singleton" variant="parent" onNavigate={onNavigate} />
+          <RecommendationsPanel variant="parent" onNavigate={onNavigate} />
         </div>
       </div>
 
@@ -662,6 +662,11 @@ function ChildrenTab({
   const [newMascot, setNewMascot] = useState("");
   const [newPin, setNewPin] = useState("");
   const [adding, setAdding] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editAge, setEditAge] = useState("");
+  const [editGoalName, setEditGoalName] = useState("");
+  const [editGoalAmount, setEditGoalAmount] = useState("");
 
   async function handleAddChild() {
     if (!newName.trim() || !newAge) return;
@@ -802,13 +807,14 @@ function ChildrenTab({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      const newName = prompt("Edit child name:", c.name);
-                      if (newName && newName.trim()) {
-                        import("@/lib/mutations").then(m => m.setChildName(c.id, newName.trim()));
-                      }
+                      setEditingId(c.id);
+                      setEditName(c.name);
+                      setEditAge(String(c.age));
+                      setEditGoalName(c.goalName);
+                      setEditGoalAmount(String(c.goalAmount));
                     }}
                     className="btn-outline px-2 py-1 rounded text-[10px] tracking-wider"
-                    title="Edit name"
+                    title="Edit child"
                   >
                     Edit
                   </button>
@@ -843,6 +849,33 @@ function ChildrenTab({
                 </div>
               </div>
 
+              {editingId === c.id && (
+                <div className="surface-flat rounded-lg p-4 mt-4 mb-4 space-y-3" onClick={(e) => e.stopPropagation()}>
+                  <div className="micro-label-gold mb-2">Edit Child</div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[10px] tracking-wider uppercase text-foreground/60 mb-1">Name</label>
+                      <input type="text" value={editName} onChange={(e) => setEditName(e.target.value)} className="input-editorial" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] tracking-wider uppercase text-foreground/60 mb-1">Age</label>
+                      <input type="number" value={editAge} onChange={(e) => setEditAge(e.target.value)} className="input-editorial" min="1" max="18" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] tracking-wider uppercase text-foreground/60 mb-1">Goal Name</label>
+                      <input type="text" value={editGoalName} onChange={(e) => setEditGoalName(e.target.value)} className="input-editorial" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] tracking-wider uppercase text-foreground/60 mb-1">Goal Amount</label>
+                      <input type="number" value={editGoalAmount} onChange={(e) => setEditGoalAmount(e.target.value)} className="input-editorial" />
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={(e) => { e.stopPropagation(); import("@/lib/mutations").then(m => m.updateChild(c.id, { name: editName, age: parseInt(editAge) || 0, goalName: editGoalName, goalAmount: parseInt(editGoalAmount) || 0 })); setEditingId(null); }} className="btn-gold px-3 py-1.5 rounded text-[10px] tracking-wider">Save</button>
+                    <button onClick={(e) => { e.stopPropagation(); setEditingId(null); }} className="btn-ghost px-3 py-1.5 rounded text-[10px] tracking-wider">Cancel</button>
+                  </div>
+                </div>
+              )}
               <div className="divider-gold my-4" />
               <div className="flex justify-between items-center text-xs">
                 <span className="micro-label">Goal</span>
