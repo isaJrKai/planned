@@ -76,6 +76,7 @@ import {
 import { useHydratedState, persistMutation } from "@/lib/store-hydration";
 import { deleteChild as persistDeleteChild, deleteParent as persistDeleteParent, resetFamilyData as persistResetFamilyData } from "@/lib/mutations";
 import { Trash2, AlertTriangle } from "lucide-react";
+import { toast } from "sonner";
 import { RecommendationsPanel } from "@/components/recommendations-panel";
 import {
   SavingsTrendChart,
@@ -102,6 +103,7 @@ export default function DashboardClient({ isFounder = false, userEmail }: Dashbo
   const [spendOwner, setSpendOwner] = useState<SpendingOwner | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ type: string; id: string; name: string } | null>(null);
 
 
   // Hydrate from /api/state on first mount — loads real DB data.
@@ -275,6 +277,7 @@ export default function DashboardClient({ isFounder = false, userEmail }: Dashbo
             <OverviewTab
               childList={children}
               parents={parents}
+              onDelete={(t) => setDeleteConfirm(t)}
               onSelectChild={(c) => setActiveChildId(c.id)}
               onGiveTokens={(c) => setGiveToChildId(c.id)}
               onLogSpend={(owner) => setSpendOwner(owner)}
@@ -284,6 +287,7 @@ export default function DashboardClient({ isFounder = false, userEmail }: Dashbo
           {tab === "children" && (
             <ChildrenTab
               childList={children}
+              onDelete={(t) => setDeleteConfirm(t)}
               onSelectChild={(c) => setActiveChildId(c.id)}
               onGiveTokens={(c) => setGiveToChildId(c.id)}
             />
@@ -321,6 +325,54 @@ export default function DashboardClient({ isFounder = false, userEmail }: Dashbo
       )}
 
       {/* Floating Log Spend button — always visible on parent dashboard */}
+
+      {/* Delete confirmation modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.7)" }} onClick={() => setDeleteConfirm(null)}>
+          <div className="surface-wood-strong rounded-lg p-6 max-w-md w-full" style={{ border: "1px solid var(--chart-3)" }} onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-start gap-3 mb-5">
+              <div className="h-10 w-10 rounded-full flex items-center justify-center shrink-0" style={{ background: "color-mix(in srgb, var(--chart-3) 15%, transparent)" }}>
+                <AlertTriangle className="h-5 w-5" style={{ color: "var(--chart-3)" }} />
+              </div>
+              <div className="flex-1">
+                <h2 className="font-editorial text-lg text-foreground mb-1">Delete {deleteConfirm.name}?</h2>
+                <p className="text-xs text-foreground/60 leading-relaxed">
+                  {deleteConfirm.type === "child" 
+                    ? `This will permanently delete ${deleteConfirm.name} and ALL their data — savings, transactions, goals, spending, investments, and tokens. This CANNOT be undone.`
+                    : deleteConfirm.type === "parent"
+                    ? `This will delete ${deleteConfirm.name} and their spending entries and goals. This CANNOT be undone.`
+                    : `This will permanently delete ALL family data — children, parents, transactions, goals, spending, investments, and tokens. Your account will remain. This CANNOT be undone.`}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => setDeleteConfirm(null)} className="btn-ghost flex-1 px-4 py-2.5 rounded text-xs tracking-wider">
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (deleteConfirm.type === "child") {
+                    import("@/lib/mutations").then(m => m.deleteChild(deleteConfirm.id));
+                    toast.error(`${deleteConfirm.name} deleted`, { description: "All their data has been permanently removed." });
+                  } else if (deleteConfirm.type === "parent") {
+                    import("@/lib/mutations").then(m => m.deleteParent(deleteConfirm.id));
+                    toast.error(`${deleteConfirm.name} deleted`, { description: "Their spending entries and goals have been removed." });
+                  } else if (deleteConfirm.type === "reset") {
+                    persistResetFamilyData();
+                    toast.error("All family data reset", { description: "Your account remains. All family data is gone." });
+                  }
+                  setDeleteConfirm(null);
+                }}
+                className="flex-1 px-4 py-2.5 rounded text-xs tracking-wider font-semibold"
+                style={{ background: "var(--chart-3)", color: "white" }}
+              >
+                Delete Permanently
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <LogSpendFab childList={children} parents={parents} />
     </div>
   );
@@ -337,6 +389,7 @@ function OverviewTab({
   onGiveTokens,
   onLogSpend,
   onNavigate,
+  onDelete,
 }: {
   childList: Child[];
   parents: { id: string; name: string; role: string; avatarColor: string; avatarPhoto?: string }[];
@@ -344,6 +397,7 @@ function OverviewTab({
   onGiveTokens: (c: Child) => void;
   onLogSpend: (owner: SpendingOwner) => void;
   onNavigate?: (target: string) => void;
+  onDelete?: (target: { type: string; id: string; name: string }) => void;
 }) {
   const totalSavings = useStore(familyTotalSavings);
   const totalInvested = useStore(familyTotalInvested);
@@ -496,7 +550,7 @@ function OverviewTab({
                         <span className="text-xs tabular-nums text-foreground/60 w-10 text-right">{pct.toFixed(0)}%</span>
                       </div>
                     </td>
-                    <td className="text-right"><div className="flex items-center justify-end gap-1"><button onClick={(e) => { e.stopPropagation(); if (confirm(`Delete ${c.name} and ALL their data? This cannot be undone.`)) { import("@/lib/mutations").then(m => m.deleteChild(c.id)); } }} className="p-1 rounded hover:bg-[color-mix(in_srgb,var(--chart-3)_15%,transparent)]" title="Delete child"><Trash2 className="h-3 w-3" style={{ color: "var(--chart-3)" }} /></button><ChevronRight className="h-3.5 w-3.5 text-foreground/30" /></div></td>
+                    <td className="text-right"><div className="flex items-center justify-end gap-1"><button onClick={(e) => { e.stopPropagation(); if (onDelete) onDelete({ type: "child", id: c.id, name: c.name }); }} className="p-1 rounded hover:bg-[color-mix(in_srgb,var(--chart-3)_15%,transparent)]" title="Delete child"><Trash2 className="h-3 w-3" style={{ color: "var(--chart-3)" }} /></button><ChevronRight className="h-3.5 w-3.5 text-foreground/30" /></div></td>
                   </tr>
                 );
               })}
@@ -647,10 +701,12 @@ function ChildrenTab({
   childList,
   onSelectChild,
   onGiveTokens,
+  onDelete,
 }: {
   childList: Child[];
   onSelectChild: (c: Child) => void;
   onGiveTokens: (c: Child) => void;
+  onDelete?: (target: { type: string; id: string; name: string }) => void;
 }) {
   const children = childList;
   const [showAddChild, setShowAddChild] = useState(false);
@@ -686,6 +742,7 @@ function ChildrenTab({
       setNewName(""); setNewAge(""); setNewGoalName(""); setNewGoalAmount("");
       setNewNickname(""); setNewMascot(""); setNewPin("");
       setShowAddChild(false);
+      toast.success("Child added!", { description: `${newName} can now log in with their mascot and PIN.` });
     } catch {
       // error handled by persistMutation
     }
@@ -769,6 +826,20 @@ function ChildrenTab({
         </div>
       )}
 
+      {/* Empty state */}
+      {children.length === 0 && !showAddChild && (
+        <div className="surface-wood rounded-lg p-12 text-center">
+          <div style={{ fontSize: "3rem", marginBottom: "1rem" }}>👶</div>
+          <h3 className="font-editorial text-lg text-foreground mb-2">No children yet</h3>
+          <p className="text-xs text-foreground/55 mb-4 max-w-sm mx-auto">
+            Add your first child to start tracking their savings, goals, and financial learning journey.
+          </p>
+          <button onClick={() => setShowAddChild(true)} className="btn-gold px-4 py-2 rounded text-xs tracking-wider inline-flex items-center gap-2">
+            <Plus className="h-3.5 w-3.5" /> Add Your First Child
+          </button>
+        </div>
+      )}
+
       {/* Children grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 stagger">
         {children.map((c) => {
@@ -821,9 +892,7 @@ function ChildrenTab({
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (confirm(`Delete ${c.name} and ALL their data? This cannot be undone.`)) {
-                        import("@/lib/mutations").then(m => m.deleteChild(c.id));
-                      }
+                      if (onDelete) onDelete({ type: "child", id: c.id, name: c.name });
                     }}
                     className="p-1 rounded"
                     style={{ color: "var(--chart-3)", background: "color-mix(in srgb, var(--chart-3) 10%, transparent)" }}
@@ -1280,6 +1349,7 @@ function SettingsTab() {
       });
       setNewParentName(""); setNewParentRole("");
       setShowAddParent(false);
+      toast.success("Parent added!", { description: `${newParentName} has been added to the family.` });
     } catch {}
     setAddingParent(false);
   }
