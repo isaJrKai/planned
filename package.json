@@ -6,7 +6,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:unit": "vitest run src/lib/money.test.ts src/lib/crypto.test.ts src/lib/goals.test.ts src/lib/format.test.ts",
+    "test:integration": "vitest run src/lib/isolation.test.ts",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@tailwindcss/postcss": "4.1.17",
@@ -25,12 +29,14 @@
     "postcss": "8.5.8",
     "react": "19.2.6",
     "react-dom": "19.2.6",
+    "resend": "^6.28.0",
     "tailwindcss": "4.1.17",
     "typescript": "5.9.3",
     "zod": "^4.5.4"
   },
   "devDependencies": {
     "drizzle-kit": "^0.31.10",
+    "tsx": "^4.23.13",
     "vitest": "^5.0.0"
   }
 }

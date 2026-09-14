@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { forecastGoal, projectSavings, weeksToReach } from "./goals";
 
 // Helper to create a transaction-like object
-function contribution(amount: number, daysAgo: number, kind = "goal_contribution") {
+function contribution(amount: number, daysAgo: number, kind: "deposit" | "allowance" | "transfer" | "spend" | "goal_contribution" | "goal_withdrawal" | "adjustment" | "reversal" = "goal_contribution") {
   return { amount, createdAt: new Date(Date.now() - daysAgo * 86400000), kind };
 }
 
