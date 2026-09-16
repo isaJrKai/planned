@@ -1,6 +1,9 @@
 "use client";
+import * as Sentry from "@sentry/nextjs";
 import { Button } from "@/components/ui";
-export default function ErrorPage({ reset }: { error: Error; reset: () => void }) {
+
+export default function ErrorPage({ error, reset }: { error: Error; reset: () => void }) {
+  Sentry.captureException(error);
   return (
     <div className="max-w-md py-10">
       <h1 className="text-[24px] font-semibold">Something didn&rsquo;t load</h1>
