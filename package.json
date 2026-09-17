@@ -13,6 +13,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
     "@sentry/nextjs": "^10.75.0",
     "@tailwindcss/postcss": "4.1.17",
     "@types/node": "22.19.15",
@@ -33,9 +34,11 @@
     "resend": "^6.28.0",
     "tailwindcss": "4.1.17",
     "typescript": "5.9.3",
+    "ws": "^8.21.3",
     "zod": "^4.5.4"
   },
   "devDependencies": {
+    "@types/ws": "^8.18.1",
     "drizzle-kit": "^0.31.10",
     "tsx": "^4.23.13",
     "vitest": "^5.0.0"
