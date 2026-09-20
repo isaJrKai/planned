@@ -1,37 +1,42 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 
 @theme {
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-  /* Neutral canvas */
+  /* Neutral canvas — crisp white + cool grays */
   --color-paper: #ffffff;
-  --color-warm: #faf9f6;
-  --color-warm-2: #f3f1ec;
-  --color-line: #e7e5df;
-  --color-line-strong: #d6d3cb;
-  --color-ink: #1c1b18;
-  --color-ink-2: #4a4843;
-  --color-ink-3: #7a776f;
-  --color-ink-4: #a8a59c;
+  --color-warm: #f8fafc;        /* slate-50 — subtle surface */
+  --color-warm-2: #f1f5f9;      /* slate-100 — hover/track */
+  --color-line: #e2e8f0;        /* slate-200 — dividers */
+  --color-line-strong: #cbd5e1; /* slate-300 — input borders */
+  --color-ink: #0f172a;         /* slate-900 — primary text */
+  --color-ink-2: #475569;      /* slate-600 — secondary text */
+  --color-ink-3: #64748b;     /* slate-500 — tertiary text */
+  --color-ink-4: #94a3b8;    /* slate-400 — quaternary text */
 
-  /* Functional palette: colour communicates meaning */
-  --color-brand: #1f5eff;        /* primary actions */
-  --color-brand-strong: #164ad1;
-  --color-brand-soft: #eef3ff;
-  --color-save: #1a8a4a;         /* saving, positive progress */
-  --color-save-soft: #e9f7ee;
-  --color-goal: #c47a09;         /* goals, attention, pending */
-  --color-goal-soft: #fdf3e2;
-  --color-spend: #c8302f;        /* spending, warnings, destructive */
-  --color-spend-soft: #fdecec;
-  --color-grow: #6b46c1;         /* investment, long-term growth */
-  --color-grow-soft: #f1ecfb;
+  /* Functional palette — fintech clean */
+  --color-brand: #2563eb;        /* primary blue */
+  --color-brand-strong: #1d4ed8;
+  --color-brand-soft: #eff4ff;
+  --color-accent: #0d9488;       /* teal — data viz accent */
+  --color-accent-soft: #ecfdf5;
+  --color-save: #059669;         /* emerald — positive */
+  --color-save-soft: #ecfdf5;
+  --color-goal: #d97706;         /* amber — attention */
+  --color-goal-soft: #fff7eb;
+  --color-spend: #dc2626;        /* red — danger */
+  --color-spend-soft: #fef2f2;
+  --color-grow: #7c3aed;         /* violet — investments */
+  --color-grow-soft: #f5f1fb;
 
   --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --shadow-soft: 0 1px 2px rgba(28, 27, 24, 0.04), 0 4px 12px -6px rgba(28, 27, 24, 0.08);
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-pill: 20px;
+  --shadow-soft: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-lifted: 0 4px 12px -2px rgba(15, 23, 42, 0.10), 0 2px 4px -1px rgba(15, 23, 42, 0.04);
 }
 
 html { color-scheme: light; }
@@ -40,15 +45,27 @@ body {
   font-size: 15.5px;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   font-feature-settings: "tnum" 1, "cv11" 1;
 }
-h1, h2, h3, h4 { letter-spacing: -0.015em; text-wrap: balance; }
+h1, h2, h3, h4 { letter-spacing: -0.02em; text-wrap: balance; }
 .tnum { font-variant-numeric: tabular-nums; }
+
 :focus-visible { outline: 2px solid var(--color-brand); outline-offset: 2px; border-radius: 4px; }
 ::selection { background: #dbe6ff; }
+
+/* Smooth transitions on all interactive elements by default */
+button, a, input, select, textarea, [role="button"] {
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease,
+              box-shadow 150ms ease, transform 150ms ease, opacity 150ms ease;
+}
+
 @keyframes shimmer { 0% { opacity: 0.55; } 50% { opacity: 1; } 100% { opacity: 0.55; } }
 .skeleton { @apply bg-warm-2 rounded-md; animation: shimmer 1.6s ease-in-out infinite; }
 @keyframes rise { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 .rise { animation: rise 220ms ease-out both; }
-@media (prefers-reduced-motion: reduce) { .rise, .skeleton { animation: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .rise, .skeleton { animation: none; }
+  button, a, input, select, textarea { transition: none !important; }
+}
 input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }

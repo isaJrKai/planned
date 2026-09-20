@@ -48,3 +48,4 @@ backups/
 # Skills/examples (not part of the app)
 skills/
 examples/
+.vercel

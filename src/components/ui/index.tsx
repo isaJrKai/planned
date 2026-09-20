@@ -14,13 +14,13 @@ const toneBar: Record<Tone, string> = { brand: "bg-brand", save: "bg-save", goal
 /* ---------- Button ---------- */
 type BtnProps = React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "secondary" | "ghost" | "danger"; size?: "sm" | "md" | "lg"; loading?: boolean; href?: string };
 export function Button({ variant = "primary", size = "md", loading, href, className, children, disabled, ...rest }: BtnProps) {
-  const base = "inline-flex items-center justify-center gap-2 font-medium rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed select-none";
+  const base = "inline-flex items-center justify-center gap-2 font-medium rounded-md transition-all hover:-translate-y-px active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 select-none";
   const sizes = { sm: "h-8 px-3 text-[13px]", md: "h-10 px-4 text-[14.5px]", lg: "h-12 px-5 text-[15.5px]" }[size];
   const variants = {
-    primary: "bg-brand text-white hover:bg-brand-strong",
-    secondary: "bg-paper text-ink border border-line-strong hover:bg-warm",
+    primary: "bg-brand text-white shadow-[0_1px_2px_rgba(37,99,235,0.25)] hover:bg-brand-strong hover:shadow-[0_2px_6px_rgba(37,99,235,0.30)]",
+    secondary: "bg-paper text-ink border border-line-strong shadow-[var(--shadow-soft)] hover:bg-warm hover:border-line",
     ghost: "text-ink-2 hover:bg-warm hover:text-ink",
-    danger: "bg-spend text-white hover:bg-[#a92626]",
+    danger: "bg-spend text-white shadow-[0_1px_2px_rgba(220,38,38,0.20)] hover:bg-[#b91c1c]",
   }[variant];
   const cls = cx(base, sizes, variants, className);
   if (href) return <Link href={href} className={cls}>{children}</Link>;
@@ -55,8 +55,42 @@ export function Textarea({ className, ...p }: React.TextareaHTMLAttributes<HTMLT
 }
 
 /* ---------- Surfaces ---------- */
-export function Card({ className, children, as: Tag = "section" }: { className?: string; children: React.ReactNode; as?: "section" | "div" | "article" }) {
-  return <Tag className={cx("bg-paper border border-line rounded-lg", className)}>{children}</Tag>;
+export function Card({ className, children, as: Tag = "section", hover, padded }: { className?: string; children: React.ReactNode; as?: "section" | "div" | "article"; hover?: boolean; padded?: boolean }) {
+  return (
+    <Tag
+      className={cx(
+        "bg-paper border border-line rounded-lg shadow-[var(--shadow-soft)]",
+        hover && "transition-all hover:-translate-y-px hover:shadow-[var(--shadow-lifted)] hover:border-line-strong cursor-pointer",
+        padded && "p-5",
+        className,
+      )}
+    >
+      {children}
+    </Tag>
+  );
+}
+
+/* ---------- KPI stat ---------- */
+export function Stat({ value, label, delta, deltaLabel, tone = "neutral", className }: { value: React.ReactNode; label: string; delta?: number | null; deltaLabel?: string; tone?: Tone; className?: string }) {
+  const hasDelta = typeof delta === "number";
+  const deltaUp = hasDelta && (delta as number) >= 0;
+  const deltaCls = !hasDelta ? "text-ink-3" : deltaUp ? "text-save" : "text-spend";
+  const valueCls = tone === "neutral" ? "text-ink" : toneText[tone];
+  return (
+    <div className={className}>
+      <p className="text-[11.5px] uppercase tracking-wide font-medium text-ink-3">{label}</p>
+      <p className={cx("mt-1.5 text-[26px] font-semibold tnum leading-none", valueCls)}>{value}</p>
+      {hasDelta ? (
+        <p className={cx("mt-2 text-[12.5px] flex items-center gap-1.5 font-medium", deltaCls)}>
+          <span aria-hidden>{deltaUp ? "\u2191" : "\u2193"}</span>
+          <span>{Math.abs(delta as number)}%</span>
+          {deltaLabel && <span className="text-ink-3 font-normal">{deltaLabel}</span>}
+        </p>
+      ) : deltaLabel ? (
+        <p className="mt-2 text-[12.5px] text-ink-3">{deltaLabel}</p>
+      ) : null}
+    </div>
+  );
 }
 export function SectionTitle({ title, sub, action }: { title: string; sub?: string; action?: React.ReactNode }) {
   return (
@@ -70,7 +104,7 @@ export function SectionTitle({ title, sub, action }: { title: string; sub?: stri
   );
 }
 export function Pill({ tone = "neutral", children, className }: { tone?: Tone; children: React.ReactNode; className?: string }) {
-  return <span className={cx("inline-flex items-center gap-1 h-6 px-2 rounded-full text-[12.5px] font-medium", toneBg[tone], className)}>{children}</span>;
+  return <span className={cx("inline-flex items-center gap-1 h-6 px-2 rounded-full text-[12.5px] font-medium transition-colors", toneBg[tone], className)}>{children}</span>;
 }
 export function ToneText({ tone, children, className }: { tone: Tone; children: React.ReactNode; className?: string }) {
   return <span className={cx(toneText[tone], className)}>{children}</span>;

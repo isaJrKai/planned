@@ -1,0 +1,464 @@
+     1→"use client";
+     2→import * as React from "react";
+     3→import { useRouter } from "next/navigation";
+     4→import { Plus, Check, X, RotateCcw, Download, Trash2, ShieldCheck } from "lucide-react";
+     5→import { Button, Field, Input, Select, Textarea, Modal, Notice, api, fieldError } from "@/components/ui";
+     6→import { parseMoneyInput, formatMoney } from "@/lib/money";
+     7→import { WEEKDAYS } from "@/lib/format";
+     8→import { PasswordInput } from "@/components/auth/PasswordInput";
+     9→
+    10→type ApiErr = { code: string; message: string; details?: Record<string, string[]> };
+    11→type Member = { id: string; name: string; role: string };
+    12→type GoalLite = { id: string; name: string; memberId: string | null };
+    13→
+    14→function useAction() {
+    15→  const router = useRouter();
+    16→  const [busy, setBusy] = React.useState(false);
+    17→  const [err, setErr] = React.useState<ApiErr | null>(null);
+    18→  const [msg, setMsg] = React.useState<string | null>(null);
+    19→  const run = async <T,>(fn: () => Promise<{ ok: true; data: T } | { ok: false; error: ApiErr }>, onOk?: (d: T) => void) => {
+    20→    setBusy(true); setErr(null); setMsg(null);
+    21→    const r = await fn();
+    22→    setBusy(false);
+    23→    if (r.ok) { onOk?.(r.data); router.refresh(); return true; }
+    24→    setErr(r.error); return false;
+    25→  };
+    26→  return { busy, err, msg, setMsg, setErr, run };
+    27→}
+    28→
+    29→export function MoneyInput({ currency, name, id, defaultValue, required = true, autoFocus }: { currency: string; name: string; id: string; defaultValue?: string; required?: boolean; autoFocus?: boolean }) {
+    30→  return (
+    31→    <div className="relative">
+    32→      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[13px] font-medium text-ink-3">{currency}</span>
+    33→      <Input id={id} name={name} inputMode="decimal" placeholder="0" className="pl-14 tnum" defaultValue={defaultValue} required={required} autoFocus={autoFocus} autoComplete="off" />
+    34→    </div>
+    35→  );
+    36→}
+    37→
+    38→/* ---------------- Children ---------------- */
+    39→export function AddChildButton({ first }: { first?: boolean }) {
+    40→  const [open, setOpen] = React.useState(false);
+    41→  const a = useAction();
+    42→  async function submit(e: React.FormEvent<HTMLFormElement>) {
+    43→    e.preventDefault();
+    44→    const fd = new FormData(e.currentTarget);
+    45→    const by = fd.get("birthYear") ? Number(fd.get("birthYear")) : undefined;
+    46→    const ok = await a.run(() => api("/api/members", { body: { name: fd.get("name"), username: fd.get("username"), password: fd.get("password"), birthYear: by } }));
+    47→    if (ok) setOpen(false);
+    48→  }
+    49→  return (
+    50→    <>
+    51→      <Button onClick={() => setOpen(true)} variant={first ? "primary" : "secondary"}><Plus className="h-4 w-4" />Add a child</Button>
+    52→      <Modal open={open} onClose={() => setOpen(false)} title="Add a child">
+    53→        <form onSubmit={submit} className="space-y-4" noValidate>
+    54→          <p className="text-[14px] text-ink-2">They&rsquo;ll get their own spending and savings accounts, and sign in with the username and password you choose here.</p>
+    55→          {a.err && !a.err.details && <Notice tone="spend">{a.err.message}</Notice>}
+    56→          <Field label="Name" htmlFor="c-name" error={fieldError(a.err ?? undefined, "name")}><Input id="c-name" name="name" required autoFocus /></Field>
+    57→          <Field label="Username" htmlFor="c-user" hint="Letters, numbers and underscores. They'll type this to sign in." error={fieldError(a.err ?? undefined, "username")}><Input id="c-user" name="username" required autoComplete="off" /></Field>
+    58→          <Field label="Password" htmlFor="c-pw" hint="At least 6 characters. You can reset it any time." error={fieldError(a.err ?? undefined, "password")}><PasswordInput id="c-pw" name="password" required minLength={6} autoComplete="new-password" /></Field>
+    59→          <Field label="Birth year (optional)" htmlFor="c-by" hint="Used only to show age; helps pick lesson wording."><Input id="c-by" name="birthYear" inputMode="numeric" placeholder={String(new Date().getFullYear() - 10)} /></Field>
+    60→          <div className="flex justify-end gap-2 pt-2"><Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button><Button type="submit" loading={a.busy}>Add child</Button></div>
+    61→        </form>
+    62→      </Modal>
+    63→    </>
+    64→  );
+    65→}
+    66→
+    67→export function ResetChildPassword({ memberId, name }: { memberId: string; name: string }) {
+    68→  const [open, setOpen] = React.useState(false);
+    69→  const a = useAction();
+    70→  async function submit(e: React.FormEvent<HTMLFormElement>) {
+    71→    e.preventDefault();
+    72→    const fd = new FormData(e.currentTarget);
+    73→    const ok = await a.run(() => api(`/api/members/${memberId}`, { method: "PATCH", body: { password: fd.get("password") } }));
+    74→    if (ok) { setOpen(false); }
+    75→  }
+    76→  return (
+    77→    <>
+    78→      <Button variant="secondary" size="sm" onClick={() => setOpen(true)}>Reset password</Button>
+    79→      <Modal open={open} onClose={() => setOpen(false)} title={`New password for ${name}`}>
+    80→        <form onSubmit={submit} className="space-y-4" noValidate>
+    81→          {a.err && <Notice tone="spend">{a.err.message}</Notice>}
+    82→          <Field label="New password" htmlFor="rp" hint="Their other devices will be signed out."><PasswordInput id="rp" name="password" required minLength={6} autoFocus autoComplete="new-password" /></Field>
+    83→          <div className="flex justify-end gap-2"><Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button><Button type="submit" loading={a.busy}>Set password</Button></div>
+    84→        </form>
+    85→      </Modal>
+    86→    </>
+    87→  );
+    88→}
+    89→
+    90→/* ---------------- Money into the family ---------------- */
+    91→export function DepositButton({ currency, variant = "primary", label = "Add to pool", defaultOpen }: { currency: string; variant?: "primary" | "secondary"; label?: string; defaultOpen?: boolean }) {
+    92→  const [open, setOpen] = React.useState(!!defaultOpen);
+    93→  const a = useAction();
+    94→  async function submit(e: React.FormEvent<HTMLFormElement>) {
+    95→    e.preventDefault();
+    96→    const fd = new FormData(e.currentTarget);
+    97→    const amount = parseMoneyInput(String(fd.get("amount")), currency);
+    98→    if (amount === null || amount <= 0) { a.setErr({ code: "v", message: "Enter a valid amount." }); return; }
+    99→    const ok = await a.run(() => api("/api/transactions", { idempotent: true, body: { type: "deposit", amount, note: fd.get("note") || undefined } }));
+   100→    if (ok) setOpen(false);
+   101→  }
+   102→  return (
+   103→    <>
+   104→      <Button variant={variant} onClick={() => setOpen(true)}><Plus className="h-4 w-4" />{label}</Button>
+   105→      <Modal open={open} onClose={() => setOpen(false)} title="Add money to the family pool">
+   106→        <form onSubmit={submit} className="space-y-4" noValidate>
+   107→          <p className="text-[14px] text-ink-2">The pool is where allowances and approved requests are paid from. This records money you&rsquo;re setting aside for the children — Planned doesn&rsquo;t move real funds.</p>
+   108→          {a.err && <Notice tone="spend">{a.err.message}</Notice>}
+   109→          <Field label="Amount" htmlFor="d-amt"><MoneyInput currency={currency} id="d-amt" name="amount" autoFocus /></Field>
+   110→          <Field label="Note (optional)" htmlFor="d-note"><Input id="d-note" name="note" placeholder="e.g. April allowances" /></Field>
+   111→          <div className="flex justify-end gap-2"><Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button><Button type="submit" loading={a.busy}>Add</Button></div>
+   112→        </form>
+   113→      </Modal>
+   114→    </>
+   115→  );
+   116→}
+   117→
+   118→export function GiveButton({ currency, members, memberId }: { currency: string; members: Member[]; memberId?: string }) {
+   119→  const [open, setOpen] = React.useState(false);
+   120→  const a = useAction();
+   121→  const kids = members.filter((m) => m.role === "child");
+   122→  async function submit(e: React.FormEvent<HTMLFormElement>) {
+   123→    e.preventDefault();
+   124→    const fd = new FormData(e.currentTarget);
+   125→    const amount = parseMoneyInput(String(fd.get("amount")), currency);
+   126→    if (amount === null || amount <= 0) { a.setErr({ code: "v", message: "Enter a valid amount." }); return; }
+   127→    const ok = await a.run(() => api("/api/transactions", { idempotent: true, body: { type: "give", memberId: fd.get("memberId"), to: fd.get("to"), amount, note: fd.get("note") || undefined } }));
+   128→    if (ok) setOpen(false);
+   129→  }
+   130→  if (!kids.length) return null;
+   131→  return (
+   132→    <>
+   133→      <Button variant="secondary" onClick={() => setOpen(true)}>Give one-off</Button>
+   134→      <Modal open={open} onClose={() => setOpen(false)} title="Give a one-off amount">
+   135→        <form onSubmit={submit} className="space-y-4" noValidate>
+   136→          {a.err && <Notice tone="spend">{a.err.message}</Notice>}
+   137→          <Field label="To" htmlFor="g-m"><Select id="g-m" name="memberId" defaultValue={memberId ?? kids[0].id}>{kids.map((k) => <option key={k.id} value={k.id}>{k.name}</option>)}</Select></Field>
+   138→          <Field label="Into" htmlFor="g-to"><Select id="g-to" name="to" defaultValue="spending"><option value="spending">Spending</option><option value="savings">Savings</option></Select></Field>
+   139→          <Field label="Amount" htmlFor="g-amt" hint="Comes out of the family pool."><MoneyInput currency={currency} id="g-amt" name="amount" /></Field>
+   140→          <Field label="Reason (optional)" htmlFor="g-note"><Input id="g-note" name="note" placeholder="e.g. Birthday" /></Field>
+   141→          <div className="flex justify-end gap-2"><Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button><Button type="submit" loading={a.busy}>Give</Button></div>
+   142→        </form>
+   143→      </Modal>
+   144→    </>
+   145→  );
+   146→}
+   147→
+   148→/* ---------------- Allowances ---------------- */
+   149→export function AllowanceButton({ currency, members, goals, first }: { currency: string; members: Member[]; goals: GoalLite[]; first?: boolean }) {
+   150→  const [open, setOpen] = React.useState(false);
+   151→  const [cadence, setCadence] = React.useState<"weekly" | "monthly">("weekly");
+   152→  const [memberId, setMemberId] = React.useState(members.find((m) => m.role === "child")?.id ?? "");
+   153→  const [save, setSave] = React.useState(20);
+   154→  const [goalPct, setGoalPct] = React.useState(0);
+   155→  const a = useAction();
+   156→  const kids = members.filter((m) => m.role === "child");
+   157→  const memberGoals = goals.filter((g) => g.memberId === memberId);
+   158→  async function submit(e: React.FormEvent<HTMLFormElement>) {
+   159→    e.preventDefault();
+   160→    const fd = new FormData(e.currentTarget);
+   161→    const amount = parseMoneyInput(String(fd.get("amount")), currency) ?? 0;
+   162→    if (!amount) { a.setErr({ code: "v", message: "Enter a valid amount." }); return; }
+   163→    const goalId = fd.get("goalId") ? String(fd.get("goalId")) : null;
+   164→    const ok = await a.run(() => api("/api/allowances", { body: { memberId, amount, cadence, dayOfPeriod: Number(fd.get("day")), savePercent: save, goalPercent: goalId ? goalPct : 0, goalId } }));
+   165→    if (ok) setOpen(false);
+   166→  }
+   167→  if (!kids.length) return null;
+   168→  const spend = Math.max(0, 100 - save - (memberGoals.length ? goalPct : 0));
+   169→  return (
+   170→    <>
+   171→      <Button variant={first ? "primary" : "secondary"} onClick={() => setOpen(true)}><Plus className="h-4 w-4" />New allowance</Button>
+   172→      <Modal open={open} onClose={() => setOpen(false)} title="Set up an allowance">
+   173→        <form onSubmit={submit} className="space-y-4" noValidate>
+   174→          {a.err && <Notice tone="spend">{a.err.message}</Notice>}
+   175→          <Field label="For" htmlFor="al-m"><Select id="al-m" value={memberId} onChange={(e) => setMemberId(e.target.value)}>{kids.map((k) => <option key={k.id} value={k.id}>{k.name}</option>)}</Select></Field>
+   176→          <Field label="Amount" htmlFor="al-amt"><MoneyInput currency={currency} id="al-amt" name="amount" /></Field>
+   177→          <div className="grid grid-cols-2 gap-3">
+   178→            <Field label="How often" htmlFor="al-c"><Select id="al-c" value={cadence} onChange={(e) => setCadence(e.target.value as "weekly" | "monthly")}><option value="weekly">Every week</option><option value="monthly">Every month</option></Select></Field>
+   179→            <Field label={cadence === "weekly" ? "On" : "On day"} htmlFor="al-d">
+   180→              <Select id="al-d" name="day" defaultValue={cadence === "weekly" ? 6 : 1}>
+   181→                {cadence === "weekly" ? WEEKDAYS.map((d, i) => <option key={d} value={i}>{d}</option>) : Array.from({ length: 28 }, (_, i) => <option key={i + 1} value={i + 1}>{i + 1}</option>)}
+   182→              </Select>
+   183→            </Field>
+   184→          </div>
+   185→          <fieldset className="border border-line rounded-md p-4 space-y-3">
+   186→            <legend className="px-1 text-[13.5px] font-medium text-ink-2">How it&rsquo;s split</legend>
+   187→            <label className="block text-[14px]"><span className="flex justify-between"><span>To savings</span><span className="tnum text-ink-2">{save}%</span></span><input type="range" min={0} max={100 - goalPct} value={save} onChange={(e) => setSave(Number(e.target.value))} className="w-full accent-[#1a8a4a]" aria-label="Percent to savings" /></label>
+   188→            {memberGoals.length > 0 && (
+   189→              <>
+   190→                <Field label="Toward a goal" htmlFor="al-g"><Select id="al-g" name="goalId" defaultValue=""><option value="">No goal</option>{memberGoals.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}</Select></Field>
+   191→                <label className="block text-[14px]"><span className="flex justify-between"><span>To that goal</span><span className="tnum text-ink-2">{goalPct}%</span></span><input type="range" min={0} max={100 - save} value={goalPct} onChange={(e) => setGoalPct(Number(e.target.value))} className="w-full accent-[#c47a09]" aria-label="Percent to goal" /></label>
+   192→              </>
+   193→            )}
+   194→            <p className="text-[13.5px] text-ink-2">Spending gets the rest: <strong className="text-ink tnum">{spend}%</strong>.</p>
+   195→          </fieldset>
+   196→          <p className="text-[13px] text-ink-3">Paid automatically from the family pool on the day you chose. You can also pay early from the Allowances page — never twice in one period.</p>
+   197→          <div className="flex justify-end gap-2"><Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button><Button type="submit" loading={a.busy}>Create</Button></div>
+   198→        </form>
+   199→      </Modal>
+   200→    </>
+   201→  );
+   202→}
+   203→
+   204→export function AllowanceRowActions({ id, active }: { id: string; active: boolean }) {
+   205→  const a = useAction();
+   206→  return (
+   207→    <div className="flex items-center gap-2">
+   208→      {a.msg && <span className="text-[13px] text-save">{a.msg}</span>}
+   209→      {a.err && <span className="text-[13px] text-spend">{a.err.message}</span>}
+   210→      {active && <Button size="sm" variant="secondary" loading={a.busy} onClick={() => a.run(() => api<{ message: string }>(`/api/allowances/${id}/pay`, { method: "POST" }), (d) => a.setMsg(d.message))}>Pay now</Button>}
+   211→      <Button size="sm" variant="ghost" loading={a.busy} onClick={() => a.run(() => api(`/api/allowances/${id}`, { method: "PATCH", body: { active: !active } }))}>{active ? "Pause" : "Resume"}</Button>
+   212→    </div>
+   213→  );
+   214→}
+   215→
+   216→/* ---------------- Goals ---------------- */
+   217→export function GoalButton({ currency, members, forMemberId, allowShared, first, childMode }: { currency: string; members: Member[]; forMemberId?: string; allowShared?: boolean; first?: boolean; childMode?: boolean }) {
+   218→  const [open, setOpen] = React.useState(false);
+   219→  const a = useAction();
+   220→  const kids = members.filter((m) => m.role === "child");
+   221→  async function submit(e: React.FormEvent<HTMLFormElement>) {
+   222→    e.preventDefault();
+   223→    const fd = new FormData(e.currentTarget);
+   224→    const target = parseMoneyInput(String(fd.get("target")), currency);
+   225→    if (!target) { a.setErr({ code: "v", message: "Enter a valid target amount." }); return; }
+   226→    const owner = String(fd.get("memberId") ?? forMemberId ?? "");
+   227→    const isShared = owner === "__shared";
+   228→    const date = fd.get("date") ? new Date(String(fd.get("date"))).toISOString() : null;
+   229→    const ok = await a.run(() => api("/api/goals", { body: { memberId: isShared ? null : owner || undefined, name: fd.get("name"), targetAmount: target, targetDate: date, isShared } }));
+   230→    if (ok) setOpen(false);
+   231→  }
+   232→  return (
+   233→    <>
+   234→      <Button variant={first ? "primary" : "secondary"} onClick={() => setOpen(true)}><Plus className="h-4 w-4" />{childMode ? "New goal" : "Create goal"}</Button>
+   235→      <Modal open={open} onClose={() => setOpen(false)} title={childMode ? "What are you saving for?" : "Create a goal"}>
+   236→        <form onSubmit={submit} className="space-y-4" noValidate>
+   237→          {a.err && !a.err.details && <Notice tone="spend">{a.err.message}</Notice>}
+   238→          {!forMemberId && !childMode && (
+   239→            <Field label="Whose goal" htmlFor="go-m"><Select id="go-m" name="memberId" defaultValue={kids[0]?.id ?? "__shared"}>{kids.map((k) => <option key={k.id} value={k.id}>{k.name}</option>)}{allowShared && <option value="__shared">Shared family goal</option>}</Select></Field>
+   240→          )}
+   241→          <Field label="Name" htmlFor="go-n" error={fieldError(a.err ?? undefined, "name")}><Input id="go-n" name="name" placeholder={childMode ? "e.g. New bicycle" : "e.g. Bicycle, Holiday fund"} required autoFocus /></Field>
+   242→          <Field label="Target" htmlFor="go-t"><MoneyInput currency={currency} id="go-t" name="target" /></Field>
+   243→          <Field label="Hoping to reach it by (optional)" htmlFor="go-d"><Input id="go-d" name="date" type="date" /></Field>
+   244→          <div className="flex justify-end gap-2"><Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button><Button type="submit" loading={a.busy}>{childMode ? "Start saving" : "Create goal"}</Button></div>
+   245→        </form>
+   246→      </Modal>
+   247→    </>
+   248→  );
+   249→}
+   250→
+   251→export function ContributeButton({ goalId, goalName, currency, sources, size = "md", variant = "primary" }: { goalId: string; goalName: string; currency: string; sources: { key: "spending" | "savings" | "family_pool"; label: string; balance: number }[]; size?: "sm" | "md"; variant?: "primary" | "secondary" }) {
+   252→  const [open, setOpen] = React.useState(false);
+   253→  const a = useAction();
+   254→  async function submit(e: React.FormEvent<HTMLFormElement>) {
+   255→    e.preventDefault();
+   256→    const fd = new FormData(e.currentTarget);
+   257→    const amount = parseMoneyInput(String(fd.get("amount")), currency);
+   258→    if (!amount) { a.setErr({ code: "v", message: "Enter a valid amount." }); return; }
+   259→    const ok = await a.run(() => api(`/api/goals/${goalId}/contribute`, { idempotent: true, body: { amount, from: fd.get("from") } }));
+   260→    if (ok) setOpen(false);
+   261→  }
+   262→  return (
+   263→    <>
+   264→      <Button size={size} variant={variant} onClick={() => setOpen(true)}>Add to goal</Button>
+   265→      <Modal open={open} onClose={() => setOpen(false)} title={`Save toward ${goalName}`}>
+   266→        <form onSubmit={submit} className="space-y-4" noValidate>
+   267→          {a.err && <Notice tone="spend">{a.err.message}</Notice>}
+   268→          <Field label="From" htmlFor="ct-f"><Select id="ct-f" name="from" defaultValue={sources[0]?.key}>{sources.map((s) => <option key={s.key} value={s.key}>{s.label} · {formatMoney(s.balance, currency)}</option>)}</Select></Field>
+   269→          <Field label="Amount" htmlFor="ct-a"><MoneyInput currency={currency} id="ct-a" name="amount" autoFocus /></Field>
+   270→          <div className="flex justify-end gap-2"><Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button><Button type="submit" loading={a.busy}>Save it</Button></div>
+   271→        </form>
+   272→      </Modal>
+   273→    </>
+   274→  );
+   275→}
+   276→
+   277→export function ArchiveGoalButton({ goalId, hasMoney }: { goalId: string; hasMoney: boolean }) {
+   278→  const a = useAction();
+   279→  const [confirm, setConfirm] = React.useState(false);
+   280→  if (!confirm) return <Button size="sm" variant="ghost" onClick={() => setConfirm(true)}>Close goal</Button>;
+   281→  return (
+   282→    <div className="flex items-center gap-2 text-[13.5px]">
+   283→      <span className="text-ink-2">{hasMoney ? "Saved money goes back to savings." : "Close this goal?"}</span>
+   284→      <Button size="sm" variant="danger" loading={a.busy} onClick={() => a.run(() => api(`/api/goals/${goalId}`, { method: "PATCH", body: { status: "archived" } }))}>Close</Button>
+   285→      <Button size="sm" variant="ghost" onClick={() => setConfirm(false)}>Keep</Button>
+   286→    </div>
+   287→  );
+   288→}
+   289→
+   290→/* ---------------- Approvals ---------------- */
+   291→export function ApprovalActions({ id }: { id: string }) {
+   292→  const a = useAction();
+   293→  const [note, setNote] = React.useState("");
+   294→  return (
+   295→    <div className="space-y-2">
+   296→      {a.err && <Notice tone="spend">{a.err.message}</Notice>}
+   297→      <div className="flex flex-wrap items-center gap-2">
+   298→        <Button size="sm" loading={a.busy} onClick={() => a.run(() => api(`/api/approvals/${id}`, { body: { decision: "approved", note: note || undefined } }))}><Check className="h-4 w-4" />Approve</Button>
+   299→        <Button size="sm" variant="secondary" loading={a.busy} onClick={() => a.run(() => api(`/api/approvals/${id}`, { body: { decision: "declined", note: note || undefined } }))}><X className="h-4 w-4" />Decline</Button>
+   300→        <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Add a note for them (optional)" className="flex-1 min-w-[180px] h-8 px-2.5 text-[13.5px] rounded-md border border-line bg-paper focus:border-brand focus:outline-none" aria-label="Note" />
+   301→      </div>
+   302→    </div>
+   303→  );
+   304→}
+   305→
+   306→/* ---------------- Transactions ---------------- */
+   307→export function ReverseButton({ id }: { id: string }) {
+   308→  const a = useAction();
+   309→  const [open, setOpen] = React.useState(false);
+   310→  async function submit(e: React.FormEvent<HTMLFormElement>) {
+   311→    e.preventDefault();
+   312→    const fd = new FormData(e.currentTarget);
+   313→    const ok = await a.run(() => api(`/api/transactions/${id}/reverse`, { body: { reason: fd.get("reason") } }));
+   314→    if (ok) setOpen(false);
+   315→  }
+   316→  return (
+   317→    <>
+   318→      <button onClick={() => setOpen(true)} className="text-[13px] text-ink-3 hover:text-ink inline-flex items-center gap-1"><RotateCcw className="h-3.5 w-3.5" />Reverse</button>
+   319→      <Modal open={open} onClose={() => setOpen(false)} title="Reverse this transaction">
+   320→        <form onSubmit={submit} className="space-y-4" noValidate>
+   321→          <p className="text-[14px] text-ink-2">An equal and opposite entry is added. The original stays in the ledger, marked as reversed.</p>
+   322→          {a.err && <Notice tone="spend">{a.err.message}</Notice>}
+   323→          <Field label="Why" htmlFor="rv-r"><Input id="rv-r" name="reason" required autoFocus placeholder="e.g. Entered twice by mistake" /></Field>
+   324→          <div className="flex justify-end gap-2"><Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button><Button type="submit" variant="danger" loading={a.busy}>Reverse</Button></div>
+   325→        </form>
+   326→      </Modal>
+   327→    </>
+   328→  );
+   329→}
+   330→
+   331→/* ---------------- Settings ---------------- */
+   332→export function RulesForm({ currency, rules }: { currency: string; rules: { minSavePercent: number; approvalThreshold: number; dailySpendLimit: number; goalWithdrawalNeedsApproval: boolean } }) {
+   333→  const a = useAction();
+   334→  async function submit(e: React.FormEvent<HTMLFormElement>) {
+   335→    e.preventDefault();
+   336→    const fd = new FormData(e.currentTarget);
+   337→    await a.run(() => api("/api/rules", { method: "PATCH", body: {
+   338→      minSavePercent: Number(fd.get("minSave")),
+   339→      approvalThreshold: parseMoneyInput(String(fd.get("threshold") || "0"), currency) ?? 0,
+   340→      dailySpendLimit: parseMoneyInput(String(fd.get("daily") || "0"), currency) ?? 0,
+   341→      goalWithdrawalNeedsApproval: fd.get("gw") === "on",
+   342→    } }), () => a.setMsg("Rules saved."));
+   343→  }
+   344→  const major = (n: number) => (n ? String(n / Math.pow(10, currency === "UGX" || currency === "KES" || currency === "TZS" || currency === "RWF" ? 0 : 2)) : "");
+   345→  return (
+   346→    <form onSubmit={submit} className="space-y-4 max-w-lg" noValidate>
+   347→      {a.err && <Notice tone="spend">{a.err.message}</Notice>}{a.msg && <Notice tone="save">{a.msg}</Notice>}
+   348→      <Field label="Purchases above this amount need your approval" htmlFor="r-t" hint="Leave empty for no threshold."><MoneyInput currency={currency} id="r-t" name="threshold" defaultValue={major(rules.approvalThreshold)} required={false} /></Field>
+   349→      <Field label="Daily spending limit per child" htmlFor="r-d" hint="Leave empty for no limit."><MoneyInput currency={currency} id="r-d" name="daily" defaultValue={major(rules.dailySpendLimit)} required={false} /></Field>
+   350→      <Field label="Suggested minimum saving rate" htmlFor="r-s" hint="Shown to children as a guide when they set up their split."><Input id="r-s" name="minSave" type="number" min={0} max={100} defaultValue={rules.minSavePercent} className="w-28" /></Field>
+   351→      <label className="flex items-start gap-3 text-[14.5px]"><input type="checkbox" name="gw" defaultChecked={rules.goalWithdrawalNeedsApproval} className="mt-1 accent-[#1f5eff]" /><span>Taking money out of a goal needs a parent&rsquo;s approval<span className="block text-[13px] text-ink-3">Recommended. Keeps goals feeling real.</span></span></label>
+   352→      <Button type="submit" loading={a.busy}>Save rules</Button>
+   353→    </form>
+   354→  );
+   355→}
+   356→
+   357→export function PasswordForm() {
+   358→  const a = useAction();
+   359→  return (
+   360→    <form onSubmit={async (e) => { e.preventDefault(); const f = e.currentTarget; const fd = new FormData(f); const ok = await a.run(() => api<{ message: string }>("/api/auth/password", { method: "PATCH", body: { current: fd.get("current"), next: fd.get("next") } }), (d) => a.setMsg(d.message)); if (ok) f.reset(); }} className="space-y-4 max-w-sm" noValidate>
+   361→      {a.err && <Notice tone="spend">{a.err.message}</Notice>}{a.msg && <Notice tone="save">{a.msg}</Notice>}
+   362→      <Field label="Current password" htmlFor="pw-c"><PasswordInput id="pw-c" name="current" required autoComplete="current-password" /></Field>
+   363→      <Field label="New password" htmlFor="pw-n" hint="At least 10 characters."><PasswordInput id="pw-n" name="next" required minLength={10} autoComplete="new-password" /></Field>
+   364→      <Button type="submit" variant="secondary" loading={a.busy}>Change password</Button>
+   365→    </form>
+   366→  );
+   367→}
+   368→
+   369→export function SessionsPanel() {
+   370→  const a = useAction();
+   371→  const [rows, setRows] = React.useState<{ id: string; current: boolean; lastSeenAt: string; ip: string | null; userAgent: string | null }[] | null>(null);
+   372→  const load = React.useCallback(async () => { const r = await api<typeof rows>("/api/auth/sessions", { method: "GET" }); if (r.ok) setRows(r.data); }, []);
+   373→  React.useEffect(() => { load(); }, [load]);
+   374→  return (
+   375→    <div className="space-y-3 max-w-lg">
+   376→      {rows === null ? <div className="space-y-2"><div className="skeleton h-10" /><div className="skeleton h-10" /></div> : (
+   377→        <ul className="divide-y divide-line border border-line rounded-md">
+   378→          {rows.map((s) => <li key={s.id} className="px-3 py-2.5 text-[14px] flex items-center justify-between gap-3"><span className="truncate"><span className="font-medium">{s.current ? "This device" : "Another device"}</span><span className="text-ink-3"> · {s.ip ?? "unknown IP"} · {(s.userAgent ?? "").split(")")[0].slice(0, 40)}</span></span><span className="text-[13px] text-ink-3 shrink-0">{new Date(s.lastSeenAt).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span></li>)}
+   379→        </ul>
+   380→      )}
+   381→      {a.msg && <Notice tone="save">{a.msg}</Notice>}
+   382→      <Button variant="secondary" size="sm" loading={a.busy} onClick={() => a.run(() => api<{ message: string }>("/api/auth/sessions", { method: "DELETE" }), (d) => { a.setMsg(d.message); load(); })}>Sign out everywhere else</Button>
+   383→    </div>
+   384→  );
+   385→}
+   386→
+   387→export function AiSettingsForm({ initial }: { initial: { enabled: boolean; baseUrl: string; model: string; keyMasked: string | null; source: string } }) {
+   388→  const a = useAction();
+   389→  const [test, setTest] = React.useState<string | null>(null);
+   390→  async function submit(e: React.FormEvent<HTMLFormElement>) {
+   391→    e.preventDefault();
+   392→    const fd = new FormData(e.currentTarget);
+   393→    const key = String(fd.get("apiKey") ?? "");
+   394→    await a.run(() => api("/api/settings/ai", { method: "PATCH", body: { enabled: fd.get("enabled") === "on", baseUrl: fd.get("baseUrl") || null, model: fd.get("model") || null, ...(key ? { apiKey: key } : {}) } }), () => a.setMsg("Saved."));
+   395→  }
+   396→  return (
+   397→    <form onSubmit={submit} className="space-y-4 max-w-lg" noValidate>
+   398→      <p className="text-[14.5px] text-ink-2">Planned can write short, plain explanations of your family&rsquo;s numbers using a language model you connect. It only ever sees aggregate figures and first names, and it cannot move money or change anything.</p>
+   399→      {a.err && <Notice tone="spend">{a.err.message}</Notice>}{a.msg && <Notice tone="save">{a.msg}</Notice>}
+   400→      <label className="flex items-center gap-3 text-[14.5px]"><input type="checkbox" name="enabled" defaultChecked={initial.enabled} className="accent-[#1f5eff]" />Enable written explanations</label>
+   401→      <Field label="Provider endpoint" htmlFor="ai-u" hint="Any OpenAI-compatible chat completions API."><Input id="ai-u" name="baseUrl" defaultValue={initial.baseUrl} placeholder="https://api.openai.com/v1" /></Field>
+   402→      <Field label="Model" htmlFor="ai-m"><Input id="ai-m" name="model" defaultValue={initial.model} placeholder="gpt-4o-mini" /></Field>
+   403→      <Field label="API key" htmlFor="ai-k" hint={initial.keyMasked ? `A key is saved (${initial.keyMasked}, from ${initial.source === "family" ? "your settings" : "the server"}). Enter a new one to replace it.` : "No key yet. Explanations will use fixed rules until you add one."}>
+   404→        <PasswordInput id="ai-k" name="apiKey" autoComplete="off" placeholder="Paste a key" />
+   405→      </Field>
+   406→      <div className="flex flex-wrap gap-2 items-center">
+   407→        <Button type="submit" loading={a.busy}>Save</Button>
+   408→        <Button type="button" variant="secondary" onClick={async () => { setTest("Testing…"); const r = await api<{ text: string; source: string }>("/api/settings/ai/test"); setTest(r.ok ? `${r.data.source === "model" ? "Connected" : "Using fallback rules"}: ${r.data.text}` : r.error.message); }}>Test connection</Button>
+   409→        {initial.keyMasked && initial.source === "family" && <Button type="button" variant="ghost" onClick={() => a.run(() => api("/api/settings/ai", { method: "PATCH", body: { apiKey: null } }), () => a.setMsg("Key removed."))}>Remove key</Button>}
+   410→      </div>
+   411→      {test && <Notice>{test}</Notice>}
+   412→    </form>
+   413→  );
+   414→}
+   415→
+   416→export function DataSection({ familyName }: { familyName: string }) {
+   417→  const a = useAction();
+   418→  const router = useRouter();
+   419→  const [open, setOpen] = React.useState(false);
+   420→  return (
+   421→    <div className="space-y-6 max-w-lg">
+   422→      <div className="flex items-start gap-3">
+   423→        <Download className="h-5 w-5 text-ink-3 mt-0.5" />
+   424→        <div><p className="font-medium">Export everything</p><p className="text-[14px] text-ink-2">Members, accounts, every transaction, goals, allowances, lessons, journal and the audit trail, as one JSON file.</p><a href="/api/account/export" className="inline-flex mt-2 h-9 px-3.5 items-center rounded-md border border-line-strong text-[14px] font-medium hover:bg-warm">Download export</a></div>
+   425→      </div>
+   426→      <div className="flex items-start gap-3">
+   427→        <Trash2 className="h-5 w-5 text-spend mt-0.5" />
+   428→        <div><p className="font-medium">Delete the family</p><p className="text-[14px] text-ink-2">Removes every member, account, transaction, goal, lesson and journal entry immediately. This cannot be undone.</p><Button variant="secondary" size="sm" className="mt-2 text-spend border-spend/30 hover:bg-spend-soft" onClick={() => setOpen(true)}>Delete {familyName}…</Button></div>
+   429→      </div>
+   430→      <Modal open={open} onClose={() => setOpen(false)} title="Delete the family">
+   431→        <form onSubmit={async (e) => { e.preventDefault(); const fd = new FormData(e.currentTarget); await a.run(() => api<{ redirect: string }>("/api/account/delete", { body: { password: fd.get("password"), confirm: fd.get("confirm") } }), (d) => router.push(d.redirect)); }} className="space-y-4" noValidate>
+   432→          <Notice tone="spend">This deletes everything for every member, including the children&rsquo;s accounts. Consider exporting first.</Notice>
+   433→          {a.err && <Notice tone="spend">{a.err.message}</Notice>}
+   434→          <Field label="Your password" htmlFor="del-p"><PasswordInput id="del-p" name="password" required autoComplete="current-password" /></Field>
+   435→          <Field label="Type DELETE to confirm" htmlFor="del-c"><Input id="del-c" name="confirm" required autoComplete="off" /></Field>
+   436→          <div className="flex justify-end gap-2"><Button type="button" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button><Button type="submit" variant="danger" loading={a.busy}>Delete permanently</Button></div>
+   437→        </form>
+   438→      </Modal>
+   439→    </div>
+   440→  );
+   441→}
+   442→
+   443→/* ---------------- Embedded coach ---------------- */
+   444→export function ExplainBox({ topic, question, prompt = "Why?" }: { topic: "pulse" | "goal" | "spending"; question: string; prompt?: string }) {
+   445→  const [state, setState] = React.useState<{ text?: string; source?: string; busy?: boolean; err?: string }>({});
+   446→  return (
+   447→    <div className="mt-3">
+   448→      {!state.text && !state.busy && <button className="text-[14px] font-medium text-brand hover:underline" onClick={async () => { setState({ busy: true }); const r = await api<{ text: string; source: string }>("/api/insights/explain", { body: { topic, question } }); setState(r.ok ? { text: r.data.text, source: r.data.source } : { err: r.error.message }); }}>{prompt}</button>}
+   449→      {state.busy && <div className="space-y-1.5"><div className="skeleton h-4 w-5/6" /><div className="skeleton h-4 w-3/6" /></div>}
+   450→      {state.err && <p className="text-[13.5px] text-spend">{state.err}</p>}
+   451→      {state.text && <div className="rise border-l-2 border-line-strong pl-3 text-[14.5px] text-ink-2 leading-relaxed"><p>{state.text}</p>{state.source === "fallback" && <p className="text-[12.5px] text-ink-4 mt-1 inline-flex items-center gap-1"><ShieldCheck className="h-3 w-3" />Generated from fixed rules. Connect a provider in Settings for richer explanations.</p>}</div>}
+   452→    </div>
+   453→  );
+   454→}
+   455→
+   456→export function ReconcileBadge() {
+   457→  const [r, setR] = React.useState<{ issues: unknown[]; accounts: unknown[] } | null>(null);
+   458→  React.useEffect(() => { api<{ issues: unknown[]; accounts: unknown[] }>("/api/reconcile", { method: "GET" }).then((x) => x.ok && setR(x.data)); }, []);
+   459→  if (!r) return <span className="text-[13px] text-ink-3">Checking ledger…</span>;
+   460→  return r.issues.length ? <span className="text-[13px] text-spend font-medium">Ledger mismatch on {r.issues.length} account(s) — contact support.</span> : <span className="text-[13px] text-save inline-flex items-center gap-1"><ShieldCheck className="h-3.5 w-3.5" />Ledger and balances reconcile across {r.accounts.length} accounts.</span>;
+   461→}
+   462→
+   463→export function InlineTextarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) { return <Textarea {...props} />; }
+   464→
