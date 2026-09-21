@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: false,
   },
   reactStrictMode: true,
+  pageExtensions: ["ts", "tsx", "js", "jsx"],
 };
 
 export default withSentryConfig(nextConfig, {
