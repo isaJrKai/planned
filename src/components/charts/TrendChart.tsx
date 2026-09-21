@@ -68,12 +68,12 @@ export function TrendChart({
     >
       <defs>
         <linearGradient id={areaId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#2563eb" stopOpacity={0.20} />
-          <stop offset="100%" stopColor="#2563eb" stopOpacity={0} />
+          <stop offset="0%" stopColor="#0052cc" stopOpacity={0.20} />
+          <stop offset="100%" stopColor="#0052cc" stopOpacity={0} />
         </linearGradient>
         <linearGradient id={lineId} x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="#2563eb" />
-          <stop offset="100%" stopColor="#0d9488" />
+          <stop offset="0%" stopColor="#0052cc" />
+          <stop offset="100%" stopColor="#7c5cfc" />
         </linearGradient>
       </defs>
 
@@ -129,7 +129,7 @@ export function TrendChart({
             cy={p[1]}
             r={4}
             fill="white"
-            stroke="#2563eb"
+            stroke="#0052cc"
             strokeWidth={2}
           />
           <title>

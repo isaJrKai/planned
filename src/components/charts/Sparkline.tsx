@@ -7,11 +7,11 @@ import { useId } from "react";
 export type SparkTone = "brand" | "accent" | "save" | "goal" | "spend";
 
 const TONE_COLOR: Record<SparkTone, string> = {
-  brand: "#2563eb",
-  accent: "#0d9488",
-  save: "#059669",
-  goal: "#d97706",
-  spend: "#dc2626",
+  brand: "#0052cc",
+  accent: "#7c5cfc",
+  save: "#00a76f",
+  goal: "#ffab00",
+  spend: "#ff3b30",
 };
 
 export function Sparkline({

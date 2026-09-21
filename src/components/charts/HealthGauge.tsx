@@ -70,9 +70,9 @@ export function HealthGauge({
       >
         <defs>
           <linearGradient id={gradId} gradientUnits="userSpaceOnUse" x1={cx - r} y1="0" x2={cx + r} y2="0">
-            <stop offset="0%" stopColor="#dc2626" />
-            <stop offset="50%" stopColor="#d97706" />
-            <stop offset="100%" stopColor="#059669" />
+            <stop offset="0%" stopColor="#ff3b30" />
+            <stop offset="50%" stopColor="#ffab00" />
+            <stop offset="100%" stopColor="#00a76f" />
           </linearGradient>
         </defs>
 
