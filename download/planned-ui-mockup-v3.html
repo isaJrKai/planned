@@ -1,0 +1,1265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planned — Family Finance Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* PRIMARY — deep teal-blue, alive and trustworthy */
+  --primary: #0052CC;
+  --primary-hover: #0037CC;
+  --primary-soft: #F0F4FF;
+  --primary-tint: #DEE7FC;
+
+  /* BACKGROUND — warm off-white */
+  --bg: #FBFBFA;
+  --surface: #FFFFFF;
+  --surface-warm: #F7F6F3;
+  --surface-cream: #FFF8E7;
+
+  /* TEXT — high contrast */
+  --ink: #1A1A2E;
+  --ink-2: #4A4A5E;
+  --ink-3: #7A7A8E;
+  --ink-4: #ABABB8;
+
+  /* BORDERS — subtle but visible, warm */
+  --border: #E8E7E1;
+  --border-soft: #F0EFEB;
+
+  /* SEMANTIC — bold and saturated */
+  --save: #00A76F;
+  --save-soft: #E6F7F0;
+  --goal: #FFAB00;
+  --goal-soft: #FFF5E0;
+  --spend: #FF3B30;
+  --spend-soft: #FFEBE9;
+  --accent: #7C5CFC;
+
+  /* SHADOWS — soft, layered, warm */
+  --shadow: 0 1px 2px rgba(26, 26, 46, 0.04), 0 4px 12px -4px rgba(26, 26, 46, 0.06);
+  --shadow-lifted: 0 2px 4px rgba(26, 26, 46, 0.06), 0 8px 24px -6px rgba(26, 26, 46, 0.10);
+
+  /* RADII */
+  --radius-sm: 8px;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+.tnum { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+
+/* ============ TYPOGRAPHY ============ */
+.hero-number {
+  font-size: 52px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: var(--primary);
+}
+.kpi-number {
+  font-size: 38px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+.section-title {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.body-text {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+.eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-3);
+}
+.currency {
+  font-size: 0.6em;
+  font-weight: 500;
+  color: var(--ink-3);
+  margin-right: 0.15em;
+}
+
+/* ============ SIDEBAR ============ */
+.sidebar {
+  position: fixed;
+  left: 0; top: 0;
+  width: 240px;
+  height: 100vh;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 24px 16px;
+  z-index: 50;
+}
+.logo {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--primary);
+  letter-spacing: -0.02em;
+  padding: 0 12px 28px;
+  display: block;
+}
+.nav-group { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.nav-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-4);
+  padding: 0 12px;
+  margin-bottom: 8px;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: var(--radius-sm);
+  color: var(--ink-2);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease;
+  text-decoration: none;
+}
+.nav-item:hover { background: var(--surface-warm); color: var(--ink); }
+.nav-item.active {
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-weight: 600;
+}
+.nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+.user-section {
+  margin-top: auto;
+  padding: 12px;
+  border-top: 1px solid var(--border-soft);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.avatar-sm {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.user-info { min-width: 0; }
+.user-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.user-label {
+  font-size: 12px;
+  color: var(--ink-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ============ MAIN ============ */
+.main {
+  margin-left: 240px;
+  min-height: 100vh;
+  padding: 32px;
+}
+.main-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Greeting */
+.greeting {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+.greeting h1 {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  line-height: 1.1;
+}
+.greeting .meta {
+  font-size: 14px;
+  color: var(--ink-3);
+  margin-top: 6px;
+}
+.btn-primary {
+  background: var(--primary);
+  color: white;
+  border: none;
+  height: 40px;
+  padding: 0 18px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 150ms ease, transform 150ms ease;
+  white-space: nowrap;
+}
+.btn-primary:hover { background: var(--primary-hover); }
+.btn-primary:active { transform: scale(0.98); }
+
+/* KPI Row */
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 24px;
+}
+.kpi-card .kpi-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+.kpi-card .kpi-body { margin-bottom: 16px; }
+.kpi-card .kpi-sub {
+  font-size: 13px;
+  color: var(--ink-3);
+  margin-top: 6px;
+}
+.progress-track {
+  height: 8px;
+  background: var(--surface-warm);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  margin-top: 16px;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--primary);
+  border-radius: var(--radius-pill);
+}
+.progress-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.progress-pct {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--primary);
+  white-space: nowrap;
+}
+.progress-track { flex: 1; margin-top: 0; }
+
+.delta-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+}
+.delta-pct {
+  font-size: 13px;
+  font-weight: 600;
+}
+.delta-meta { font-size: 12px; color: var(--ink-3); }
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--surface-warm);
+  color: var(--ink-3);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+.pill svg { width: 12px; height: 12px; }
+
+/* ============ CHARTS ROW ============ */
+.charts-row {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: 20px;
+  align-items: stretch;
+}
+.chart-card { display: flex; flex-direction: column; }
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.chart-header .muted { font-size: 13px; color: var(--ink-3); }
+.chart-header .total-amt {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.chart-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding-top: 16px;
+  margin-top: auto;
+  border-top: 1px solid var(--border-soft);
+}
+.chart-footer .stat {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.chart-footer .stat strong { font-weight: 600; color: var(--ink); }
+.chart-footer .divider {
+  width: 1px;
+  height: 14px;
+  background: var(--border);
+}
+
+/* Donut */
+.donut-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  padding: 8px 0 4px;
+}
+.donut-svg-wrap { position: relative; width: 160px; height: 160px; }
+.donut-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.donut-center .amt {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.donut-center .lbl {
+  font-size: 11px;
+  color: var(--ink-3);
+  margin-top: 4px;
+  line-height: 1;
+}
+.legend {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+.legend-row {
+  display: grid;
+  grid-template-columns: 16px 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 0;
+  height: 32px;
+}
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.legend-label {
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.legend-amt {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.legend-pct {
+  font-size: 12px;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+  min-width: 32px;
+  text-align: right;
+}
+
+/* ============ AI COACH ============ */
+.ai-card {
+  background: var(--surface-cream);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.ai-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.ai-content { flex: 1; min-width: 0; }
+.ai-line1 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+.ai-line2 {
+  font-size: 14px;
+  color: var(--ink-2);
+  line-height: 1.5;
+}
+.ai-link {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--primary);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  text-decoration: none;
+}
+.ai-link:hover { text-decoration: underline; }
+
+/* ============ CHILDREN ROW ============ */
+.children-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+.child-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px;
+  transition: transform 200ms ease, box-shadow 200ms ease;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+}
+.child-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lifted);
+}
+.child-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.child-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.child-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+  flex: 1;
+}
+.child-view {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--primary);
+  text-decoration: none;
+}
+.child-savings {
+  text-align: center;
+  margin: 16px 0 12px;
+}
+.child-amount {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.child-of {
+  font-size: 13px;
+  color: var(--ink-3);
+  margin-top: 6px;
+}
+.ring-wrap {
+  display: flex;
+  justify-content: center;
+  margin: 8px 0 12px;
+}
+.ring-svg-wrap {
+  position: relative;
+  width: 60px;
+  height: 60px;
+}
+.ring-pct {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.child-goal {
+  text-align: center;
+  font-size: 14px;
+  color: var(--ink-2);
+  margin-bottom: 8px;
+}
+.sparkline-wrap {
+  width: 100%;
+  height: 28px;
+  margin-top: 8px;
+}
+.child-stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 12px;
+  margin-top: 8px;
+  border-top: 1px solid var(--border-soft);
+}
+.child-stat {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+.child-stat svg { width: 12px; height: 12px; color: var(--ink-4); }
+
+/* ============ ACTIVITY ROW ============ */
+.activity-row {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: 20px;
+  align-items: start;
+}
+.activity-list {
+  display: flex;
+  flex-direction: column;
+}
+.activity-row-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 56px;
+  border-bottom: 1px solid var(--border-soft);
+}
+.activity-row-item:last-child { border-bottom: none; }
+.act-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.act-icon svg { width: 14px; height: 14px; }
+.act-text { flex: 1; min-width: 0; }
+.act-desc {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.act-child {
+  font-size: 12px;
+  color: var(--ink-3);
+  margin-top: 2px;
+}
+.act-amt {
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.act-time {
+  font-size: 12px;
+  color: var(--ink-4);
+  white-space: nowrap;
+  width: 48px;
+  text-align: right;
+}
+
+/* Suggested actions */
+.suggest-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 4px;
+}
+.suggest-card {
+  background: var(--surface-warm);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+}
+.suggest-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.suggest-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 7px;
+  flex-shrink: 0;
+}
+.suggest-content { flex: 1; min-width: 0; }
+.suggest-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.3;
+}
+.suggest-meta {
+  font-size: 12px;
+  color: var(--ink-3);
+  margin-top: 3px;
+}
+.suggest-link {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--primary);
+  text-decoration: none;
+  margin-top: 10px;
+  display: inline-block;
+}
+.suggest-link:hover { text-decoration: underline; }
+
+/* ============ RESPONSIVE ============ */
+@media (max-width: 1100px) {
+  .kpi-row { grid-template-columns: 1fr; }
+  .charts-row { grid-template-columns: 1fr; }
+  .children-row { grid-template-columns: 1fr; }
+  .activity-row { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+  .sidebar { transform: translateX(-100%); }
+  .main { margin-left: 0; padding: 20px 16px; }
+  .greeting { flex-direction: column; align-items: stretch; }
+  .greeting .btn-primary { width: 100%; justify-content: center; }
+}
+</style>
+</head>
+<body>
+
+<!-- ============ SIDEBAR ============ -->
+<aside class="sidebar">
+  <div class="logo">Planned</div>
+
+  <div class="nav-group">
+    <div class="nav-label">Menu</div>
+    <a class="nav-item active" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      Overview
+    </a>
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Children
+    </a>
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+      Goals
+    </a>
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>
+      Allowances
+    </a>
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/></svg>
+      Transactions
+    </a>
+    <a class="nav-item" href="#">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+      Settings
+    </a>
+  </div>
+
+  <div class="user-section">
+    <div class="avatar-sm">SS</div>
+    <div class="user-info">
+      <div class="user-name">Sarah Sterling</div>
+      <div class="user-label">Parent · The Sterling Family</div>
+    </div>
+  </div>
+</aside>
+
+<!-- ============ MAIN ============ -->
+<main class="main">
+  <div class="main-inner">
+
+    <!-- Greeting -->
+    <header class="greeting">
+      <div>
+        <h1>Good afternoon, Sarah</h1>
+        <div class="meta">Friday, 21 September · 3 children active</div>
+      </div>
+      <button class="btn-primary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+        Add Transaction
+      </button>
+    </header>
+
+    <!-- Row 1: KPI Cards -->
+    <section class="kpi-row">
+      <!-- Card 1: Total Family Savings -->
+      <div class="card kpi-card">
+        <div class="eyebrow">Total Savings</div>
+        <div class="kpi-body" style="margin-top:12px;">
+          <div class="hero-number tnum"><span class="currency">UGX</span>3,245,000</div>
+          <div class="kpi-sub">of UGX 5,000,000 goal</div>
+        </div>
+        <div class="progress-row">
+          <div class="progress-track">
+            <div class="progress-fill" style="width:65%;"></div>
+          </div>
+          <div class="progress-pct tnum">65%</div>
+        </div>
+      </div>
+
+      <!-- Card 2: This Month Saved -->
+      <div class="card kpi-card">
+        <div class="eyebrow">Saved This Month</div>
+        <div class="kpi-body" style="margin-top:12px;">
+          <div class="kpi-number tnum" style="color:var(--save);"><span class="currency">UGX</span>450,000</div>
+          <div class="delta-row">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--save);"><path d="m5 12 7-7 7 7"/><path d="M12 19V5"/></svg>
+            <span class="delta-pct tnum" style="color:var(--save);">+12%</span>
+            <span class="delta-meta">vs last month</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3: Family Pool -->
+      <div class="card kpi-card">
+        <div class="kpi-top">
+          <div class="eyebrow">Family Pool</div>
+          <div class="pill">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 2v4"/><path d="M16 2v4"/></svg>
+            Next: Mon
+          </div>
+        </div>
+        <div class="kpi-body" style="margin-top:12px;">
+          <div class="kpi-number tnum" style="color:var(--ink);"><span class="currency">UGX</span>500,000</div>
+          <div class="kpi-sub">Available for allowances</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Row 2: Charts -->
+    <section class="charts-row">
+      <!-- Savings Trend -->
+      <div class="card chart-card">
+        <div class="chart-header">
+          <div class="section-title">Savings Trend</div>
+          <div class="muted">Last 6 months</div>
+        </div>
+
+        <svg viewBox="0 0 600 220" width="100%" height="220" preserveAspectRatio="none" style="display:block;">
+          <defs>
+            <linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#0052CC" stop-opacity="0.18"/>
+              <stop offset="100%" stop-color="#0052CC" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+
+          <!-- Grid lines (horizontal, dashed) -->
+          <line x1="30" y1="30" x2="580" y2="30" stroke="#F0EFEB" stroke-width="1" stroke-dasharray="3,4"/>
+          <line x1="30" y1="80" x2="580" y2="80" stroke="#F0EFEB" stroke-width="1" stroke-dasharray="3,4"/>
+          <line x1="30" y1="130" x2="580" y2="130" stroke="#F0EFEB" stroke-width="1" stroke-dasharray="3,4"/>
+          <line x1="30" y1="180" x2="580" y2="180" stroke="#F0EFEB" stroke-width="1" stroke-dasharray="3,4"/>
+
+          <!-- Y-axis labels -->
+          <text x="22" y="34" font-size="10" fill="#ABABB8" text-anchor="end" font-family="Inter">450K</text>
+          <text x="22" y="84" font-size="10" fill="#ABABB8" text-anchor="end" font-family="Inter">300K</text>
+          <text x="22" y="134" font-size="10" fill="#ABABB8" text-anchor="end" font-family="Inter">150K</text>
+          <text x="22" y="184" font-size="10" fill="#ABABB8" text-anchor="end" font-family="Inter">0</text>
+
+          <!-- Area fill -->
+          <path d="M 30,120 C 48,117.83 102,114 138,107 C 174,100 210,87.33 246,78 C 282,68.67 318,57.5 354,51 C 390,44.5 426,42.5 462,39 C 498,35.5 552,31.5 570,30 L 570,180 L 30,180 Z"
+                fill="url(#trendGrad)"/>
+
+          <!-- Line -->
+          <path d="M 30,120 C 48,117.83 102,114 138,107 C 174,100 210,87.33 246,78 C 282,68.67 318,57.5 354,51 C 390,44.5 426,42.5 462,39 C 498,35.5 552,31.5 570,30"
+                fill="none" stroke="#0052CC" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+          <!-- Data dots -->
+          <circle cx="30" cy="120" r="5" fill="#0052CC" stroke="white" stroke-width="2"/>
+          <circle cx="138" cy="107" r="5" fill="#0052CC" stroke="white" stroke-width="2"/>
+          <circle cx="246" cy="78" r="5" fill="#0052CC" stroke="white" stroke-width="2"/>
+          <circle cx="354" cy="51" r="5" fill="#0052CC" stroke="white" stroke-width="2"/>
+          <circle cx="462" cy="39" r="5" fill="#0052CC" stroke="white" stroke-width="2"/>
+          <circle cx="570" cy="30" r="7" fill="#0052CC" stroke="white" stroke-width="2"/>
+
+          <!-- Last point pill label -->
+          <rect x="538" y="4" width="56" height="20" rx="10" fill="#0052CC"/>
+          <text x="566" y="18" font-size="11" fill="white" text-anchor="middle" font-weight="600" font-family="Inter">450K</text>
+
+          <!-- X-axis labels -->
+          <text x="30" y="206" font-size="10" fill="#7A7A8E" text-anchor="middle" font-family="Inter">Apr</text>
+          <text x="138" y="206" font-size="10" fill="#7A7A8E" text-anchor="middle" font-family="Inter">May</text>
+          <text x="246" y="206" font-size="10" fill="#7A7A8E" text-anchor="middle" font-family="Inter">Jun</text>
+          <text x="354" y="206" font-size="10" fill="#7A7A8E" text-anchor="middle" font-family="Inter">Jul</text>
+          <text x="462" y="206" font-size="10" fill="#7A7A8E" text-anchor="middle" font-family="Inter">Aug</text>
+          <text x="570" y="206" font-size="10" fill="#7A7A8E" text-anchor="middle" font-family="Inter">Sep</text>
+        </svg>
+
+        <div class="chart-footer">
+          <div class="stat">Total: <strong class="tnum">UGX 1.95M</strong></div>
+          <div class="divider"></div>
+          <div class="stat">Avg: <strong class="tnum">UGX 325K/mo</strong></div>
+          <div class="divider"></div>
+          <div class="stat">Best: <strong>Sep</strong></div>
+        </div>
+      </div>
+
+      <!-- Spending Breakdown -->
+      <div class="card chart-card">
+        <div class="chart-header">
+          <div class="section-title">Spending This Month</div>
+          <div class="total-amt tnum">UGX 127,500</div>
+        </div>
+
+        <div class="donut-wrap">
+          <div class="donut-svg-wrap">
+            <svg width="160" height="160" viewBox="0 0 160 160">
+              <!-- Track -->
+              <circle cx="80" cy="80" r="60" fill="none" stroke="#F7F6F3" stroke-width="26"/>
+              <!-- Food 45% = 169.65 of 376.99; gap 3 -->
+              <circle cx="80" cy="80" r="60" fill="none" stroke="#0052CC" stroke-width="26"
+                stroke-dasharray="166.65 376.99" stroke-dashoffset="0"
+                transform="rotate(-90 80 80)" stroke-linecap="butt"/>
+              <!-- Education 25% = 94.25; starts at 169.65 -->
+              <circle cx="80" cy="80" r="60" fill="none" stroke="#7C5CFC" stroke-width="26"
+                stroke-dasharray="91.25 376.99" stroke-dashoffset="-169.65"
+                transform="rotate(-90 80 80)" stroke-linecap="butt"/>
+              <!-- Transport 15% = 56.55; starts at 263.9 -->
+              <circle cx="80" cy="80" r="60" fill="none" stroke="#FFAB00" stroke-width="26"
+                stroke-dasharray="53.55 376.99" stroke-dashoffset="-263.9"
+                transform="rotate(-90 80 80)" stroke-linecap="butt"/>
+              <!-- Entertainment 10% = 37.7; starts at 320.45 -->
+              <circle cx="80" cy="80" r="60" fill="none" stroke="#00A76F" stroke-width="26"
+                stroke-dasharray="34.7 376.99" stroke-dashoffset="-320.45"
+                transform="rotate(-90 80 80)" stroke-linecap="butt"/>
+              <!-- Other 5% = 18.85; starts at 358.15 -->
+              <circle cx="80" cy="80" r="60" fill="none" stroke="#ABABB8" stroke-width="26"
+                stroke-dasharray="15.85 376.99" stroke-dashoffset="-358.15"
+                transform="rotate(-90 80 80)" stroke-linecap="butt"/>
+            </svg>
+            <div class="donut-center">
+              <div class="amt">UGX 127,500</div>
+              <div class="lbl">total</div>
+            </div>
+          </div>
+
+          <div class="legend">
+            <div class="legend-row">
+              <span class="legend-dot" style="background:#0052CC;"></span>
+              <span class="legend-label">Food</span>
+              <span class="legend-amt tnum">UGX 57,375</span>
+              <span class="legend-pct tnum">45%</span>
+            </div>
+            <div class="legend-row">
+              <span class="legend-dot" style="background:#7C5CFC;"></span>
+              <span class="legend-label">Education</span>
+              <span class="legend-amt tnum">UGX 31,875</span>
+              <span class="legend-pct tnum">25%</span>
+            </div>
+            <div class="legend-row">
+              <span class="legend-dot" style="background:#FFAB00;"></span>
+              <span class="legend-label">Transport</span>
+              <span class="legend-amt tnum">UGX 19,125</span>
+              <span class="legend-pct tnum">15%</span>
+            </div>
+            <div class="legend-row">
+              <span class="legend-dot" style="background:#00A76F;"></span>
+              <span class="legend-label">Entertainment</span>
+              <span class="legend-amt tnum">UGX 12,750</span>
+              <span class="legend-pct tnum">10%</span>
+            </div>
+            <div class="legend-row">
+              <span class="legend-dot" style="background:#ABABB8;"></span>
+              <span class="legend-label">Other</span>
+              <span class="legend-amt tnum">UGX 6,375</span>
+              <span class="legend-pct tnum">5%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Row 3: AI Coach Insight -->
+    <section class="ai-card">
+      <div class="ai-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.8a2 2 0 0 0 1.3 1.3L21 12l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 12l5.8-1.9a2 2 0 0 0 1.3-1.3L12 3z"/></svg>
+      </div>
+      <div class="ai-content">
+        <div class="ai-line1">Weekly savings: UGX 50,000. Streak: 3 weeks.</div>
+        <div class="ai-line2">Emma saved consistently this week. Liam hasn't saved in 4 days — a gentle reminder might help.</div>
+      </div>
+      <a class="ai-link" href="#">What's behind this? →</a>
+    </section>
+
+    <!-- Row 4: Children Cards -->
+    <section class="children-row">
+      <!-- Emma -->
+      <div class="child-card">
+        <div class="child-top">
+          <div class="child-avatar" style="background:#0052CC;">E</div>
+          <div class="child-name">Emma, 10</div>
+          <a class="child-view" href="#">View →</a>
+        </div>
+        <div class="child-savings">
+          <div class="child-amount tnum"><span class="currency">UGX</span>850,000</div>
+          <div class="child-of">of UGX 1,000,000</div>
+        </div>
+        <div class="ring-wrap">
+          <div class="ring-svg-wrap">
+            <svg width="60" height="60" viewBox="0 0 60 60">
+              <circle cx="30" cy="30" r="22" fill="none" stroke="#F7F6F3" stroke-width="4"/>
+              <circle cx="30" cy="30" r="22" fill="none" stroke="#00A76F" stroke-width="4"
+                stroke-dasharray="117.5 138.23" stroke-dashoffset="0"
+                transform="rotate(-90 30 30)" stroke-linecap="round"/>
+            </svg>
+            <div class="ring-pct">85%</div>
+          </div>
+        </div>
+        <div class="child-goal">New Bicycle</div>
+        <div class="sparkline-wrap">
+          <svg width="100%" height="28" viewBox="0 0 100 28" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="sparkE" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#7C5CFC" stop-opacity="0.25"/>
+                <stop offset="100%" stop-color="#7C5CFC" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <path d="M 2,22 L 18,16 L 34,20 L 50,13 L 66,9 L 82,15 L 98,4 L 98,28 L 2,28 Z" fill="url(#sparkE)"/>
+            <polyline points="2,22 18,16 34,20 50,13 66,9 82,15 98,4" fill="none" stroke="#7C5CFC" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+            <circle cx="98" cy="4" r="2" fill="#7C5CFC"/>
+          </svg>
+        </div>
+        <div class="child-stats">
+          <div class="child-stat">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            47 tokens
+          </div>
+          <div class="child-stat">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+            1 goal
+          </div>
+          <div class="child-stat">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            3 lessons
+          </div>
+        </div>
+      </div>
+
+      <!-- Liam -->
+      <div class="child-card">
+        <div class="child-top">
+          <div class="child-avatar" style="background:#7C5CFC;">L</div>
+          <div class="child-name">Liam, 8</div>
+          <a class="child-view" href="#">View →</a>
+        </div>
+        <div class="child-savings">
+          <div class="child-amount tnum"><span class="currency">UGX</span>520,000</div>
+          <div class="child-of">of UGX 1,000,000</div>
+        </div>
+        <div class="ring-wrap">
+          <div class="ring-svg-wrap">
+            <svg width="60" height="60" viewBox="0 0 60 60">
+              <circle cx="30" cy="30" r="22" fill="none" stroke="#F7F6F3" stroke-width="4"/>
+              <circle cx="30" cy="30" r="22" fill="none" stroke="#FFAB00" stroke-width="4"
+                stroke-dasharray="71.88 138.23" stroke-dashoffset="0"
+                transform="rotate(-90 30 30)" stroke-linecap="round"/>
+            </svg>
+            <div class="ring-pct">52%</div>
+          </div>
+        </div>
+        <div class="child-goal">Gaming Console</div>
+        <div class="sparkline-wrap">
+          <svg width="100%" height="28" viewBox="0 0 100 28" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="sparkL" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#7C5CFC" stop-opacity="0.25"/>
+                <stop offset="100%" stop-color="#7C5CFC" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <path d="M 2,10 L 18,16 L 34,13 L 50,19 L 66,22 L 82,18 L 98,20 L 98,28 L 2,28 Z" fill="url(#sparkL)"/>
+            <polyline points="2,10 18,16 34,13 50,19 66,22 82,18 98,20" fill="none" stroke="#7C5CFC" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+            <circle cx="98" cy="20" r="2" fill="#7C5CFC"/>
+          </svg>
+        </div>
+        <div class="child-stats">
+          <div class="child-stat">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            23 tokens
+          </div>
+          <div class="child-stat">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+            1 goal
+          </div>
+          <div class="child-stat">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            1 lesson
+          </div>
+        </div>
+      </div>
+
+      <!-- Zara -->
+      <div class="child-card">
+        <div class="child-top">
+          <div class="child-avatar" style="background:#FFAB00;">Z</div>
+          <div class="child-name">Zara, 12</div>
+          <a class="child-view" href="#">View →</a>
+        </div>
+        <div class="child-savings">
+          <div class="child-amount tnum"><span class="currency">UGX</span>620,000</div>
+          <div class="child-of">of UGX 1,000,000</div>
+        </div>
+        <div class="ring-wrap">
+          <div class="ring-svg-wrap">
+            <svg width="60" height="60" viewBox="0 0 60 60">
+              <circle cx="30" cy="30" r="22" fill="none" stroke="#F7F6F3" stroke-width="4"/>
+              <circle cx="30" cy="30" r="22" fill="none" stroke="#00A76F" stroke-width="4"
+                stroke-dasharray="85.7 138.23" stroke-dashoffset="0"
+                transform="rotate(-90 30 30)" stroke-linecap="round"/>
+            </svg>
+            <div class="ring-pct">62%</div>
+          </div>
+        </div>
+        <div class="child-goal">College Fund</div>
+        <div class="sparkline-wrap">
+          <svg width="100%" height="28" viewBox="0 0 100 28" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="sparkZ" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#7C5CFC" stop-opacity="0.25"/>
+                <stop offset="100%" stop-color="#7C5CFC" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <path d="M 2,22 L 18,19 L 34,12 L 50,15 L 66,8 L 82,5 L 98,2 L 98,28 L 2,28 Z" fill="url(#sparkZ)"/>
+            <polyline points="2,22 18,19 34,12 50,15 66,8 82,5 98,2" fill="none" stroke="#7C5CFC" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+            <circle cx="98" cy="2" r="2" fill="#7C5CFC"/>
+          </svg>
+        </div>
+        <div class="child-stats">
+          <div class="child-stat">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            57 tokens
+          </div>
+          <div class="child-stat">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+            1 goal
+          </div>
+          <div class="child-stat">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+            5 lessons
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Row 5: Activity Feed + Suggested Actions -->
+    <section class="activity-row">
+      <!-- Recent Activity -->
+      <div class="card chart-card">
+        <div class="chart-header">
+          <div class="section-title">Recent Activity</div>
+          <a class="child-view" href="#">View all →</a>
+        </div>
+        <div class="activity-list">
+          <!-- 1: Save -->
+          <div class="activity-row-item">
+            <div class="act-icon" style="background:var(--save-soft); color:var(--save);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
+            </div>
+            <div class="act-text">
+              <div class="act-desc">Saved to goal</div>
+              <div class="act-child">Emma · New Bicycle</div>
+            </div>
+            <div class="act-amt tnum" style="color:var(--save);">+UGX 25,000</div>
+            <div class="act-time">2h ago</div>
+          </div>
+          <!-- 2: Spend -->
+          <div class="activity-row-item">
+            <div class="act-icon" style="background:var(--spend-soft); color:var(--spend);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
+            </div>
+            <div class="act-text">
+              <div class="act-desc">Snacks after school</div>
+              <div class="act-child">Emma</div>
+            </div>
+            <div class="act-amt tnum" style="color:var(--spend);">−UGX 5,000</div>
+            <div class="act-time">5h ago</div>
+          </div>
+          <!-- 3: Allowance -->
+          <div class="activity-row-item">
+            <div class="act-icon" style="background:var(--primary-soft); color:var(--primary);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </div>
+            <div class="act-text">
+              <div class="act-desc">Allowance payment</div>
+              <div class="act-child">Liam</div>
+            </div>
+            <div class="act-amt tnum" style="color:var(--primary);">+UGX 30,000</div>
+            <div class="act-time">1d ago</div>
+          </div>
+          <!-- 4: Save -->
+          <div class="activity-row-item">
+            <div class="act-icon" style="background:var(--save-soft); color:var(--save);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
+            </div>
+            <div class="act-text">
+              <div class="act-desc">Saved to goal</div>
+              <div class="act-child">Zara · College Fund</div>
+            </div>
+            <div class="act-amt tnum" style="color:var(--save);">+UGX 50,000</div>
+            <div class="act-time">1d ago</div>
+          </div>
+          <!-- 5: Spend -->
+          <div class="activity-row-item">
+            <div class="act-icon" style="background:var(--spend-soft); color:var(--spend);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>
+            </div>
+            <div class="act-text">
+              <div class="act-desc">Art supplies</div>
+              <div class="act-child">Emma</div>
+            </div>
+            <div class="act-amt tnum" style="color:var(--spend);">−UGX 8,000</div>
+            <div class="act-time">2d ago</div>
+          </div>
+          <!-- 6: Save -->
+          <div class="activity-row-item">
+            <div class="act-icon" style="background:var(--save-soft); color:var(--save);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
+            </div>
+            <div class="act-text">
+              <div class="act-desc">Saved to goal</div>
+              <div class="act-child">Emma · New Bicycle</div>
+            </div>
+            <div class="act-amt tnum" style="color:var(--save);">+UGX 10,000</div>
+            <div class="act-time">3d ago</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Suggested Actions -->
+      <div class="card chart-card">
+        <div class="chart-header">
+          <div class="section-title">Suggested Actions</div>
+        </div>
+        <div class="suggest-list">
+          <div class="suggest-card">
+            <div class="suggest-top">
+              <div class="suggest-dot" style="background:#0052CC;"></div>
+              <div class="suggest-content">
+                <div class="suggest-title">Set up Emma's allowance</div>
+                <div class="suggest-meta">Weekly, UGX 30,000</div>
+                <a class="suggest-link" href="#">Configure →</a>
+              </div>
+            </div>
+          </div>
+          <div class="suggest-card">
+            <div class="suggest-top">
+              <div class="suggest-dot" style="background:#FFAB00;"></div>
+              <div class="suggest-content">
+                <div class="suggest-title">Liam's goal is 52% reached</div>
+                <div class="suggest-meta">On track but could be faster</div>
+                <a class="suggest-link" href="#">View →</a>
+              </div>
+            </div>
+          </div>
+          <div class="suggest-card">
+            <div class="suggest-top">
+              <div class="suggest-dot" style="background:#00A76F;"></div>
+              <div class="suggest-content">
+                <div class="suggest-title">Review this month's spending</div>
+                <div class="suggest-meta">UGX 127,500 total</div>
+                <a class="suggest-link" href="#">View report →</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+</body>
+</html>
