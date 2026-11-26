@@ -38,12 +38,11 @@ export const POST = handler(async (req) => {
   if (!verifyPassword(password, user.passwordHash)) {
     // Increment in SQL rather than read-modify-write in application memory.
     // Concurrent failed attempts can no longer overwrite one another.
-    const lockoutUntil = new Date(Date.now() + 15 * 60 * 1000);
     const [updated] = await db
       .update(users)
       .set({
         failedLoginCount: sql`${users.failedLoginCount} + 1`,
-        lockedUntil: sql`CASE WHEN ${users.failedLoginCount} + 1 >= 8 THEN ${lockoutUntil} ELSE NULL END`,
+        lockedUntil: sql<Date | null>`CASE WHEN ${users.failedLoginCount} + 1 >= 8 THEN NOW() + INTERVAL '15 minutes' ELSE NULL::timestamptz END`,
       })
       .where(eq(users.id, user.id))
       .returning({ count: users.failedLoginCount });
