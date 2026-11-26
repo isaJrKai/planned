@@ -14,9 +14,10 @@ const SECRET = configuredSecret ?? "planned-local-development-secret-only";
 // Older deployments may have encrypted provider keys using DATABASE_URL as the
 // fallback key. Keep a read-only fallback so those values can be re-encrypted
 // after APP_SECRET is configured. New values are always encrypted with APP_SECRET.
-const LEGACY_SECRET = !configuredSecret && process.env.DATABASE_URL
-  ? process.env.DATABASE_URL
-  : null;
+const LEGACY_SECRET =
+  process.env.DATABASE_URL && process.env.DATABASE_URL !== configuredSecret
+    ? process.env.DATABASE_URL
+    : null;
 
 export function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
