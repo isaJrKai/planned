@@ -1,8 +1,9 @@
 /**
- * Integration tests — multi-tenant isolation + auth flow
- * Uses Neon HTTP driver (same as production).
+ * Integration tests — multi-tenant isolation + auth flow.
+ * Uses the same Neon serverless WebSocket driver as the application.
  *
- * Run: DATABASE_URL="postgresql://..." npx vitest run src/lib/isolation.test.ts
+ * Run with TEST_DATABASE_URL (preferred) or DATABASE_URL.
+ * These database-dependent tests are skipped when neither variable is set.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
@@ -20,14 +21,20 @@ import {
 } from "@/db/schema";
 import { hashPassword, verifyPassword, sha256, randomToken } from "@/lib/crypto";
 
+const hasTestDatabase = Boolean(process.env.TEST_DATABASE_URL || process.env.DATABASE_URL);
 const TEST_DB_URL =
   process.env.TEST_DATABASE_URL ??
   process.env.DATABASE_URL ??
-  "postgresql://neondb_owner:npg_3abZmqje9EBQ@ep-divine-heart-af994g0p-pooler.c-2.us-west-2.aws.neon.tech/neondb?sslmode=require";
+  "postgresql://localhost:5432/planned_test";
 
 neonConfig.webSocketConstructor = WebSocket as any;
 const pool = new Pool({ connectionString: TEST_DB_URL, max: 5 });
 const db = drizzle(pool);
+
+afterAll(async () => {
+  if (hasTestDatabase) await cleanupTestData();
+  await pool.end();
+});
 
 // --- Helpers ---
 
@@ -90,7 +97,7 @@ async function cleanupTestData() {
 
 // --- Tests ---
 
-describe("Multi-tenant Isolation", () => {
+describe.skipIf(!hasTestDatabase)("Multi-tenant Isolation", () => {
   let familyA: any, familyB: any, childA: any, goalA: any;
 
   beforeAll(async () => {
@@ -100,10 +107,6 @@ describe("Multi-tenant Isolation", () => {
     familyB = await createTestFamily(`FamilyB TestIsolation`, `familyB-${suffix}@test.isolation`, "TestPassword456!");
     childA = await createTestChild(familyA.family.id, `ChildA-${suffix}`, `testiso_childa_${suffix}`, "ChildPass123!");
     goalA = await createTestGoal(familyA.family.id, childA.member.id, "New Bicycle", 500000);
-  });
-
-  afterAll(async () => {
-    await cleanupTestData();
   });
 
   it("Family A and Family B have different family IDs", () => {
@@ -149,7 +152,7 @@ describe("Multi-tenant Isolation", () => {
   });
 });
 
-describe("Auth Flow", () => {
+describe.skipIf(!hasTestDatabase)("Auth Flow", () => {
   it("hashes passwords with scrypt (not plaintext)", () => {
     const hash = hashPassword("testPassword123");
     expect(hash).not.toBe("testPassword123");
@@ -202,7 +205,5 @@ describe("Auth Flow", () => {
     const [found] = await db.select().from(sessions).where(and(eq(sessions.tokenHash, sha256(expiredToken)), isNull(sessions.revokedAt))).limit(1);
     expect(found).toBeDefined();
     expect(found.expiresAt.getTime()).toBeLessThan(now.getTime());
-    await cleanupTestData();
-  await pool.end();
   });
 });
