@@ -14,10 +14,10 @@ const toneBar: Record<Tone, string> = { brand: "bg-brand", save: "bg-save", goal
 /* ---------- Button ---------- */
 type BtnProps = React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "secondary" | "ghost" | "danger"; size?: "sm" | "md" | "lg"; loading?: boolean; href?: string };
 export function Button({ variant = "primary", size = "md", loading, href, className, children, disabled, ...rest }: BtnProps) {
-  const base = "inline-flex items-center justify-center gap-2 font-medium rounded-md transition-all hover:-translate-y-px active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 select-none";
+  const base = "inline-flex min-w-0 items-center justify-center gap-2 rounded-md font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 hover:-translate-y-px active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 select-none";
   const sizes = { sm: "h-8 px-3 text-[13px]", md: "h-10 px-4 text-[14.5px]", lg: "h-12 px-5 text-[15.5px]" }[size];
   const variants = {
-    primary: "bg-brand text-white shadow-[0_1px_2px_rgba(0,82,204,0.25)] hover:bg-brand-strong hover:shadow-[0_2px_6px_rgba(0,82,204,0.30)]",
+    primary: "bg-brand text-white shadow-[0_1px_2px_rgba(0,82,204,0.18)] hover:bg-brand-strong hover:shadow-[0_2px_6px_rgba(0,82,204,0.22)]",
     secondary: "bg-surface text-ink border border-line-strong shadow-[var(--shadow-soft)] hover:bg-warm hover:border-line",
     ghost: "text-ink-2 hover:bg-warm hover:text-ink",
     danger: "bg-spend text-white shadow-[0_1px_2px_rgba(255,59,48,0.20)] hover:bg-[#cc2e26]",
@@ -43,7 +43,7 @@ export function Field({ label, hint, error, children, htmlFor }: FieldProps) {
     </div>
   );
 }
-export const inputCls = "w-full h-10 px-3 rounded-md border border-line-strong bg-surface text-ink placeholder:text-ink-4 text-[15px] focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/15 disabled:bg-warm aria-[invalid=true]:border-spend";
+export const inputCls = "w-full min-h-11 px-3 rounded-md border border-line-strong bg-surface text-ink placeholder:text-ink-4 text-[15px] focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/15 disabled:bg-warm aria-[invalid=true]:border-spend";
 export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(function Input({ className, ...p }, ref) {
   return <input ref={ref} className={cx(inputCls, className)} {...p} />;
 });
@@ -59,7 +59,7 @@ export function Card({ className, children, as: Tag = "section", hover, padded }
   return (
     <Tag
       className={cx(
-        "bg-surface border border-line rounded-lg shadow-[var(--shadow-soft)]",
+        "bg-surface border border-line rounded-xl shadow-[var(--shadow-soft)]",
         hover && "transition-all hover:-translate-y-px hover:shadow-[var(--shadow-lifted)] hover:border-line-strong cursor-pointer",
         padded && "p-5",
         className,

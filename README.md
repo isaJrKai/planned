@@ -1,201 +1,97 @@
 # Planned — Family Savings & Allowance
 
-A family financial education platform that teaches children disciplined wealth-building through saving, goals, investments, tokens, and financial literacy.
+Planned helps families teach children practical money habits through savings, goals, allowances, spending, financial literacy and family-level financial visibility.
 
-## Quick Start (Local Development)
+## Stack
 
-### Prerequisites
-- **Node.js 18+** (tested on Node 20 and 22)
-- **npm** (comes with Node.js)
+- **Web:** Next.js App Router, React and TypeScript
+- **Database:** PostgreSQL on Neon
+- **Data access:** Drizzle ORM with the Neon serverless WebSocket driver
+- **Validation:** Zod
+- **Tests:** Vitest
+- **Hosting:** Vercel
 
-### Setup Steps
+## Local development
+
+Requirements: Node.js 22.12+ and npm.
 
 ```bash
-# 1. Extract the archive
-tar -xzf planned-app.tar.gz
-# OR: unzip planned-app.zip
-cd planned-app
-
-# 2. Install dependencies
 npm install
-
-# 3. Create your .env file
 cp .env.example .env
-
-# 4. Edit .env — set your JWT_SECRET
-#    Generate one with:
-#    node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
-#    Paste the output after JWT_SECRET=
-#    Also set FOUNDER_EMAIL to your real email
-
-# 5. Create the database + generate Prisma client
-npx prisma db push
-npx prisma generate
-
-# 6. Run the security check (verifies everything is ready)
-npm run security:check
-
-# 7. Start the dev server
+# Set DATABASE_URL and APP_SECRET in .env
 npm run dev
-
-# 8. Open http://localhost:3000 in your browser
-#    You'll be redirected to /setup — create your founder account
 ```
 
-### Production Build
+Open http://localhost:3000.
 
-```bash
-npm run build
-npm run start
-```
+### Available scripts
 
-## What's Included
+| Command | Purpose |
+|---|---|
+| `npm run dev` | Start the development server |
+| `npm run build` | Create a production build |
+| `npm run start` | Start the production server |
+| `npm run lint` | Run ESLint |
+| `npm run typecheck` | Run TypeScript checks |
+| `npm test` | Run the Vitest suite |
+| `npm run test:unit` | Run the unit-test subset used by CI |
+| `npm run test:integration` | Run database-backed isolation tests |
+| `npm run test:watch` | Run Vitest in watch mode |
 
-### Authentication & Security
-- **Founder-only administration** — exactly one SUPER_ADMIN account
-- **JWT sessions** — HttpOnly + SameSite=Strict cookies, 7-day expiry
-- **bcrypt password hashing** — cost factor 12
-- **TOTP 2FA** — Google Authenticator / Authy / 1Password compatible
-- **Backup codes** — 8 single-use codes, bcrypt-hashed
-- **DB-backed rate limiting** — 5 login attempts / 15 min / IP
-- **DB-backed 2FA challenges** — survives server restarts
-- **Account lockout** — 10 failed attempts → 30 min lockout
-- **Audit logging** — every auth event + admin action recorded
+Database integration tests require `TEST_DATABASE_URL` (preferred) or `DATABASE_URL`. They are skipped when neither is configured. Use a dedicated test database, never production.
 
-### Application Features
-- Parent dashboard with financial overview
-- Child dashboards with goals, savings, investments, tokens
-- Token economy (buy rate: 50, redeem rate: 80)
-- Goals (save / spend_less, weekly / monthly / annual, private / revealed)
-- Spending tracking with categories
-- AI Financial Coach (GLM via z-ai-web-dev-sdk)
-- Financial literacy lessons (6 lessons + quizzes + certificates)
-- Achievement system (10 badges + streaks)
-- 4 themes (dark, light, pink, red)
-- PWA installable (manifest + icons + service worker)
+## Environment variables
 
-### PWA
-- `public/manifest.webmanifest` — full PWA manifest
-- `public/icons/` — 14 PNG icons (16px–1024px) + apple-touch-icon + favicon
-- `public/sw.js` — service worker (Cache-First for assets, Network-First for API, Stale-While-Revalidate for pages)
-- Auto-registers in production mode
-
-### Scripts
-- `npm run security:check` — 9-point production readiness audit
-- `npm run founder:recover` — dev-only emergency founder reset (requires interactive TTY + typed confirmation)
-- `npm run typecheck` — TypeScript strict mode check
-- `npm run lint` — ESLint
-- `npm run db:push` — push schema to database
-- `npm run db:generate` — regenerate Prisma client
-
-## Environment Variables
-
-| Variable | Required | Description |
+| Variable | Required | Purpose |
 |---|---|---|
-| `DATABASE_URL` | Yes | SQLite path (e.g., `file:./db/custom.db`) |
-| `JWT_SECRET` | Yes | 32+ char random string (64 recommended) |
-| `FOUNDER_EMAIL` | No | Pre-fills /setup form |
-| `NODE_ENV` | No | `development` or `production` |
-| `DISABLE_FOUNDER_RECOVERY` | No | Set to `true` in production |
+| `DATABASE_URL` | Yes | Neon/PostgreSQL connection string |
+| `APP_SECRET` | Yes in production | Dedicated random encryption secret, minimum 32 characters; do not reuse database credentials |
+| `TEST_DATABASE_URL` | For integration tests | Isolated PostgreSQL test database |
+| `FOUNDER_EMAIL` | Optional | Prefills the account setup form, where supported |
+| `DISABLE_FOUNDER_RECOVERY` | Optional | Set to `true` to disable any configured founder recovery workflow |
 
-## Security Model
-
-- **One founder account** — created via `/setup` (one-time, then permanently disabled)
-- **SUPER_ADMIN role** — hardcoded in `performFounderSetup()`, never accepted from client
-- **Deny-by-default middleware** — all `/api/*` routes require session except 6 public auth endpoints
-- **Defense in depth** — middleware + admin layout server guard + per-route role checks
-- **User ID is authoritative** — email is metadata, can be changed without changing identity
-
-## Database
-
-- **ORM:** Prisma
-- **Database:** SQLite (easily switchable to PostgreSQL by changing `DATABASE_URL`)
-- **29 models** including User, SystemSettings, AuditLog, RateLimitEntry, TwoFactorChallenge
-- **Transactional financial writes** — all money operations wrapped in `db.$transaction`
-- **Atomic conditional updates** — prevents TOCTOU race conditions on balances
-
-## Project Structure
-
-```
-src/
-├── app/                    # Next.js App Router
-│   ├── admin/             # Admin console (SUPER_ADMIN only)
-│   │   ├── security/      # Security settings (2FA, password, email)
-│   │   ├── layout.tsx     # Server-side role guard
-│   │   └── page.tsx       # Admin dashboard
-│   ├── api/               # API routes (19 total)
-│   │   ├── admin/         # Admin-only APIs (2FA, password, security)
-│   │   ├── auth/          # Auth APIs (setup, login, logout, me, verify-2fa)
-│   │   ├── state/         # App state hydration
-│   │   ├── mutations/     # Financial mutations
-│   │   └── ...            # Lessons, achievements, recommendations
-│   ├── login/             # Login page
-│   ├── setup/             # One-time founder setup page
-│   ├── layout.tsx         # Root layout (PWA metadata, splash screen, SW registration)
-│   ├── page.tsx           # Auth gate → redirects to /setup or /login
-│   ├── DashboardClient.tsx # Parent dashboard (client component)
-│   └── loading.tsx        # Route-transition loading state
-├── components/            # 13 React components
-├── lib/                   # 13 modules (auth, db, store, etc.)
-├── server/                # Domain services (achievements, education, etc.)
-└── middleware.ts          # Deny-by-default route protection
-
-public/
-├── icons/                 # 14 PWA icons
-├── manifest.webmanifest   # PWA manifest
-├── sw.js                  # Service worker
-└── favicon.ico
-
-scripts/
-├── founder-recover.js     # Dev-only emergency reset
-└── security-check.js      # Production readiness audit
-
-prisma/
-└── schema.prisma          # 29 models
-```
-
-## Production Deployment
-
-### Vercel
-1. Push to GitHub
-2. Import to Vercel
-3. Set environment variables: `DATABASE_URL`, `JWT_SECRET`, `FOUNDER_EMAIL`, `DISABLE_FOUNDER_RECOVERY=true`
-4. Deploy
-5. Visit `/setup` once to create founder account
-
-### Self-hosted
-1. `npm run build`
-2. Copy `.next/standalone/` to your server
-3. Set environment variables
-4. Run `node server.js`
-5. Visit `/setup` once
-
-## If You Forget Your Password
-
-Run locally:
-```bash
-npm run founder:recover
-```
-This will:
-1. Verify you're in development mode
-2. Require interactive terminal (no automation)
-3. Ask you to type "I UNDERSTAND THE CONSEQUENCES"
-4. Wait 10 seconds (Ctrl+C to abort)
-5. Delete the founder account + SystemSettings
-6. Log the action to audit trail
-7. Allow you to re-run `/setup`
-
-**In production:** Set `DISABLE_FOUNDER_RECOVERY=true` — the script refuses to run.
-
-## Verification
+Generate an `APP_SECRET` with:
 
 ```bash
-npm run lint           # 0 errors
-npm run typecheck      # 0 errors
-npm run build          # 27 routes
-npm run security:check # 9/9 PASS
+node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
 ```
 
-## License
+Production startup fails if `APP_SECRET` is missing or shorter than 32 characters. Keep it stable between deployments: changing it can make previously encrypted provider credentials unreadable. The encryption module retains a legacy decryption fallback for data encrypted by older builds using `DATABASE_URL`; new encryption always uses `APP_SECRET`.
 
-Private — Planned © 2026
+## Authentication and security
+
+- Passwords are hashed with Node.js scrypt.
+- Sessions are stored in PostgreSQL; the browser receives an HttpOnly, SameSite=Lax cookie with a 14-day expiry.
+- Session tokens are stored as SHA-256 hashes and can be revoked server-side.
+- Login failures increment a database counter atomically; eight failed attempts trigger a 15-minute account lockout.
+- Mutating API requests apply an Origin/Host check.
+- The current general-purpose rate limiter in `src/lib/api.ts` is process-local. It is not a distributed rate limiter and should not be treated as a global per-IP control on serverless deployments.
+
+## Data model
+
+The Drizzle schema lives in `src/db/schema.ts`. Core tables include users, sessions, families, family members, accounts, transactions, goals, allowance rules, approval requests, family settings, lessons, achievements, journal entries and audit logs.
+
+Financial amounts are stored in PostgreSQL BIGINT columns. The current Drizzle mapping uses JavaScript numbers, so application values must remain within `Number.MAX_SAFE_INTEGER`. A future end-to-end bigint/string migration is recommended before supporting amounts beyond that limit.
+
+Transactions have a family-scoped unique idempotency key. Account balances are cached alongside transaction records and should be reconciled against the ledger.
+
+### Database changes
+
+The schema source is `src/db/schema.ts`. The current `package.json` does not define Drizzle migration or push scripts. Do not use old Prisma commands from archived documentation. Before deploying schema changes, use the project's approved SQL migration process and verify the resulting database schema.
+
+## Deployment
+
+The production project is hosted on Vercel. Configure at least:
+
+- `DATABASE_URL`
+- `APP_SECRET` (random, stable, 32+ characters)
+- Any optional provider credentials required by the enabled features
+
+Deploy from the verified production branch only after build, typecheck, unit tests, database migration review and a preview smoke test pass.
+
+## Important maintenance notes
+
+- Never commit database connection strings, API keys or other credentials.
+- Removing a credential from the latest source does not remove it from Git history. Rotate any credential that has ever been committed.
+- Use a separate Neon database for integration tests.
+- Review transaction concurrency, idempotency and family scoping whenever adding financial mutations.
