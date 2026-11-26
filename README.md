@@ -22,15 +22,13 @@ npm install
 # 3. Create your .env file
 cp .env.example .env
 
-# 4. Edit .env — set your JWT_SECRET
-#    Generate one with:
+# 4. Edit .env — set DATABASE_URL and APP_SECRET.
+#    Generate APP_SECRET with:
 #    node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
-#    Paste the output after JWT_SECRET=
-#    Also set FOUNDER_EMAIL to your real email
+#    Also set FOUNDER_EMAIL if you want to prefill the founder setup form.
 
-# 5. Create the database + generate Prisma client
-npx prisma db push
-npx prisma generate
+# 5. Apply database changes using the project's Drizzle workflow.
+#    Check the package scripts and drizzle configuration in this repository.
 
 # 6. Run the security check (verifies everything is ready)
 npm run security:check
@@ -53,8 +51,8 @@ npm run start
 
 ### Authentication & Security
 - **Founder-only administration** — exactly one SUPER_ADMIN account
-- **JWT sessions** — HttpOnly + SameSite=Strict cookies, 7-day expiry
-- **bcrypt password hashing** — cost factor 12
+- **Database-backed sessions** — HttpOnly + SameSite=Lax cookies, 14-day expiry
+- **scrypt password hashing**
 - **TOTP 2FA** — Google Authenticator / Authy / 1Password compatible
 - **Backup codes** — 8 single-use codes, bcrypt-hashed
 - **DB-backed rate limiting** — 5 login attempts / 15 min / IP
@@ -85,15 +83,15 @@ npm run start
 - `npm run founder:recover` — dev-only emergency founder reset (requires interactive TTY + typed confirmation)
 - `npm run typecheck` — TypeScript strict mode check
 - `npm run lint` — ESLint
-- `npm run db:push` — push schema to database
-- `npm run db:generate` — regenerate Prisma client
+- `npm run test` — run the Vitest test suite
+- `npm run test:integration` — run database-isolation integration tests
 
 ## Environment Variables
 
 | Variable | Required | Description |
 |---|---|---|
-| `DATABASE_URL` | Yes | SQLite path (e.g., `file:./db/custom.db`) |
-| `JWT_SECRET` | Yes | 32+ char random string (64 recommended) |
+| `DATABASE_URL` | Yes | Neon/PostgreSQL connection string |
+| `APP_SECRET` | Yes in production | Dedicated random secret, at least 32 characters; do not reuse DATABASE_URL |
 | `FOUNDER_EMAIL` | No | Pre-fills /setup form |
 | `NODE_ENV` | No | `development` or `production` |
 | `DISABLE_FOUNDER_RECOVERY` | No | Set to `true` in production |
@@ -108,11 +106,12 @@ npm run start
 
 ## Database
 
-- **ORM:** Prisma
-- **Database:** SQLite (easily switchable to PostgreSQL by changing `DATABASE_URL`)
-- **29 models** including User, SystemSettings, AuditLog, RateLimitEntry, TwoFactorChallenge
-- **Transactional financial writes** — all money operations wrapped in `db.$transaction`
-- **Atomic conditional updates** — prevents TOCTOU race conditions on balances
+- **ORM:** Drizzle ORM
+- **Database:** PostgreSQL on Neon (serverless driver with WebSocket transport for transactions)
+- **Schema:** `src/db/schema.ts`
+- **Transactional financial writes:** use PostgreSQL transactions for money-moving operations
+- **Idempotency:** transaction idempotency keys are unique within a family
+- **Money:** stored as integer-valued PostgreSQL BIGINT columns; application code currently maps these to JavaScript numbers, so values must remain within the safe-integer range until the numeric representation is migrated to bigint/string end-to-end
 
 ## Project Structure
 
@@ -150,8 +149,9 @@ scripts/
 ├── founder-recover.js     # Dev-only emergency reset
 └── security-check.js      # Production readiness audit
 
-prisma/
-└── schema.prisma          # 29 models
+src/db/
+├── schema.ts              # PostgreSQL schema
+└── index.ts               # Neon + Drizzle database client
 ```
 
 ## Production Deployment
@@ -159,7 +159,7 @@ prisma/
 ### Vercel
 1. Push to GitHub
 2. Import to Vercel
-3. Set environment variables: `DATABASE_URL`, `JWT_SECRET`, `FOUNDER_EMAIL`, `DISABLE_FOUNDER_RECOVERY=true`
+3. Set environment variables: `DATABASE_URL`, `APP_SECRET` (random, 32+ characters), `FOUNDER_EMAIL` (optional), and `DISABLE_FOUNDER_RECOVERY=true`
 4. Deploy
 5. Visit `/setup` once to create founder account
 
@@ -193,7 +193,7 @@ This will:
 npm run lint           # 0 errors
 npm run typecheck      # 0 errors
 npm run build          # 27 routes
-npm run security:check # 9/9 PASS
+npm run test           # Vitest suite
 ```
 
 ## License
